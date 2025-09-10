@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { logSystemEvent } from '@/lib/notification-logger';
 
 // This route initializes the WebSocket server
@@ -6,7 +6,7 @@ import { logSystemEvent } from '@/lib/notification-logger';
 
 let isInitialized = false;
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   if (!isInitialized && process.env.NODE_ENV === 'development') {
     // In development, we'll use a simple approach
     // In production, use a custom server setup

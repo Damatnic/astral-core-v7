@@ -220,3 +220,6 @@ export const rateLimiters = {
     message: 'Wellness tracking rate limit exceeded'
   })
 };
+
+// Export default rate limiter instance for general use
+export const rateLimiter = rateLimiters.api;

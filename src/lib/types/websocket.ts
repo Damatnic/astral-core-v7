@@ -110,6 +110,24 @@ export interface GroupMessage extends BaseWebSocketMessage {
   messageType: 'text' | 'announcement' | 'system';
 }
 
+// Notification messages
+export interface NotificationMessage extends BaseWebSocketMessage {
+  type: 'notification';
+  notificationId: string;
+  title: string;
+  message: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  actionUrl?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// Generic data message for flexible data transmission
+export interface DataMessage extends BaseWebSocketMessage {
+  type: string;
+  data: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage =
   | PresenceUpdateMessage
@@ -124,7 +142,9 @@ export type WebSocketMessage =
   | CrisisResponseMessage
   | GroupJoinMessage
   | GroupLeaveMessage
-  | GroupMessage;
+  | GroupMessage
+  | NotificationMessage
+  | DataMessage;
 
 // Socket authentication
 export interface AuthenticatedSocket {

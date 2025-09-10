@@ -23,7 +23,7 @@ export interface ErrorEvent {
     beforeError: PerformanceMetrics;
     afterError: PerformanceMetrics;
   };
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 interface PerformanceMetrics {
@@ -59,7 +59,7 @@ export interface AlertRule {
 
 export interface AlertAction {
   type: 'email' | 'webhook' | 'console' | 'notification';
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 class ErrorMonitor {
@@ -116,8 +116,8 @@ class ErrorMonitor {
       const target = event.target as HTMLElement;
       if (target && target !== window) {
         this.captureError({
-          message: `Failed to load resource: ${(target as any).src || (target as any).href}`,
-          filename: (target as any).src || (target as any).href,
+          message: `Failed to load resource: ${(target as HTMLImageElement).src || (target as HTMLAnchorElement).href}`,
+          filename: (target as HTMLImageElement).src || (target as HTMLAnchorElement).href,
           type: 'resource',
           severity: 'medium'
         });
@@ -219,7 +219,7 @@ class ErrorMonitor {
     const metrics: PerformanceMetrics = {};
 
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
       metrics.memoryUsage = {
         usedJSHeapSize: memory.usedJSHeapSize,
         totalJSHeapSize: memory.totalJSHeapSize
@@ -531,7 +531,7 @@ export function requestNotificationPermission() {
   }
 }
 
-export function captureCustomError(message: string, context?: Record<string, any>, severity?: 'low' | 'medium' | 'high' | 'critical') {
+export function captureCustomError(message: string, context?: Record<string, unknown>, severity?: 'low' | 'medium' | 'high' | 'critical') {
   const monitor = getErrorMonitor();
   monitor.captureError({
     message,

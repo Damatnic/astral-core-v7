@@ -22,16 +22,16 @@ const mockPerformance = {
 };
 
 // Mock PerformanceObserver
-const mockPerformanceObserver = jest.fn().mockImplementation((callback) => ({
+const mockPerformanceObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   disconnect: jest.fn(),
   takeRecords: jest.fn(() => [])
 }));
 
 // Setup global mocks
-(global as any).performance = mockPerformance;
-(global as any).PerformanceObserver = mockPerformanceObserver;
-(global as any).Notification = {
+(global as { performance: unknown }).performance = mockPerformance;
+(global as { PerformanceObserver: unknown }).PerformanceObserver = mockPerformanceObserver;
+(global as { Notification: unknown }).Notification = {
   permission: 'default',
   requestPermission: jest.fn(() => Promise.resolve('granted'))
 };
@@ -432,7 +432,7 @@ describe('Performance Monitoring System', () => {
   describe('Integration Tests', () => {
     test('should handle multiple monitoring systems together', () => {
       const metricsCollector = getPerformanceMetricsCollector();
-      const webVitalsMonitor = getWebVitalsMonitor();
+      getWebVitalsMonitor();
       const errorMonitor = getErrorMonitor();
       const databaseMonitor = getDatabaseMonitor();
       
@@ -498,7 +498,7 @@ describe('Performance Monitoring System', () => {
           message: 'Test error',
           type: 'custom',
           severity: 'medium',
-          context: null as any
+          context: undefined
         });
       }).not.toThrow();
     });

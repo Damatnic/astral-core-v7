@@ -1,31 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import type { SessionUser } from '@/lib/types/auth';
-import { DashboardCardSkeleton, AppointmentListSkeleton } from '@/components/ui/SkeletonLoader';
-import { LoadingOverlay, InlineLoading } from '@/components/ui/LoadingStates';
-import { CompactErrorBoundary } from '@/components/EnhancedErrorBoundary';
+import type { AppointmentWithDetails } from '@/lib/types/therapy';
+import type { wellnessDataSchema } from '@/lib/types/wellness';
+import type { z } from 'zod';
+import { AppointmentListSkeleton } from '@/components/ui/SkeletonLoader';
+
+type WellnessData = z.infer<typeof wellnessDataSchema>;
 
 interface ClientDashboardProps {
   user: SessionUser;
 }
 
 export default function ClientDashboard({ user }: ClientDashboardProps) {
-  const [wellnessData, setWellnessData] = useState<any>(null);
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [wellnessData, setWellnessData] = useState<WellnessData | null>(null);
+  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [wellnessLoading, setWellnessLoading] = useState(true);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [wellnessError, setWellnessError] = useState<string | null>(null);
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
 
   const fetchWellnessData = async () => {
     try {
@@ -69,10 +65,7 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
     }
   };
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    setError(null);
-    
+  const fetchDashboardData = useCallback(async () => {
     try {
       await Promise.allSettled([
         fetchWellnessData(),
@@ -80,16 +73,12 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
       ]);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load dashboard');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
 
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
+  useEffect(() => {
     fetchDashboardData();
-  };
+  }, [fetchDashboardData]);
 
   const handleWellnessRetry = () => {
     fetchWellnessData();
@@ -176,7 +165,7 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
           {/* Today's Wellness */}
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow p-6'>
             <h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>
-              Today's Wellness
+              Today&apos;s Wellness
             </h2>
 
             {wellnessLoading ? (
@@ -363,6 +352,6 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

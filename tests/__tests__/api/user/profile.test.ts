@@ -1,7 +1,6 @@
 import { GET, PUT } from '@/app/api/user/profile/route';
-import { NextRequest } from 'next/server';
 import { createMockRequest, createMockSession, createMockUser } from '../../../utils/test-helpers';
-import { mockPrisma, resetPrismaMocks, mockPrismaImplementations } from '../../../mocks/prisma';
+import { mockPrisma, resetPrismaMocks } from '../../../mocks/prisma';
 
 // Mock dependencies
 jest.mock('next-auth', () => ({
@@ -34,9 +33,10 @@ jest.mock('@/lib/logger', () => ({
   logError: jest.fn()
 }));
 
+import { getServerSession } from 'next-auth';
+import { phiService } from '@/lib/security/phi-service';
+
 describe('/api/user/profile', () => {
-  const { getServerSession } = require('next-auth');
-  const { phiService } = require('@/lib/security/phi-service');
 
   beforeEach(() => {
     resetPrismaMocks();
@@ -311,7 +311,7 @@ describe('/api/user/profile', () => {
       getServerSession.mockResolvedValue(session);
       phiService.update.mockResolvedValue(updatedUserData);
 
-      const { audit } = require('@/lib/security/audit');
+      const { audit } = await import('@/lib/security/audit');
 
       const request = createMockRequest('http://localhost:3000/api/user/profile', {
         method: 'PUT',

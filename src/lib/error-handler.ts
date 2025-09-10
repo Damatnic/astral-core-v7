@@ -39,7 +39,7 @@ export enum ErrorCode {
 export interface ApiError {
   code: ErrorCode;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   timestamp: string;
   requestId?: string;
 }
@@ -47,35 +47,38 @@ export interface ApiError {
 export class AppError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: number;
-  public readonly details?: Record<string, any>;
+  public readonly details?: Record<string, unknown>;
   public readonly requestId?: string;
 
   constructor(
     code: ErrorCode,
     message: string,
     statusCode: number = 500,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     requestId?: string
   ) {
     super(message);
     this.name = 'AppError';
     this.code = code;
     this.statusCode = statusCode;
-    this.details = details;
-    this.requestId = requestId;
+    if (details !== undefined) this.details = details;
+    if (requestId !== undefined) this.requestId = requestId;
 
     // Maintains proper stack trace
     Error.captureStackTrace(this, AppError);
   }
 
   public toApiError(): ApiError {
-    return {
+    const apiError: ApiError = {
       code: this.code,
       message: this.message,
-      details: this.details,
-      timestamp: new Date().toISOString(),
-      requestId: this.requestId
+      timestamp: new Date().toISOString()
     };
+    
+    if (this.details !== undefined) apiError.details = this.details;
+    if (this.requestId !== undefined) apiError.requestId = this.requestId;
+    
+    return apiError;
   }
 }
 
@@ -88,7 +91,7 @@ export const createForbiddenError = (message: string = 'Access denied', requestI
 
 export const createValidationError = (
   message: string,
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
   requestId?: string
 ) => new AppError(ErrorCode.VALIDATION_ERROR, message, 400, details, requestId);
 
@@ -144,9 +147,9 @@ export function handleApiError(
     apiError = {
       code: ErrorCode.INTERNAL_ERROR,
       message: isProduction ? 'An unexpected error occurred' : error.message,
-      timestamp: new Date().toISOString(),
-      requestId
+      timestamp: new Date().toISOString()
     };
+    if (requestId) apiError.requestId = requestId;
     statusCode = 500;
 
     // Always log unknown errors as errors
@@ -189,7 +192,7 @@ export function handleServiceError(
 }
 
 // Async error wrapper for API routes
-export function withErrorHandler<T extends any[]>(handler: (...args: T) => Promise<NextResponse>) {
+export function withErrorHandler<T extends unknown[]>(handler: (...args: T) => Promise<NextResponse>) {
   return async (...args: T): Promise<NextResponse> => {
     try {
       return await handler(...args);
@@ -200,7 +203,7 @@ export function withErrorHandler<T extends any[]>(handler: (...args: T) => Promi
 }
 
 // Async error wrapper for service functions
-export function withServiceErrorHandler<T extends any[], R>(
+export function withServiceErrorHandler<T extends unknown[], R>(
   operation: string,
   handler: (...args: T) => Promise<R>,
   context?: string

@@ -5,7 +5,7 @@ import { Session } from 'next-auth';
  */
 
 // Mock response helper that matches Next.js Response.json
-export const createMockResponse = (data: any, status: number = 200) => {
+export const createMockResponse = (data: unknown, status: number = 200) => {
   const response = {
     status,
     ok: status >= 200 && status < 300,
@@ -20,7 +20,7 @@ export const createMockResponse = (data: any, status: number = 200) => {
 
 // Mock Next.js Response.json static method
 export const mockNextResponse = {
-  json: jest.fn((data: any, options: { status?: number } = {}) => {
+  json: jest.fn((data: unknown, options: { status?: number } = {}) => {
     return createMockResponse(data, options.status || 200);
   })
 };
@@ -30,7 +30,7 @@ export const createAPIRequest = (
   url: string,
   options: {
     method?: string;
-    body?: any;
+    body?: unknown;
     headers?: Record<string, string>;
     searchParams?: Record<string, string>;
   } = {}
@@ -166,7 +166,7 @@ export const createErrorResponse = (message: string, status: number = 400) => ({
 });
 
 // Success response helpers
-export const createSuccessResponse = (data: any, message?: string) => ({
+export const createSuccessResponse = (data: unknown, message?: string) => ({
   success: true,
   data,
   message,
@@ -175,8 +175,8 @@ export const createSuccessResponse = (data: any, message?: string) => ({
 
 // API endpoint test wrapper
 export const testAPIEndpoint = async (
-  handler: Function,
-  request: any,
+  handler: (request: unknown) => Promise<{ status?: number; json?: () => Promise<unknown> }>,
+  request: unknown,
   expectedStatus: number = 200
 ) => {
   try {

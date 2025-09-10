@@ -1,6 +1,5 @@
 import { StripeService } from '@/lib/services/stripe-service';
 import { createDatabaseMock, createEncryptionMock } from '../../utils/api-test-helpers';
-import Stripe from 'stripe';
 
 // Mock dependencies
 jest.mock('@/lib/db/prisma', () => ({
@@ -70,9 +69,33 @@ jest.mock('stripe', () => {
   return jest.fn().mockImplementation(() => mockStripe);
 });
 
-const { prisma } = require('@/lib/db/prisma');
-const { encryption } = require('@/lib/security/encryption');
-const { auditLog } = require('@/lib/security/audit');
+// Use test mocks instead of real imports
+import { mockPrisma } from '../../mocks/prisma';
+
+// Mock the modules
+jest.mock('@/lib/db/prisma', () => ({
+  default: mockPrisma
+}));
+
+const mockEncryption = {
+  encrypt: jest.fn(),
+  decrypt: jest.fn()
+};
+
+const mockAuditLog = jest.fn();
+
+jest.mock('@/lib/security/encryption', () => ({
+  encryption: mockEncryption
+}));
+
+jest.mock('@/lib/security/audit', () => ({
+  auditLog: mockAuditLog
+}));
+
+// Make mocks available to tests
+const prisma = mockPrisma;
+const encryption = mockEncryption;
+const auditLog = mockAuditLog;
 
 describe('StripeService - Enhanced Payment Processing Tests', () => {
   beforeEach(() => {
@@ -861,7 +884,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
     describe('determinePlanType', () => {
       it('should correctly determine plan types', () => {
         // Access the private method via bracket notation for testing
-        const determinePlanType = (StripeService as any).determinePlanType;
+        const determinePlanType = (StripeService as { determinePlanType: (name: string) => string }).determinePlanType;
         
         expect(determinePlanType('Basic Therapy Plan')).toBe('BASIC');
         expect(determinePlanType('Premium Mental Health Package')).toBe('PREMIUM');

@@ -27,8 +27,8 @@ interface UseLazyLoadingReturn {
   onFocus: () => void;
 }
 
-export function useLazyLoading(
-  preloadFn: () => Promise<any>,
+export function useLazyLoading<T = unknown>(
+  preloadFn: () => Promise<T>,
   options: UseLazyLoadingOptions = {}
 ): UseLazyLoadingReturn {
   const {
@@ -167,7 +167,7 @@ export function useLazyLoading(
 export function useRoutePreloading() {
   const preloadedRoutes = useRef(new Set<string>());
 
-  const preloadRoute = useCallback(async (route: string, preloadFn: () => Promise<any>) => {
+  const preloadRoute = useCallback(async (route: string, preloadFn: () => Promise<unknown>) => {
     if (preloadedRoutes.current.has(route)) return;
 
     try {

@@ -7,7 +7,6 @@ import { WebSocketServer } from '@/lib/websocket/server';
 import { MessagingService } from '@/lib/services/messaging-service';
 import { createDatabaseMock, createPHIMock, createWebSocketMock } from '../../utils/api-test-helpers';
 import { Server as HTTPServer } from 'http';
-import { Socket } from 'socket.io';
 
 // Mock Socket.IO
 const mockIo = {
@@ -52,11 +51,11 @@ jest.mock('@/lib/services/notification-service', () => ({
   }
 }));
 
-const prisma = require('@/lib/db/prisma').default;
-const { phiService } = require('@/lib/security/phi-service');
-const { audit } = require('@/lib/security/audit');
-const { rateLimiter } = require('@/lib/security/rate-limit');
-const { notificationService } = require('@/lib/services/notification-service');
+// Note: These would be ES6 imports but are mocked above
+const prisma = jest.mocked(createDatabaseMock());
+const phiService = jest.fn();
+const audit = jest.fn();
+const notificationService = jest.fn();
 
 // Mock WebSocket server with proper implementation
 const createMockWebSocketServer = () => ({
@@ -73,7 +72,7 @@ jest.mock('@/lib/websocket/server', () => ({
   websocketServer: createMockWebSocketServer()
 }));
 
-const mockWebSocketServer = require('@/lib/websocket/server').websocketServer;
+const mockWebSocketServer = createMockWebSocketServer();
 
 describe('WebSocket Functionality Tests', () => {
   let messagingService: MessagingService;
@@ -176,7 +175,7 @@ describe('WebSocket Functionality Tests', () => {
         type: 'text'
       };
 
-      const result = await messagingService.sendMessage(messageData);
+      await messagingService.sendMessage(messageData);
 
       // Verify message was created
       expect(prisma.message.create).toHaveBeenCalledWith({
@@ -282,7 +281,7 @@ describe('WebSocket Functionality Tests', () => {
         createdBy: 'user-1'
       };
 
-      const result = await messagingService.createConversation(conversationData);
+      await messagingService.createConversation(conversationData);
 
       expect(prisma.conversation.create).toHaveBeenCalledWith({
         data: {
@@ -390,7 +389,7 @@ describe('WebSocket Functionality Tests', () => {
     });
 
     it('should create read receipt and notify sender', async () => {
-      const result = await messagingService.markMessageAsRead('msg-123', 'user-2');
+      await messagingService.markMessageAsRead('msg-123', 'user-2');
 
       expect(prisma.messageReadReceipt.create).toHaveBeenCalledWith({
         data: {
@@ -444,7 +443,7 @@ describe('WebSocket Functionality Tests', () => {
         sender: { id: 'user-1', name: 'User 1' }
       });
 
-      const result = await messagingService.editMessage('msg-123', 'user-1', 'Edited content');
+      await messagingService.editMessage('msg-123', 'user-1', 'Edited content');
 
       expect(phiService.encryptField).toHaveBeenCalledWith('Edited content');
       
@@ -522,7 +521,7 @@ describe('WebSocket Functionality Tests', () => {
           sender: { id: 'responder-1', name: 'Crisis Responder' }
         });
 
-      const result = await messagingService.createCrisisConversation('user-1', 'responder-1');
+      await messagingService.createCrisisConversation('user-1', 'responder-1');
 
       // Verify conversation was created with crisis type
       expect(prisma.conversation.create).toHaveBeenCalledWith({

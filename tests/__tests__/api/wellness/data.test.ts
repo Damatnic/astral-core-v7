@@ -1,11 +1,10 @@
 import { GET, POST } from '@/app/api/wellness/data/route';
-import { NextRequest } from 'next/server';
 import {
   createMockRequest,
   createMockSession,
   createMockWellnessData
 } from '../../../utils/test-helpers';
-import { mockPrisma, resetPrismaMocks, mockPrismaImplementations } from '../../../mocks/prisma';
+import { mockPrisma, resetPrismaMocks } from '../../../mocks/prisma';
 
 // Mock dependencies
 jest.mock('next-auth', () => ({
@@ -41,9 +40,10 @@ jest.mock('@/lib/logger', () => ({
   logError: jest.fn()
 }));
 
+import { getServerSession } from 'next-auth';
+import { phiService } from '@/lib/security/phi-service';
+
 describe('/api/wellness/data', () => {
-  const { getServerSession } = require('next-auth');
-  const { phiService } = require('@/lib/security/phi-service');
 
   beforeEach(() => {
     resetPrismaMocks();
@@ -353,7 +353,7 @@ describe('/api/wellness/data', () => {
       getServerSession.mockResolvedValue(session);
       phiService.create.mockResolvedValue(newWellnessData);
 
-      const { audit } = require('@/lib/security/audit');
+      const { audit } = await import('@/lib/security/audit');
 
       const wellnessInput = {
         date: '2024-01-15',

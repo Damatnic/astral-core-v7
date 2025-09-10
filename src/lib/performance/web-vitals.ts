@@ -86,24 +86,26 @@ class WebVitalsMonitor {
     this.observeVital('first-input', (entries) => {
       const fidEntry = entries[0];
       if (fidEntry) {
-        const delay = (fidEntry as any).processingStart - fidEntry.startTime;
+        const delay = (fidEntry as PerformanceEventTiming).processingStart - fidEntry.startTime;
         this.updateVital('fid', delay, delay, 'fid-' + Date.now(), [fidEntry]);
       }
     });
 
     // Cumulative Layout Shift
     let clsValue = 0;
-    let clsEntries: PerformanceEntry[] = [];
+    const clsEntries: PerformanceEntry[] = [];
     
     this.observeVital('layout-shift', (entries) => {
       for (const entry of entries) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const layoutEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value: number };
+        if (!layoutEntry.hadRecentInput) {
+          clsValue += layoutEntry.value;
           clsEntries.push(entry);
         }
       }
       
-      this.updateVital('cls', clsValue, (entries[entries.length - 1] as any).value, 'cls-' + Date.now(), clsEntries);
+      const lastEntry = entries[entries.length - 1] as PerformanceEntry & { value: number };
+      this.updateVital('cls', clsValue, lastEntry.value, 'cls-' + Date.now(), clsEntries);
     });
 
     // Time to First Byte
@@ -122,7 +124,7 @@ class WebVitalsMonitor {
         let inpEntry: PerformanceEntry | null = null;
         
         for (const entry of entries) {
-          const eventEntry = entry as any;
+          const eventEntry = entry as PerformanceEntry & { interactionId?: number; duration: number };
           if (eventEntry.interactionId && eventEntry.duration) {
             if (eventEntry.duration > maxDelay) {
               maxDelay = eventEntry.duration;

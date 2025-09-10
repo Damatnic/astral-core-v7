@@ -4,7 +4,8 @@
  */
 
 import Stripe from 'stripe';
-import prisma from '@/lib/db/prisma';
+import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { encryption } from '@/lib/security/encryption';
 import { auditLog } from '@/lib/security/audit';
 import type {
@@ -16,28 +17,58 @@ import type {
   CreateRefundResponse,
   GetSubscriptionResponse,
   Customer,
-  Subscription,
-  Payment,
   PaymentMethod,
   SubscriptionPlanType,
-  PaymentMethodType,
-  CustomerWithRelations,
-  SubscriptionWithRelations,
-  PaymentWithRelations
+  PaymentMethodType
 } from '@/lib/types/billing';
 
 // Initialize Stripe with API version and configuration
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!, {
+  apiVersion: '2025-08-27.basil',
   typescript: true
 });
+
+// Helper function to map Stripe subscription status to our enum
+const mapSubscriptionStatus = (stripeStatus: string) => {
+  switch (stripeStatus.toLowerCase()) {
+    case 'active': return 'ACTIVE';
+    case 'canceled': return 'CANCELED';
+    case 'incomplete': return 'INCOMPLETE';
+    case 'incomplete_expired': return 'INCOMPLETE_EXPIRED';
+    case 'past_due': return 'PAST_DUE';
+    case 'trialing': return 'TRIALING';
+    case 'unpaid': return 'UNPAID';
+    default: return 'ACTIVE';
+  }
+};
+
+// Helper function to map Stripe payment status to our enum
+const mapPaymentStatus = (stripeStatus: string) => {
+  switch (stripeStatus.toLowerCase()) {
+    case 'requires_payment_method': return 'REQUIRES_PAYMENT_METHOD';
+    case 'requires_confirmation': return 'REQUIRES_CONFIRMATION';
+    case 'requires_action': return 'REQUIRES_ACTION';
+    case 'processing': return 'PROCESSING';
+    case 'requires_capture': return 'REQUIRES_CAPTURE';
+    case 'canceled': return 'CANCELED';
+    case 'succeeded': return 'SUCCEEDED';
+    default: return 'PROCESSING';
+  }
+};
 
 export interface CreateCustomerData {
   userId: string;
   email: string;
   name?: string;
   phone?: string;
-  address?: Stripe.CustomerCreateParams.Address;
+  address?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+  };
   metadata?: Record<string, string>;
 }
 
@@ -92,16 +123,19 @@ export class StripeService {
   static async createCustomer(data: CreateCustomerData): Promise<CreateCustomerResponse> {
     try {
       // Create Stripe customer
-      const stripeCustomer = await stripe.customers.create({
+      const customerData: Stripe.CustomerCreateParams = {
         email: data.email,
-        name: data.name,
-        phone: data.phone,
-        address: data.address,
         metadata: {
           userId: data.userId,
           ...data.metadata
         }
-      });
+      };
+
+      if (data.name) customerData.name = data.name;
+      if (data.phone) customerData.phone = data.phone;
+      if (data.address) customerData.address = data.address;
+
+      const stripeCustomer = await stripe.customers.create(customerData);
 
       // Store customer in database with encrypted sensitive data
       const encryptedEmail = encryption.encrypt(data.email);
@@ -110,8 +144,8 @@ export class StripeService {
           userId: data.userId,
           stripeCustomerId: stripeCustomer.id,
           email: encryptedEmail,
-          name: data.name,
-          address: data.address ? JSON.stringify(data.address) : null
+          name: data.name || null,
+          address: data.address ? JSON.stringify(data.address) : Prisma.JsonNull
         }
       });
 
@@ -165,7 +199,11 @@ export class StripeService {
     });
 
     if (!customer) {
-      const result = await this.createCustomer({ userId, email, name });
+      const result = await this.createCustomer({ 
+        userId, 
+        email, 
+        ...(name && { name })
+      });
       customer = result.customer;
     }
 
@@ -222,7 +260,7 @@ export class StripeService {
         subscriptionData.default_payment_method = data.paymentMethodId;
       }
 
-      const stripeSubscription = await stripe.subscriptions.create(subscriptionData);
+      const stripeSubscription = await stripe.subscriptions.create(subscriptionData) as Stripe.Subscription;
 
       // Get price details for plan information
       const price = await stripe.prices.retrieve(data.priceId, { expand: ['product'] });
@@ -235,9 +273,9 @@ export class StripeService {
           stripeSubscriptionId: stripeSubscription.id,
           stripePriceId: data.priceId,
           stripeProductId: product.id,
-          status: stripeSubscription.status,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+          status: mapSubscriptionStatus(stripeSubscription.status),
+          currentPeriodStart: new Date((stripeSubscription as Record<string, unknown>)['current_period_start'] as number * 1000),
+          currentPeriodEnd: new Date((stripeSubscription as Record<string, unknown>)['current_period_end'] as number * 1000),
           planType: this.determinePlanType(product.name),
           planName: product.name,
           amount: price.unit_amount! / 100,
@@ -250,7 +288,7 @@ export class StripeService {
           trialEnd: stripeSubscription.trial_end
             ? new Date(stripeSubscription.trial_end * 1000)
             : null,
-          metadata: data.metadata ? JSON.stringify(data.metadata) : null
+          metadata: data.metadata ? JSON.stringify(data.metadata) : Prisma.JsonNull
         }
       });
 
@@ -321,33 +359,40 @@ export class StripeService {
       }
 
       // Create Stripe payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntentData: Stripe.PaymentIntentCreateParams = {
         amount: Math.round(data.amount * 100), // Convert to cents
         currency: data.currency || 'usd',
         customer: customer.stripeCustomerId,
-        payment_method: data.paymentMethodId,
-        description: data.description,
         metadata: {
           userId: customer.userId,
           appointmentId: data.appointmentId || '',
           ...data.metadata
         },
         confirm: data.paymentMethodId ? true : false,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/payment-complete`
-      });
+        return_url: `${process.env['NEXT_PUBLIC_APP_URL']}/billing/payment-complete`
+      };
+
+      if (data.paymentMethodId) {
+        paymentIntentData.payment_method = data.paymentMethodId;
+      }
+      if (data.description) {
+        paymentIntentData.description = data.description;
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
       // Store payment in database
       const payment = await prisma.payment.create({
         data: {
           customerId: data.customerId,
-          appointmentId: data.appointmentId,
+          appointmentId: data.appointmentId || null,
           stripePaymentIntentId: paymentIntent.id,
           amount: data.amount,
           currency: data.currency || 'usd',
-          status: paymentIntent.status,
+          status: mapPaymentStatus(paymentIntent.status),
           type: data.appointmentId ? 'SESSION_PAYMENT' : 'ONE_TIME',
-          description: data.description,
-          metadata: data.metadata ? JSON.stringify(data.metadata) : null
+          description: data.description || null,
+          metadata: data.metadata ? JSON.stringify(data.metadata) : Prisma.JsonNull
         }
       });
 
@@ -421,7 +466,7 @@ export class StripeService {
         proration_behavior: data.prorationBehavior || 'create_prorations'
       };
 
-      if (data.priceId) {
+      if (data.priceId && currentSubscription.items.data[0]?.id) {
         updateData.items = [
           {
             id: currentSubscription.items.data[0].id,
@@ -431,15 +476,15 @@ export class StripeService {
         ];
       }
 
-      const stripeSubscription = await stripe.subscriptions.update(data.subscriptionId, updateData);
+      const stripeSubscription = await stripe.subscriptions.update(data.subscriptionId, updateData) as Stripe.Subscription;
 
       // Update subscription in database
       const updatedSubscription = await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: stripeSubscription.status,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+          status: mapSubscriptionStatus(stripeSubscription.status),
+          currentPeriodStart: new Date((stripeSubscription as Record<string, unknown>)['current_period_start'] as number * 1000),
+          currentPeriodEnd: new Date((stripeSubscription as Record<string, unknown>)['current_period_end'] as number * 1000),
           ...(data.priceId && {
             stripePriceId: data.priceId
             // Get updated price details
@@ -513,7 +558,7 @@ export class StripeService {
       const updatedSubscription = await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: stripeSubscription.status,
+          status: mapSubscriptionStatus(stripeSubscription.status),
           cancelAt: stripeSubscription.cancel_at
             ? new Date(stripeSubscription.cancel_at * 1000)
             : null
@@ -632,7 +677,7 @@ export class StripeService {
                 exp_month: paymentMethod.card.exp_month,
                 exp_year: paymentMethod.card.exp_year
               })
-            : null
+            : Prisma.JsonNull
         }
       });
 
@@ -717,7 +762,7 @@ export class StripeService {
           reason:
             (reason as keyof typeof import('@prisma/client').RefundReason) ||
             'REQUESTED_BY_CUSTOMER',
-          status: stripeRefund.status.toUpperCase() as import('@prisma/client').RefundStatus,
+          status: stripeRefund.status ? stripeRefund.status.toUpperCase() as import('@prisma/client').RefundStatus : 'PENDING',
           receiptNumber: stripeRefund.receipt_number
         }
       });
@@ -895,7 +940,7 @@ export class StripeService {
    * ```
    */
   static constructWebhookEvent(body: string | Buffer, signature: string): Stripe.Event {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = process.env['STRIPE_WEBHOOK_SECRET'];
     if (!webhookSecret) {
       throw new Error('Stripe webhook secret not configured');
     }

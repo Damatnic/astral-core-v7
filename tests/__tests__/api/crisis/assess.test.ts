@@ -1,5 +1,4 @@
 import { POST, GET } from '@/app/api/crisis/assess/route';
-import { NextRequest } from 'next/server';
 import {
   createMockRequest,
   createMockSession,
@@ -49,9 +48,10 @@ jest.mock('@/lib/logger', () => ({
   logError: jest.fn()
 }));
 
+import { getServerSession } from 'next-auth';
+import { phiService } from '@/lib/security/phi-service';
+
 describe('/api/crisis/assess', () => {
-  const { getServerSession } = require('next-auth');
-  const { phiService } = require('@/lib/security/phi-service');
 
   beforeEach(() => {
     resetPrismaMocks();
@@ -255,7 +255,7 @@ describe('/api/crisis/assess', () => {
       const session = createMockSession();
       getServerSession.mockResolvedValue(session);
 
-      const { rateLimiters } = require('@/lib/security/rate-limit');
+      const { rateLimiters } = await import('@/lib/security/rate-limit');
       rateLimiters.crisis.check.mockResolvedValue({ allowed: false });
 
       const request = createMockRequest('http://localhost:3000/api/crisis/assess', {
@@ -298,7 +298,7 @@ describe('/api/crisis/assess', () => {
       const session = createMockSession();
       getServerSession.mockResolvedValue(session);
 
-      const { audit } = require('@/lib/security/audit');
+      const { audit } = await import('@/lib/security/audit');
       phiService.create.mockResolvedValue({ id: 'intervention-123', severity: 'HIGH' });
 
       const request = createMockRequest('http://localhost:3000/api/crisis/assess', {
@@ -382,10 +382,6 @@ describe('/api/crisis/assess', () => {
 
   describe('GET - Crisis Resources', () => {
     it('should return crisis resources without authentication', async () => {
-      const request = createMockRequest('http://localhost:3000/api/crisis/assess', {
-        method: 'GET'
-      });
-
       const response = await GET();
       const data = await response.json();
 

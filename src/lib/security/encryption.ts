@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const SALT_LENGTH = 64;
@@ -93,7 +93,7 @@ export class EncryptionService {
    * // Returns: { name: 'John Doe', ssn: 'encrypted_data', age: 30 }
    * ```
    */
-  encryptObject<T extends Record<string, any>>(obj: T, fields: (keyof T)[]): T {
+  encryptObject<T extends Record<string, unknown>>(obj: T, fields: (keyof T)[]): T {
     const encrypted = { ...obj };
 
     for (const field of fields) {
@@ -119,7 +119,7 @@ export class EncryptionService {
    * // Returns: { name: 'John Doe', ssn: '123-45-6789', age: 30 }
    * ```
    */
-  decryptObject<T extends Record<string, any>>(obj: T, fields: (keyof T)[]): T {
+  decryptObject<T extends Record<string, unknown>>(obj: T, fields: (keyof T)[]): T {
     const decrypted = { ...obj };
 
     for (const field of fields) {

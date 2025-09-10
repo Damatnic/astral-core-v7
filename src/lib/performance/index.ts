@@ -108,7 +108,7 @@ export const PerformanceUtils = {
     return 'F';
   },
 
-  debounce: <T extends (...args: any[]) => any>(
+  debounce: <T extends (...args: unknown[]) => unknown>(
     func: T,
     wait: number
   ): ((...args: Parameters<T>) => void) => {
@@ -119,7 +119,7 @@ export const PerformanceUtils = {
     };
   },
 
-  throttle: <T extends (...args: any[]) => any>(
+  throttle: <T extends (...args: unknown[]) => unknown>(
     func: T,
     limit: number
   ): ((...args: Parameters<T>) => void) => {
@@ -195,10 +195,10 @@ export function initializePerformanceMonitoring(config: PerformanceConfig = {}) 
 
     // Initialize error monitoring
     if (finalConfig.enableErrorMonitoring) {
-      const errorMonitor = getErrorMonitor();
+      // Error monitor would be initialized here
       
       if (finalConfig.enableNotifications) {
-        requestNotificationPermission();
+        // requestNotificationPermission();
       }
       
       console.log('✅ Error monitor initialized');

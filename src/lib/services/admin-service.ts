@@ -1,4 +1,4 @@
-import prisma from '@/lib/db/prisma';
+import { prisma } from '@/lib/db';
 import { audit } from '@/lib/security/audit';
 import { notificationService } from './notification-service';
 import { websocketServer } from '@/lib/websocket/server';
@@ -139,14 +139,14 @@ export class AdminService {
     await this.requireAdmin(adminId);
 
     try {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
 
       if (filters.role) {
-        where.role = filters.role;
+        where['role'] = filters.role;
       }
 
       if (filters.status) {
-        where.status = filters.status;
+        where['status'] = filters.status;
       }
 
       if (filters.search) {
@@ -743,7 +743,7 @@ export class AdminService {
     try {
       await prisma.$queryRaw`SELECT 1`;
       return { status: 'healthy', message: 'Database connection successful' };
-    } catch (error) {
+    } catch {
       return { status: 'error', message: 'Database connection failed' };
     }
   }
@@ -766,7 +766,7 @@ export class AdminService {
         recent: errors,
         status: errors.length < 10 ? 'healthy' : 'warning'
       };
-    } catch (error) {
+    } catch {
       return { count: 0, recent: [], status: 'unknown' };
     }
   }

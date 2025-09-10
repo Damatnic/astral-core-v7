@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+
 import { Session } from 'next-auth';
 
 // Mock user data generator
-export const createMockUser = (overrides: Partial<any> = {}) => ({
+export const createMockUser = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'user-123',
   email: 'test@example.com',
   name: 'Test User',
@@ -14,7 +14,7 @@ export const createMockUser = (overrides: Partial<any> = {}) => ({
 });
 
 // Mock therapist data generator
-export const createMockTherapist = (overrides: Partial<any> = {}) => ({
+export const createMockTherapist = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'therapist-123',
   email: 'therapist@example.com',
   name: 'Test Therapist',
@@ -44,7 +44,7 @@ export const createMockRequest = (
   url: string = 'http://localhost:3000/api/test',
   options: {
     method?: string;
-    body?: any;
+    body?: unknown;
     headers?: Record<string, string>;
   } = {}
 ) => {
@@ -66,11 +66,11 @@ export const createMockRequest = (
     }
   };
 
-  return mockRequest as any;
+  return mockRequest as unknown;
 };
 
 // Mock appointment data generator
-export const createMockAppointment = (overrides: Partial<any> = {}) => ({
+export const createMockAppointment = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'appointment-123',
   clientId: 'user-123',
   therapistId: 'therapist-123',
@@ -85,7 +85,7 @@ export const createMockAppointment = (overrides: Partial<any> = {}) => ({
 });
 
 // Mock journal entry generator
-export const createMockJournalEntry = (overrides: Partial<any> = {}) => ({
+export const createMockJournalEntry = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'journal-123',
   userId: 'user-123',
   title: 'Test Entry',
@@ -99,7 +99,7 @@ export const createMockJournalEntry = (overrides: Partial<any> = {}) => ({
 });
 
 // Mock wellness data generator
-export const createMockWellnessData = (overrides: Partial<any> = {}) => ({
+export const createMockWellnessData = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'wellness-123',
   userId: 'user-123',
   date: new Date('2024-01-01'),
@@ -116,7 +116,7 @@ export const createMockWellnessData = (overrides: Partial<any> = {}) => ({
 });
 
 // Mock treatment plan generator
-export const createMockTreatmentPlan = (overrides: Partial<any> = {}) => ({
+export const createMockTreatmentPlan = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'treatment-plan-123',
   clientId: 'user-123',
   therapistId: 'therapist-123',
@@ -133,7 +133,7 @@ export const createMockTreatmentPlan = (overrides: Partial<any> = {}) => ({
 });
 
 // Mock Stripe customer
-export const createMockStripeCustomer = (overrides: Partial<any> = {}) => ({
+export const createMockStripeCustomer = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'cus_test123',
   email: 'test@example.com',
   name: 'Test User',
@@ -145,7 +145,7 @@ export const createMockStripeCustomer = (overrides: Partial<any> = {}) => ({
 });
 
 // Mock Stripe subscription
-export const createMockStripeSubscription = (overrides: Partial<any> = {}) => ({
+export const createMockStripeSubscription = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'sub_test123',
   customer: 'cus_test123',
   status: 'active',
@@ -170,7 +170,7 @@ export const createMockStripeSubscription = (overrides: Partial<any> = {}) => ({
 
 // API Response helpers
 export const mockApiResponse = {
-  success: (data: any) => ({ success: true, data }),
+  success: (data: unknown) => ({ success: true, data }),
   error: (message: string, code: number = 400) => ({
     success: false,
     error: message,
@@ -179,7 +179,7 @@ export const mockApiResponse = {
 };
 
 // Crisis assessment mock data
-export const createMockCrisisAssessment = (overrides: Partial<any> = {}) => ({
+export const createMockCrisisAssessment = (overrides: Partial<Record<string, unknown>> = {}) => ({
   userId: 'user-123',
   responses: {
     suicidalIdeation: 2,

@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, AlertTriangle, TrendingUp, Database, Globe, Cpu, BarChart3, RefreshCw } from 'lucide-react';
+import { Activity, AlertTriangle, TrendingUp, Database, Globe, Cpu, RefreshCw } from 'lucide-react';
 import { usePerformanceMetrics } from '@/lib/performance/metrics';
 import { useWebVitals } from '@/lib/performance/web-vitals';
 import { useErrorMonitoring } from '@/lib/performance/error-monitoring';
@@ -143,10 +143,7 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
     };
   }, [autoRefresh, refreshInterval]);
 
-  const formatDuration = (ms: number) => {
-    if (ms < 1000) return `${Math.round(ms)}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-  };
+
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';

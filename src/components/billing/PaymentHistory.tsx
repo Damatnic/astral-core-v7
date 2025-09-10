@@ -5,8 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import Button from '@/components/ui/Button';
+import { useState, useEffect, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import { clsx } from 'clsx';
@@ -413,7 +412,7 @@ const PaymentHistory = ({ className, showInvoices = true }: PaymentHistoryProps)
     }
   };
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     if (!showInvoices) return;
 
     try {
@@ -427,7 +426,7 @@ const PaymentHistory = ({ className, showInvoices = true }: PaymentHistoryProps)
       console.warn('Failed to load invoices:', err);
       // Don't set error for invoices as they might not be available
     }
-  };
+  }, [showInvoices]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -437,7 +436,7 @@ const PaymentHistory = ({ className, showInvoices = true }: PaymentHistoryProps)
     };
 
     loadData();
-  }, [showInvoices]);
+  }, [showInvoices, fetchInvoices]);
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =

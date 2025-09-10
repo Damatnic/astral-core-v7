@@ -19,7 +19,7 @@ const withDashboardLoading = <P extends object>(
   Component: React.ComponentType<P>,
   loadingMessage?: string
 ) => {
-  const LazyDashboard = React.forwardRef<any, P>((props, ref) => (
+  const LazyDashboard = (props: P) => (
     <ErrorBoundary>
       <Suspense 
         fallback={
@@ -31,10 +31,10 @@ const withDashboardLoading = <P extends object>(
           />
         }
       >
-        <Component {...props} ref={ref} />
+        <Component {...props} />
       </Suspense>
     </ErrorBoundary>
-  ));
+  );
 
   LazyDashboard.displayName = `LazyDashboard(${Component.displayName || Component.name || 'Component'})`;
   

@@ -3,8 +3,6 @@
  * Manages code splitting and dynamic imports across the application
  */
 
-import { ComponentType } from 'react';
-
 // Component loading strategies
 export enum LoadingStrategy {
   IMMEDIATE = 'immediate',

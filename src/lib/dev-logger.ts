@@ -22,7 +22,7 @@ class DevLogger {
   }
 
   // Safe console.log replacement - only works in development
-  public log(...args: any[]): void {
+  public log(...args: unknown[]): void {
     if (this.isDevelopment) {
       const sanitizedArgs = this.sanitizeArgs(args);
       console.log('[DEV]', ...sanitizedArgs);
@@ -30,7 +30,7 @@ class DevLogger {
   }
 
   // Safe console.error replacement - uses structured logging in production
-  public error(message: string, error?: Error, context?: string, ...args: any[]): void {
+  public error(message: string, error?: Error, context?: string, ...args: unknown[]): void {
     if (this.isDevelopment) {
       const sanitizedArgs = this.sanitizeArgs(args);
       console.error('[DEV]', message, error, ...sanitizedArgs);
@@ -41,7 +41,7 @@ class DevLogger {
   }
 
   // Safe console.warn replacement
-  public warn(message: string, context?: string, ...args: any[]): void {
+  public warn(message: string, context?: string, ...args: unknown[]): void {
     if (this.isDevelopment) {
       const sanitizedArgs = this.sanitizeArgs(args);
       console.warn('[DEV]', message, ...sanitizedArgs);
@@ -51,7 +51,7 @@ class DevLogger {
   }
 
   // Safe console.info replacement
-  public info(message: string, context?: string, ...args: any[]): void {
+  public info(message: string, context?: string, ...args: unknown[]): void {
     if (this.isDevelopment) {
       const sanitizedArgs = this.sanitizeArgs(args);
       console.info('[DEV]', message, ...sanitizedArgs);
@@ -61,7 +61,7 @@ class DevLogger {
   }
 
   // Debug logging with additional context
-  public debug(message: string, data?: any, context?: string): void {
+  public debug(message: string, data?: unknown, context?: string): void {
     if (this.isDevelopment) {
       const sanitizedData = this.sanitizeData(data);
       console.debug('[DEV DEBUG]', message, sanitizedData);
@@ -97,18 +97,18 @@ class DevLogger {
   }
 
   // Table logging for structured data
-  public table(data: any): void {
+  public table(data: unknown): void {
     if (this.isDevelopment) {
       const sanitizedData = this.sanitizeData(data);
       console.table(sanitizedData);
     }
   }
 
-  private sanitizeArgs(args: any[]): any[] {
+  private sanitizeArgs(args: unknown[]): unknown[] {
     return args.map(arg => this.sanitizeData(arg));
   }
 
-  private sanitizeData(data: any): any {
+  private sanitizeData(data: unknown): unknown {
     if (!data) return data;
 
     // Fields that should never be logged
@@ -133,7 +133,7 @@ class DevLogger {
       'apiKey'
     ];
 
-    const sanitize = (obj: any): any => {
+    const sanitize = (obj: unknown): unknown => {
       if (typeof obj !== 'object' || obj === null) {
         return obj;
       }
@@ -142,7 +142,7 @@ class DevLogger {
         return obj.map(sanitize);
       }
 
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         const lowerKey = key.toLowerCase();
         if (sensitiveFields.some(field => lowerKey.includes(field))) {
@@ -164,14 +164,14 @@ class DevLogger {
 export const devLogger = DevLogger.getInstance();
 
 // Convenience functions for easy migration from console statements
-export const devLog = (...args: any[]) => devLogger.log(...args);
-export const devError = (message: string, error?: Error, context?: string, ...args: any[]) =>
+export const devLog = (...args: unknown[]) => devLogger.log(...args);
+export const devError = (message: string, error?: Error, context?: string, ...args: unknown[]) =>
   devLogger.error(message, error, context, ...args);
-export const devWarn = (message: string, context?: string, ...args: any[]) =>
+export const devWarn = (message: string, context?: string, ...args: unknown[]) =>
   devLogger.warn(message, context, ...args);
-export const devInfo = (message: string, context?: string, ...args: any[]) =>
+export const devInfo = (message: string, context?: string, ...args: unknown[]) =>
   devLogger.info(message, context, ...args);
-export const devDebug = (message: string, data?: any, context?: string) =>
+export const devDebug = (message: string, data?: unknown, context?: string) =>
   devLogger.debug(message, data, context);
 
 // Performance helpers
@@ -183,4 +183,4 @@ export const devGroup = (label: string) => devLogger.group(label);
 export const devGroupEnd = () => devLogger.groupEnd();
 
 // Table helper
-export const devTable = (data: any) => devLogger.table(data);
+export const devTable = (data: unknown) => devLogger.table(data);

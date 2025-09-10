@@ -55,7 +55,7 @@ describe('EncryptionService', () => {
         final: jest.fn().mockReturnValue(Buffer.alloc(0)),
         getAuthTag: jest.fn().mockReturnValue(Buffer.alloc(16, 3))
       };
-      mockCrypto.createCipheriv.mockReturnValue(mockCipher as any);
+      mockCrypto.createCipheriv.mockReturnValue(mockCipher as unknown as crypto.Cipher);
 
       // Mock decipher
       const mockDecipher = {
@@ -63,7 +63,7 @@ describe('EncryptionService', () => {
         update: jest.fn().mockReturnValue('decrypted_'),
         final: jest.fn().mockReturnValue('data')
       };
-      mockCrypto.createDecipheriv.mockReturnValue(mockDecipher as any);
+      mockCrypto.createDecipheriv.mockReturnValue(mockDecipher as unknown as crypto.Decipher);
     });
 
     it('should encrypt text successfully', () => {
@@ -93,14 +93,6 @@ describe('EncryptionService', () => {
     });
 
     it('should encrypt and decrypt be reversible', () => {
-      // Temporarily clear mocks to use real crypto
-      const originalMocks = {
-        randomBytes: crypto.randomBytes,
-        pbkdf2Sync: crypto.pbkdf2Sync,
-        createCipheriv: crypto.createCipheriv,
-        createDecipheriv: crypto.createDecipheriv
-      };
-
       // Restore original crypto functions
       jest.restoreAllMocks();
       
@@ -113,7 +105,7 @@ describe('EncryptionService', () => {
       expect(encrypted).not.toBe(plaintext);
 
       // Re-apply mocks for subsequent tests
-      const mockCrypto = require('crypto');
+      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
       Object.assign(mockCrypto, {
         randomBytes: jest.fn(),
         pbkdf2Sync: jest.fn(),
@@ -149,7 +141,7 @@ describe('EncryptionService', () => {
       expect(decrypted.sensitiveData).toBe(testObj.sensitiveData);
       
       // Re-apply mocks
-      const mockCrypto = require('crypto');
+      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
       Object.assign(mockCrypto, {
         randomBytes: jest.fn(),
         pbkdf2Sync: jest.fn(),
@@ -258,7 +250,7 @@ describe('EncryptionService', () => {
       expect(isValid).toBe(false);
       
       // Re-apply mocks
-      const mockCrypto = require('crypto');
+      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
       Object.assign(mockCrypto, {
         randomBytes: jest.fn(),
         pbkdf2Sync: jest.fn(),

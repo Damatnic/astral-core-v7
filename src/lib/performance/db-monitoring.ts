@@ -17,7 +17,7 @@ export interface QueryMetric {
   endpoint?: string;
   success: boolean;
   errorMessage?: string;
-  executionPlan?: any;
+  executionPlan?: Record<string, unknown>;
   cacheHit?: boolean;
 }
 
@@ -274,7 +274,7 @@ class DatabaseMonitor {
     const queryDistribution = this.queries.reduce((acc, query) => {
       acc[query.operation] = (acc[query.operation] || 0) + 1;
       return acc;
-    }, {} as any);
+    }, {} as Record<string, number>);
 
     // Ensure all operations are represented
     ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'UPSERT', 'CREATE', 'DROP'].forEach(op => {
@@ -476,7 +476,7 @@ export function useDatabaseMonitoring() {
 
 // Utility functions for Prisma integration
 export function createPrismaMiddleware() {
-  return async (params: any, next: any) => {
+  return async (params: { model?: string; action: string; args: unknown }, next: (params: unknown) => Promise<unknown>) => {
     const start = performance.now();
     const monitor = getDatabaseMonitor();
     
@@ -486,10 +486,10 @@ export function createPrismaMiddleware() {
       
       monitor.trackQuery({
         query: `${params.action} on ${params.model}`,
-        operation: params.action.toUpperCase() as any,
+        operation: params.action.toUpperCase() as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
         duration,
         rows: Array.isArray(result) ? result.length : result ? 1 : 0,
-        table: params.model,
+        ...(params.model && { table: params.model }),
         success: true
       });
       
@@ -499,10 +499,10 @@ export function createPrismaMiddleware() {
       
       monitor.trackQuery({
         query: `${params.action} on ${params.model}`,
-        operation: params.action.toUpperCase() as any,
+        operation: params.action.toUpperCase() as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
         duration,
         rows: 0,
-        table: params.model,
+        ...(params.model && { table: params.model }),
         success: false,
         errorMessage: error instanceof Error ? error.message : String(error)
       });

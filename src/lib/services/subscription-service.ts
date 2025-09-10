@@ -7,7 +7,6 @@ import { prisma } from '@/lib/db';
 import { StripeService, CreateSubscriptionData } from './stripe-service';
 import { auditLog } from '@/lib/security/audit';
 import type { TherapyPlan, Subscription, SubscriptionStatus } from '@prisma/client';
-import type { Subscription as PrismaSubscriptionWithRelations } from '@/lib/types/billing';
 import Stripe from 'stripe';
 
 export interface TherapyPlanData {
@@ -45,8 +44,8 @@ export interface SubscriptionWithSetupIntent {
 
 export interface UserSubscriptionDetails extends Subscription {
   stripeData: Stripe.Subscription;
-  customer?: any;
-  subscriptionItems?: any[];
+  customer?: Stripe.Customer;
+  subscriptionItems?: Stripe.SubscriptionItem[];
 }
 
 /**

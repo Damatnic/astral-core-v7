@@ -84,13 +84,13 @@ export const authOptions: NextAuthOptions = {
           const attempts = user.loginAttempts + 1;
           const maxAttempts = parseInt(process.env['MAX_LOGIN_ATTEMPTS'] || '5');
 
-          const updateData: any = { loginAttempts: attempts };
+          const updateData: Record<string, unknown> = { loginAttempts: attempts };
 
           // Lock account if max attempts exceeded
           if (attempts >= maxAttempts) {
             const lockoutMinutes = parseInt(process.env['LOCKOUT_DURATION_MINUTES'] || '15');
-            updateData.lockedUntil = new Date(Date.now() + lockoutMinutes * 60000);
-            updateData.loginAttempts = 0;
+            updateData['lockedUntil'] = new Date(Date.now() + lockoutMinutes * 60000);
+            updateData['loginAttempts'] = 0;
           }
 
           await prisma.user.update({

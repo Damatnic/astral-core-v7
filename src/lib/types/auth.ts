@@ -47,3 +47,62 @@ export type LoginData = z.infer<typeof loginSchema>;
 export type MfaSetupData = z.infer<typeof mfaSetupSchema>;
 export type PasswordResetData = z.infer<typeof passwordResetSchema>;
 export type PasswordChangeData = z.infer<typeof passwordChangeSchema>;
+
+// Session user type for NextAuth
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  role: 'ADMIN' | 'THERAPIST' | 'CLIENT' | 'CRISIS_RESPONDER' | 'SUPERVISOR';
+}
+
+// Extended session type
+export interface ExtendedSession {
+  user: SessionUser;
+  expires: string;
+}
+
+// Authentication error types
+export interface AuthError {
+  type: string;
+  message: string;
+  code?: string;
+}
+
+// Login credentials
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+// Registration data interface
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+  role?: 'CLIENT' | 'THERAPIST';
+}
+
+// MFA setup response
+export interface MfaSetupResponse {
+  secret: string;
+  qrCode: string;
+  backupCodes: string[];
+}
+
+// Password reset request
+export interface PasswordResetRequest {
+  token: string;
+  password: string;
+}
+
+// JWT payload
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  iat: number;
+  exp: number;
+}

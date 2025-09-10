@@ -1,4 +1,4 @@
-import prisma from '@/lib/db/prisma';
+import { prisma } from '@/lib/db';
 import { phiService } from '@/lib/security/phi-service';
 import { websocketServer } from '@/lib/websocket/server';
 import { notificationService } from './notification-service';
@@ -18,7 +18,7 @@ interface SendMessageDto {
   content: string;
   type?: string;
   attachments?: string[];
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface ConversationFilters {
@@ -34,18 +34,19 @@ export class MessagingService {
     try {
       // Check if direct conversation already exists
       if (data.type === 'DIRECT' && data.participantIds.length === 2) {
-        const existing = await this.findDirectConversation(
-          data.participantIds[0],
-          data.participantIds[1]
-        );
-        if (existing) return existing;
+        const participant1 = data.participantIds[0];
+        const participant2 = data.participantIds[1];
+        if (participant1 && participant2) {
+          const existing = await this.findDirectConversation(participant1, participant2);
+          if (existing) return existing;
+        }
       }
 
       // Create conversation
       const conversation = await prisma.conversation.create({
         data: {
           type: data.type,
-          title: data.title,
+          title: data.title || null,
           participants: {
             create: data.participantIds.map(userId => ({
               userId,
@@ -73,10 +74,15 @@ export class MessagingService {
       data.participantIds.forEach(userId => {
         if (userId !== data.createdBy) {
           websocketServer.sendToUser(userId, 'conversation:new', {
-            conversationId: conversation.id,
-            type: conversation.type,
-            title: conversation.title,
-            participants: conversation.participants
+            type: 'conversation:new',
+            timestamp: Date.now(),
+            userId: data.createdBy,
+            data: {
+              conversationId: conversation.id,
+              conversationType: conversation.type,
+              title: conversation.title,
+              participants: conversation.participants
+            }
           });
         }
       });
@@ -199,7 +205,7 @@ export class MessagingService {
   // Get user conversations
   async getUserConversations(filters: ConversationFilters) {
     try {
-      const where: any = {
+      const where: Record<string, unknown> = {
         participants: {
           some: {
             userId: filters.userId,
@@ -209,7 +215,7 @@ export class MessagingService {
       };
 
       if (filters.type) {
-        where.type = filters.type;
+        where['type'] = filters.type;
       }
 
       const conversations = await prisma.conversation.findMany({
@@ -289,13 +295,13 @@ export class MessagingService {
         throw new Error('Access denied');
       }
 
-      const where: any = {
+      const where: Record<string, unknown> = {
         conversationId,
         isDeleted: false
       };
 
       if (options.before) {
-        where.createdAt = { lt: options.before };
+        where['createdAt'] = { lt: options.before };
       }
 
       const messages = await prisma.message.findMany({
@@ -381,8 +387,11 @@ export class MessagingService {
       if (message) {
         // Notify sender via WebSocket
         websocketServer.sendToUser(message.senderId, 'message:read', {
+          type: 'message_read',
+          timestamp: Date.now(),
           messageId,
-          userId,
+          conversationId: message.conversationId || '',
+          readBy: userId,
           readAt: receipt.readAt
         });
       }
@@ -434,9 +443,13 @@ export class MessagingService {
       // Notify participants
       if (message.conversationId) {
         websocketServer.sendToUser('conversation:' + message.conversationId, 'message:edited', {
-          messageId,
-          content: newContent,
-          editedAt: updated.editedAt
+          type: 'message:edited',
+          timestamp: Date.now(),
+          data: {
+            messageId,
+            content: newContent,
+            editedAt: updated.editedAt
+          }
         });
       }
 
@@ -478,7 +491,11 @@ export class MessagingService {
       // Notify participants
       if (message.conversationId) {
         websocketServer.sendToUser('conversation:' + message.conversationId, 'message:deleted', {
-          messageId
+          type: 'message:deleted',
+          timestamp: Date.now(),
+          data: {
+            messageId
+          }
         });
       }
 
@@ -544,7 +561,7 @@ export class MessagingService {
   // Search messages
   async searchMessages(userId: string, query: string, conversationId?: string) {
     try {
-      const where: any = {
+      const where: Record<string, unknown> = {
         conversation: {
           participants: {
             some: { userId }
@@ -554,7 +571,7 @@ export class MessagingService {
       };
 
       if (conversationId) {
-        where.conversationId = conversationId;
+        where['conversationId'] = conversationId;
       }
 
       // Note: In production, use full-text search or Elasticsearch

@@ -67,9 +67,9 @@ jest.mock('stripe', () => ({
   }))
 }));
 
-const prisma = require('@/lib/db/prisma').default;
-const { encryption } = require('@/lib/security/encryption');
-const { phiService } = require('@/lib/security/phi-service');
+import prisma from '@/lib/db/prisma';
+import { encryption } from '@/lib/security/encryption';
+import { phiService } from '@/lib/security/phi-service';
 
 // Performance measurement utilities
 const measurePerformance = async <T>(
@@ -506,8 +506,6 @@ describe('Critical Operations Performance Tests', () => {
 
   describe('Messaging Performance', () => {
     beforeEach(() => {
-      const messagingService = new MessagingService();
-      
       prisma.conversationParticipant.findMany.mockResolvedValue([
         { userId: 'user-1', user: { id: 'user-1', name: 'User 1' } },
         { userId: 'user-2', user: { id: 'user-2', name: 'User 2' } }
@@ -608,7 +606,7 @@ describe('Critical Operations Performance Tests', () => {
         }));
       };
 
-      const { result, memoryUsage } = await measurePerformance(
+      const { result } = await measurePerformance(
         bulkOperation,
         'Memory Intensive Operation'
       );
@@ -741,7 +739,7 @@ describe('Critical Operations Performance Tests', () => {
         return await Promise.all(userOperations);
       };
 
-      const { executionTime, throughput } = await measurePerformance(
+      const { executionTime } = await measurePerformance(
         simulateUserLoad,
         'Simulated User Load (50 concurrent users)',
         30000 // 30 seconds max for load test

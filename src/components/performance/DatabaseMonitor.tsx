@@ -232,7 +232,7 @@ const DatabaseMonitor: React.FC<DatabaseMonitorProps> = ({
   maxQueries = 50,
   showSlowQueriesOnly = false
 }) => {
-  const { queries, slowQueries, patterns, stats, insights, subscribe } = useDatabaseMonitoring();
+  const { queries, slowQueries, stats, insights, subscribe } = useDatabaseMonitoring();
   const [expandedQueries, setExpandedQueries] = useState<Set<string>>(new Set());
   const [operationFilter, setOperationFilter] = useState<string>('all');
   const [isLive, setIsLive] = useState(false);
@@ -261,13 +261,7 @@ const DatabaseMonitor: React.FC<DatabaseMonitorProps> = ({
     return `${(ms / 1000).toFixed(2)}s`;
   };
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+
 
   const displayQueries = showSlowQueriesOnly ? slowQueries : queries;
   const filteredQueries = displayQueries
@@ -301,7 +295,7 @@ const DatabaseMonitor: React.FC<DatabaseMonitorProps> = ({
             <input
               type="checkbox"
               checked={showSlowQueriesOnly}
-              onChange={(e) => setShowedSlowQueriesOnly && setShowedSlowQueriesOnly(e.target.checked)}
+              disabled
               className="rounded border-gray-300"
             />
             <span className="text-sm text-gray-600">Slow queries only</span>

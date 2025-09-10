@@ -129,12 +129,12 @@ export const ButtonLoading = ({
   children, 
   className 
 }: ButtonLoadingProps) => (
-  <>
+  <span className={className}>
     {isLoading && (
       <LoadingSpinner size="sm" className="mr-2" />
     )}
     {isLoading && loadingText ? loadingText : children}
-  </>
+  </span>
 );
 
 interface InlineLoadingProps {
@@ -236,7 +236,7 @@ export const PulsingLoading = ({ className, variant = 'card' }: PulsingLoadingPr
   );
 };
 
-export default {
+const LoadingComponents = {
   LoadingSpinner,
   LoadingOverlay,
   FullPageLoading,
@@ -248,3 +248,5 @@ export default {
   ProgressBar,
   PulsingLoading
 };
+
+export default LoadingComponents;

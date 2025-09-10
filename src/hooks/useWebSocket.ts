@@ -2,8 +2,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { logError, logWarning } from '@/lib/logger';
-import { logSystemEvent } from '@/lib/notification-logger';
-import { useAuthStore } from '@/stores/authStore';
 
 interface WebSocketOptions {
   autoConnect?: boolean;
@@ -27,9 +25,23 @@ interface TypingState {
   typingUsers: Map<string, Set<string>>;
 }
 
+interface WebSocketNotification {
+  id: string;
+  type: string;
+  message: string;
+  timestamp: number;
+  read?: boolean;
+}
+
+interface TherapySessionUpdate {
+  status?: 'started' | 'in-progress' | 'ended';
+  notes?: string;
+  duration?: number;
+  participants?: string[];
+}
+
 export function useWebSocket(options: WebSocketOptions = {}) {
   const { data: session } = useSession();
-  const user = useAuthStore(state => state.user);
   const socketRef = useRef<Socket | null>(null);
 
   const [connectionState, setConnectionState] = useState<ConnectionState>({
@@ -49,7 +61,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   });
 
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<WebSocketNotification[]>([]);
 
   // Initialize socket connection
   useEffect(() => {
@@ -69,21 +81,21 @@ export function useWebSocket(options: WebSocketOptions = {}) {
 
     // Connection events
     socket.on('connect', () => {
-      logSystemEvent('websocket-connect', 'WebSocket connected');
-      setConnectionState({
+      console.log('WebSocket connected');
+      setConnectionState(prev => ({
+        ...prev,
         isConnected: true,
         isConnecting: false,
-        error: null,
-        reconnectAttempts: 0
-      });
+        error: null
+      }));
     });
 
-    socket.on('disconnect', reason => {
-      logSystemEvent('websocket-disconnect', `WebSocket disconnected: ${reason}`);
+        socket.on('disconnect', (reason) => {
+      console.log(`WebSocket disconnected: ${reason}`);
       setConnectionState(prev => ({
         ...prev,
         isConnected: false,
-        isConnecting: false
+        error: reason
       }));
     });
 
@@ -167,7 +179,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   }, [session, options.autoConnect, options.reconnectionAttempts, options.reconnectionDelay]);
 
   // Emit events
-  const emit = useCallback((event: string, data?: any) => {
+  const emit = useCallback((event: string, data?: unknown) => {
     if (!socketRef.current?.connected) {
       logWarning('Socket not connected', 'useWebSocket');
       return;
@@ -176,7 +188,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   }, []);
 
   // Subscribe to events
-  const on = useCallback((event: string, handler: (data: any) => void) => {
+  const on = useCallback((event: string, handler: (data: unknown) => void) => {
     if (!socketRef.current) return;
     socketRef.current.on(event, handler);
 
@@ -254,7 +266,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   );
 
   const updateTherapySession = useCallback(
-    (appointmentId: string, update: any) => {
+    (appointmentId: string, update: TherapySessionUpdate) => {
       emit('session:update', { appointmentId, update });
     },
     [emit]
@@ -388,12 +400,5 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   };
 }
 
-// Singleton hook for app-wide WebSocket connection
-let globalSocket: ReturnType<typeof useWebSocket> | null = null;
-
-export function useGlobalWebSocket() {
-  if (!globalSocket) {
-    globalSocket = useWebSocket({ autoConnect: true });
-  }
-  return globalSocket;
-}
+// Note: For app-wide WebSocket connection, use a context provider 
+// instead of this singleton pattern which violates React hooks rules

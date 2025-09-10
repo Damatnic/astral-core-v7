@@ -23,6 +23,7 @@ interface PHIContext {
  * Ensures HIPAA compliance by protecting sensitive healthcare data
  */
 const PHI_FIELDS: PHIFieldDefinitions = {
+  User: ['email', 'phoneNumber'],
   Profile: ['firstName', 'lastName', 'dateOfBirth', 'phoneNumber', 'address'],
   ClientProfile: ['primaryConcerns', 'goals'],
   SessionNote: [
@@ -86,7 +87,7 @@ export class PHIService {
       : data;
 
     try {
-      const result = await (this.prisma as any)[model.toLowerCase()].create({
+      const result = await (this.prisma as unknown as Record<string, { create: (args: { data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()].create({
         data: encryptedData
       });
 
@@ -128,7 +129,7 @@ export class PHIService {
     context?: PHIContext
   ): Promise<T[]> {
     try {
-      const results = await (this.prisma as any)[model.toLowerCase()].findMany(args);
+      const results = await (this.prisma as unknown as Record<string, { findMany: (args: unknown) => Promise<PHIRecord[]> }>)[model.toLowerCase()].findMany(args);
 
       await audit.logSuccess(
         'READ_MANY',
@@ -167,7 +168,7 @@ export class PHIService {
     context?: PHIContext
   ): Promise<T | null> {
     try {
-      const result = await (this.prisma as any)[model.toLowerCase()].findUnique({ where });
+      const result = await (this.prisma as unknown as Record<string, { findUnique: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[model.toLowerCase()].findUnique({ where });
 
       if (result) {
         await audit.logSuccess(
@@ -219,7 +220,7 @@ export class PHIService {
       : data;
 
     try {
-      const result = await (this.prisma as any)[model.toLowerCase()].update({
+      const result = await (this.prisma as unknown as Record<string, { update: (args: { where: unknown; data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()].update({
         where,
         data: encryptedData
       });
@@ -257,7 +258,7 @@ export class PHIService {
    */
   async delete(model: ResourceType, where: PrismaWhereInput, context?: PHIContext): Promise<void> {
     try {
-      const result = await (this.prisma as any)[model.toLowerCase()].delete({ where });
+      const result = await (this.prisma as unknown as Record<string, { delete: (args: { where: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()].delete({ where });
 
       await audit.logSuccess(
         'DELETE',
@@ -336,7 +337,7 @@ export class PHIService {
         case 'WellnessData':
         case 'JournalEntry':
           // Users can access their own data
-          const resource = await (this.prisma as any)[resourceType.toLowerCase()].findFirst({
+          const resource = await (this.prisma as unknown as Record<string, { findFirst: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[resourceType.toLowerCase()].findFirst({
             where: { id: resourceId, userId }
           });
           return !!resource;
@@ -558,6 +559,28 @@ export class PHIService {
   async decryptBinary(encryptedText: string): Promise<Buffer> {
     const decryptedText = this.encryption.decrypt(encryptedText);
     return Buffer.from(decryptedText, 'base64');
+  }
+
+  /**
+   * Encrypt a single field value
+   * Used for encrypting individual PHI fields in services
+   * @param {string} value - Value to encrypt
+   * @returns {Promise<string>} Encrypted value
+   * @throws {Error} If encryption fails
+   */
+  async encryptField(value: string): Promise<string> {
+    return this.encryption.encrypt(value);
+  }
+
+  /**
+   * Decrypt a single field value
+   * Used for decrypting individual PHI fields in services
+   * @param {string} encryptedValue - Encrypted value to decrypt
+   * @returns {Promise<string>} Decrypted value
+   * @throws {Error} If decryption fails
+   */
+  async decryptField(encryptedValue: string): Promise<string> {
+    return this.encryption.decrypt(encryptedValue);
   }
 }
 

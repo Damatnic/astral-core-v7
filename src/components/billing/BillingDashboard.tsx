@@ -19,6 +19,13 @@ interface BillingDashboardProps {
   defaultTab?: 'subscription' | 'payment-methods' | 'history';
 }
 
+interface Payment {
+  id: string;
+  amount: number;
+  status: string;
+  createdAt: string;
+}
+
 interface BillingSummary {
   currentSubscription: {
     planName: string;
@@ -149,7 +156,6 @@ const BillingSummaryCard = ({ summary }: { summary: BillingSummary | null }) => 
 
 const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDashboardProps) => {
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const tabs = [
@@ -201,7 +207,7 @@ const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDas
 
   const fetchBillingSummary = async () => {
     try {
-      setIsLoading(true);
+
 
       // Fetch summary data from multiple endpoints
       const [subscriptionRes, paymentMethodsRes, paymentsRes] = await Promise.all([
@@ -219,12 +225,12 @@ const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDas
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
 
       const totalSpent =
-        paymentsData?.payments?.reduce((total: number, payment: any) => {
+        paymentsData?.payments?.reduce((total: number, payment: Payment) => {
           return payment.status === 'succeeded' ? total + payment.amount : total;
         }, 0) || 0;
 
       const paymentsThisMonth =
-        paymentsData?.payments?.reduce((total: number, payment: any) => {
+        paymentsData?.payments?.reduce((total: number, payment: Payment) => {
           const paymentDate = new Date(payment.createdAt);
           return payment.status === 'succeeded' && paymentDate >= startOfMonth
             ? total + payment.amount
@@ -251,7 +257,7 @@ const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDas
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load billing summary');
     } finally {
-      setIsLoading(false);
+
     }
   };
 

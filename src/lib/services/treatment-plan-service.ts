@@ -1,8 +1,21 @@
-import prisma from '@/lib/db/prisma';
-import { phiService } from '@/lib/security/phi-service';
+import { prisma } from '@/lib/db';
+import { phiService } from '@/lib/service';
+
+interface CreateTreatmentPlanDto {
+  patientId: string;
+  therapistId: string;
+  title: string;
+  diagnosis: string[];
+  goals: Record<string, unknown>[];
+  objectives: Record<string, unknown>[];
+  interventions: Record<string, unknown>[];
+  frequency: string;
+  duration: string;
+  startDate: Date;
+  reviewDate: Date;
+}
 import { audit } from '@/lib/security/audit';
 import { notificationService } from './notification-service';
-import { PlanStatus } from '@prisma/client';
 import { z } from 'zod';
 
 // Schemas for validation
@@ -60,9 +73,9 @@ interface CreateTreatmentPlanDto {
   therapistId: string;
   title: string;
   diagnosis: string[];
-  goals: any[];
-  objectives: any[];
-  interventions: any[];
+  goals: z.infer<typeof goalSchema>[];
+  objectives: z.infer<typeof objectiveSchema>[];
+  interventions: z.infer<typeof interventionSchema>[];
   frequency: string;
   duration: string;
   startDate: Date;
@@ -74,8 +87,25 @@ interface UpdateProgressDto {
   objectiveId?: string;
   progress: number;
   notes?: string;
-  evidenceData?: any;
+  evidenceData?: Record<string, unknown>;
 }
+
+// Note: ProgressTrackingData interface removed as it was unused
+
+interface TreatmentOutcomes {
+  goalsAchieved: number;
+  goalsTotal: number;
+  objectivesAchieved: number;
+  objectivesTotal: number;
+  overallSuccess: 'excellent' | 'good' | 'fair' | 'poor';
+  symptomImprovement: number; // percentage
+  functionalImprovement: number; // percentage
+  clientSatisfaction: number; // 1-10 scale
+  recommendedFollowUp?: string;
+  recommendations?: string[];
+}
+
+// Note: ProgressEntry interface removed as it was unused
 
 export class TreatmentPlanService {
   // Create a new treatment plan
@@ -315,7 +345,7 @@ export class TreatmentPlanService {
       }
 
       // Update progress object
-      const currentProgress = (plan.progress as any) || {};
+      const currentProgress = (plan.progress as Record<string, unknown>) || {};
 
       if (progressData.goalId) {
         currentProgress.goalsProgress = currentProgress.goalsProgress || {};
@@ -327,7 +357,7 @@ export class TreatmentPlanService {
         };
 
         // Update goal in goals array
-        const goals = plan.goals as any[];
+        const goals = plan.goals as Record<string, unknown>[];
         const goalIndex = goals.findIndex(g => g.id === progressData.goalId);
         if (goalIndex !== -1) {
           goals[goalIndex].progress = progressData.progress;
@@ -346,19 +376,22 @@ export class TreatmentPlanService {
         };
 
         // Update objective in objectives array
-        const objectives = plan.objectives as any[];
+        const objectives = plan.objectives as z.infer<typeof objectiveSchema>[];
         const objIndex = objectives.findIndex(o => o.id === progressData.objectiveId);
         if (objIndex !== -1) {
-          objectives[objIndex].currentValue = progressData.progress;
-          objectives[objIndex].status =
-            progressData.progress >= (objectives[objIndex].targetValue || 100)
-              ? 'COMPLETED'
-              : 'ACTIVE';
+          const objective = objectives[objIndex];
+          if (objective) {
+            objective.currentValue = progressData.progress;
+            objective.status =
+              progressData.progress >= (objective.targetValue || 100)
+                ? 'COMPLETED'
+                : 'ACTIVE';
+          }
         }
       }
 
       // Calculate overall progress
-      const goals = plan.goals as any[];
+      const goals = plan.goals as z.infer<typeof goalSchema>[];
       const totalProgress = goals.reduce((sum, goal) => sum + (goal.progress || 0), 0);
       currentProgress.overallProgress = Math.round(totalProgress / goals.length);
       currentProgress.lastUpdated = new Date();
@@ -502,7 +535,7 @@ export class TreatmentPlanService {
         data: {
           reviewDate: review.nextReviewDate,
           progress: {
-            ...(plan.progress as any),
+            ...(plan.progress as Record<string, unknown>),
             lastReview: review
           }
         }
@@ -552,7 +585,7 @@ export class TreatmentPlanService {
     planId: string,
     therapistId: string,
     completionNotes: string,
-    outcomes: any
+    outcomes: TreatmentOutcomes
   ) {
     try {
       const plan = await prisma.treatmentPlan.findFirst({
@@ -580,7 +613,7 @@ export class TreatmentPlanService {
           status: 'COMPLETED',
           endDate: new Date(),
           progress: {
-            ...(plan.progress as any),
+            ...(plan.progress as Record<string, unknown>),
             completionNotes,
             outcomes,
             completedAt: new Date()
@@ -808,9 +841,9 @@ export class TreatmentPlanService {
         throw new Error('Treatment plan not found');
       }
 
-      const goals = plan.goals as any[];
-      const objectives = plan.objectives as any[];
-      const interventions = plan.interventions as any[];
+      const goals = plan.goals as z.infer<typeof goalSchema>[];
+      const objectives = plan.objectives as z.infer<typeof objectiveSchema>[];
+      const interventions = plan.interventions as z.infer<typeof interventionSchema>[];
 
       // Calculate metrics
       const goalsAchieved = goals.filter(g => g.status === 'ACHIEVED').length;

@@ -54,7 +54,7 @@ export const useErrorHandling = (options: UseErrorHandlingOptions = {}) => {
     onError?.(error instanceof Error ? error : new Error(errorMessage));
   }, [context, errorState.retryCount, maxRetries, onError]);
 
-  const retry = useCallback(async (operation: () => Promise<any>) => {
+  const retry = useCallback(async (operation: () => Promise<unknown>) => {
     if (errorState.retryCount >= maxRetries) {
       return false;
     }
@@ -117,7 +117,7 @@ interface UseAsyncOperationOptions<T> extends UseErrorHandlingOptions {
   onSuccess?: (data: T) => void;
 }
 
-export const useAsyncOperation = <T = any>(options: UseAsyncOperationOptions<T> = {}) => {
+export const useAsyncOperation = <T = unknown>(options: UseAsyncOperationOptions<T> = {}) => {
   const { initialData, onSuccess, ...errorOptions } = options;
   
   const [data, setData] = useState<T | null>(initialData || null);
@@ -185,7 +185,7 @@ export const useFormSubmission = (options: UseFormSubmissionOptions = {}) => {
   
   const { error, handleError, clearError } = useErrorHandling(errorOptions);
 
-  const submit = useCallback(async (submitFunction: () => Promise<any>) => {
+  const submit = useCallback(async (submitFunction: () => Promise<void>) => {
     if (validateBeforeSubmit && !validateBeforeSubmit()) {
       return false;
     }

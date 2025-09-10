@@ -1,4 +1,4 @@
-import prisma from '@/lib/db/prisma';
+import { prisma } from '@/lib/db';
 import { audit } from '@/lib/security/audit';
 import { notificationService } from './notification-service';
 import { logError, logWarning } from '@/lib/logger';
@@ -51,6 +51,24 @@ interface TimeSlot {
   end: Date;
   available: boolean;
   reason?: string;
+}
+
+interface AppointmentWithDetails {
+  id: string;
+  userId: string;
+  therapistId: string;
+  scheduledAt: Date;
+  status: AppointmentStatus;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+  therapist: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
 }
 
 /**
@@ -614,18 +632,19 @@ export class AppointmentService {
     } = {}
   ) {
     try {
-      const where: any = {
+      const where: Record<string, unknown> = {
         OR: [{ userId }, { therapistId: userId }]
       };
 
       if (filters.status) {
-        where.status = filters.status;
+        where['status'] = filters.status;
       }
 
       if (filters.from || filters.to) {
-        where.scheduledAt = {};
-        if (filters.from) where.scheduledAt.gte = filters.from;
-        if (filters.to) where.scheduledAt.lte = filters.to;
+        const scheduledAt: Record<string, unknown> = {};
+        if (filters.from) scheduledAt['gte'] = filters.from;
+        if (filters.to) scheduledAt['lte'] = filters.to;
+        where['scheduledAt'] = scheduledAt;
       }
 
       const [appointments, total] = await Promise.all([
@@ -757,7 +776,7 @@ export class AppointmentService {
   ): Promise<boolean> {
     const endTime = new Date(scheduledAt.getTime() + duration * 60000);
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       therapistId,
       status: {
         in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
@@ -776,7 +795,7 @@ export class AppointmentService {
     };
 
     if (excludeAppointmentId) {
-      where.id = { not: excludeAppointmentId };
+      where['id'] = { not: excludeAppointmentId };
     }
 
     const conflicts = await prisma.appointment.findMany({ where });
@@ -820,9 +839,10 @@ export class AppointmentService {
    * @param {Date} date - Date to check availability
    * @returns {Promise<number[]>} Array of available hours (0-23)
    */
-  private async getTherapistAvailability(therapistId: string, date: Date): Promise<number[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async getTherapistAvailability(_therapistId: string, _date: Date): Promise<number[]> {
     // Default business hours
-    // In production, fetch from therapist preferences
+    // In production, fetch from therapist preferences based on therapistId and date
     return Array.from(
       { length: this.businessHours.end - this.businessHours.start },
       (_, i) => this.businessHours.start + i
@@ -838,7 +858,7 @@ export class AppointmentService {
    * @returns {Promise<void>}
    */
   private async sendAppointmentNotifications(
-    appointment: any,
+    appointment: AppointmentWithDetails,
     action: 'CREATED' | 'RESCHEDULED' | 'CANCELLED' | 'CONFIRMED',
     reason?: string
   ) {
@@ -899,7 +919,7 @@ export class AppointmentService {
    * @param {any} appointment - Appointment to schedule reminder for
    * @returns {Promise<void>}
    */
-  private async scheduleReminder(appointment: any) {
+  private async scheduleReminder(appointment: AppointmentWithDetails) {
     // Schedule reminder 24 hours before appointment
     const reminderTime = new Date(appointment.scheduledAt.getTime() - 24 * 60 * 60 * 1000);
 

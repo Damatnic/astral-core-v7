@@ -90,13 +90,15 @@ class PerformanceMetricsCollector {
 
     // First Input Delay (FID) & Interaction to Next Paint (INP)
     this.observePerformanceEntry('first-input', (entry) => {
-      this.webVitals.fid = (entry as any).processingStart - entry.startTime;
+      const inputEntry = entry as PerformanceEventTiming;
+      this.webVitals.fid = inputEntry.processingStart - entry.startTime;
     });
 
     // Layout Shift (CLS)
     this.observePerformanceEntry('layout-shift', (entry) => {
-      if (!(entry as any).hadRecentInput) {
-        this.webVitals.cls = (this.webVitals.cls || 0) + (entry as any).value;
+      const layoutEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+      if (!layoutEntry.hadRecentInput) {
+        this.webVitals.cls = (this.webVitals.cls || 0) + (layoutEntry.value || 0);
       }
     });
 
@@ -110,7 +112,7 @@ class PerformanceMetricsCollector {
   private setupMemoryMonitoring() {
     if ('memory' in performance) {
       const collectMemoryMetrics = () => {
-        const memory = (performance as any).memory;
+        const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
         this.memoryMetrics.push({
           usedJSHeapSize: memory.usedJSHeapSize,
           totalJSHeapSize: memory.totalJSHeapSize,

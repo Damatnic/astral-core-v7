@@ -15,11 +15,11 @@ export interface PHIRecord extends Record<string, unknown> {
 // PHI find operations type helpers
 export type PrismaModelDelegate = {
   [K in keyof PrismaClient]: PrismaClient[K] extends {
-    findMany: (...args: any[]) => any;
-    findUnique: (...args: any[]) => any;
-    create: (...args: any[]) => any;
-    update: (...args: any[]) => any;
-    delete: (...args: any[]) => any;
+    findMany: (...args: unknown[]) => unknown;
+    findUnique: (...args: unknown[]) => unknown;
+    create: (...args: unknown[]) => unknown;
+    update: (...args: unknown[]) => unknown;
+    delete: (...args: unknown[]) => unknown;
   }
     ? PrismaClient[K]
     : never;

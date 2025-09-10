@@ -213,16 +213,18 @@ export function withPerformanceMonitoring<P extends object>(
         });
       };
 
-      window.addEventListener('error', (event) => {
+      const errorHandler = (event: ErrorEvent) => {
         if (event.error) {
           handleError(event.error);
         }
-      });
+      };
+
+      window.addEventListener('error', errorHandler);
 
       return () => {
-        window.removeEventListener('error', handleError as any);
+        window.removeEventListener('error', errorHandler);
       };
-    }, [errorMonitor, name, props]);
+    }, [errorMonitor, props]);
 
     return <WrappedComponent {...props} />;
   };
@@ -232,7 +234,7 @@ export function withPerformanceMonitoring<P extends object>(
 export function usePerformanceTracking() {
   const { metricsCollector, errorMonitor, databaseMonitor } = usePerformanceContext();
 
-  const trackCustomEvent = (eventName: string, duration: number, metadata?: any) => {
+  const trackCustomEvent = (eventName: string, duration: number, metadata?: Record<string, unknown>) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`Custom event: ${eventName} took ${duration}ms`, metadata);
     }
@@ -252,10 +254,10 @@ export function usePerformanceTracking() {
     }
   };
 
-  const trackAsyncOperation = async <T>(
+  const trackAsyncOperation = async function<T>(
     operation: () => Promise<T>,
     operationName: string
-  ): Promise<T> => {
+  ): Promise<T> {
     const startTime = performance.now();
     
     try {

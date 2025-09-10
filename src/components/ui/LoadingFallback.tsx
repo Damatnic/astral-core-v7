@@ -22,8 +22,7 @@ const LoadingSpinner = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
   };
 
   return (
-    <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400" 
-         style={{ width: size === 'sm' ? '1rem' : size === 'md' ? '2rem' : '3rem', height: size === 'sm' ? '1rem' : size === 'md' ? '2rem' : '3rem' }} />
+    <div className={`animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400 ${sizeClasses[size]}`} />
   );
 };
 

@@ -1,3 +1,17 @@
+export const APP_CONFIG = {
+  name: 'Astral Core',
+  version: '0.1.0',
+  description: 'Secure HIPAA-compliant mental health platform providing therapy, wellness tracking, and crisis support services.',
+  environment: process.env.NODE_ENV || 'development',
+  features: {
+    aiTherapy: process.env['ENABLE_AI_THERAPY'] === 'true',
+    crisisDetection: process.env['ENABLE_CRISIS_DETECTION'] === 'true',
+    peerSupport: process.env['ENABLE_PEER_SUPPORT'] === 'true',
+    professionalServices: process.env['ENABLE_PROFESSIONAL_SERVICES'] === 'true',
+    offlineMode: process.env['ENABLE_OFFLINE_MODE'] === 'true'
+  }
+};
+
 export const HTTP_STATUS = {
   OK: 200,
   CREATED: 201,

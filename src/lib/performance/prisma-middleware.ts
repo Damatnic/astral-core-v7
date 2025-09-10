@@ -52,7 +52,7 @@ export function createPerformanceMiddleware(): Prisma.Middleware {
       // Track successful query
       monitor.trackQuery({
         query,
-        operation: operation as any,
+        operation: operation as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
         duration,
         rows,
         table: model,
@@ -81,7 +81,7 @@ export function createPerformanceMiddleware(): Prisma.Middleware {
       // Track failed query
       monitor.trackQuery({
         query,
-        operation: operation as any,
+        operation: operation as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
         duration,
         rows: 0,
         table: model,
@@ -164,7 +164,7 @@ function generateQueryString(params: Prisma.MiddlewareParams): string {
 }
 
 // Helper for Next.js API routes to set context
-export function withQueryContext<T extends any[], R>(
+export function withQueryContext<T extends unknown[], R>(
   fn: (...args: T) => Promise<R>,
   context: QueryContext
 ) {
@@ -180,7 +180,7 @@ export function withQueryContext<T extends any[], R>(
 }
 
 // Express/Next.js middleware to extract context from request
-export function extractQueryContextFromRequest(req: any): QueryContext {
+export function extractQueryContextFromRequest(req: { headers?: Record<string, string>; url?: string; [key: string]: unknown }): QueryContext {
   const context: QueryContext = {};
   
   // Extract user ID from various sources
@@ -210,7 +210,7 @@ export function extractQueryContextFromRequest(req: any): QueryContext {
 }
 
 // Performance analysis helpers
-export function analyzeQueryPerformance(queries: any[]) {
+export function analyzeQueryPerformance(queries: Record<string, unknown>[]) {
   if (queries.length === 0) return null;
 
   const totalDuration = queries.reduce((sum, q) => sum + q.duration, 0);
@@ -250,7 +250,7 @@ export function analyzeQueryPerformance(queries: any[]) {
     acc[pattern].count++;
     acc[pattern].queries.push(query);
     return acc;
-  }, {} as Record<string, { count: number; queries: any[] }>);
+  }, {} as Record<string, { count: number; queries: Record<string, unknown>[] }>);
 
   Object.entries(queryPatterns).forEach(([pattern, data]) => {
     if (data.count > 10 && data.queries[0].operation === 'SELECT') {

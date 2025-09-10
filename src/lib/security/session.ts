@@ -8,7 +8,7 @@ interface SessionData {
   createdAt: number;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface SessionOptions {
@@ -77,7 +77,7 @@ export class SessionManager {
     role: string,
     ipAddress?: string,
     userAgent?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): string {
     const sessionId = this.generateSessionId();
     const now = Date.now();

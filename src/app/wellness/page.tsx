@@ -4,9 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { LoadingOverlay, FullPageLoading, InlineLoading } from '@/components/ui/LoadingStates';
-import { PulsingLoading } from '@/components/ui/LoadingStates';
-import { EnhancedErrorBoundary } from '@/components/EnhancedErrorBoundary';
 import { useWellnessStore } from '@/store/useWellnessStore';
 import type { WellnessDataInput } from '@/lib/types/wellness';
 
@@ -26,10 +23,6 @@ const MOOD_OPTIONS = [
 export default function WellnessPage() {
   const router = useRouter();
   const { todayData, submitWellnessData, isLoading, error, fetchTodayData } = useWellnessStore();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const [formData, setFormData] = useState<WellnessDataInput>({
     moodScore: 5,
@@ -61,26 +54,15 @@ export default function WellnessPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitError(null);
     
     try {
       const success = await submitWellnessData(formData);
       if (success) {
-        setHasUnsavedChanges(false);
         router.push('/dashboard');
-      } else {
-        setSubmitError('Failed to save wellness data. Please try again.');
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'An unexpected error occurred.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Failed to submit wellness data:', err);
     }
-  };
-
-  const handleRetry = () => {
-    fetchTodayData();
   };
 
   const handleSliderChange = (field: keyof WellnessDataInput, value: number) => {

@@ -22,7 +22,7 @@ const withLazyLoading = <P extends object>(
   Component: React.ComponentType<P>,
   loadingMessage?: string
 ) => {
-  const LazyComponent = React.forwardRef<any, P>((props, ref) => (
+  const LazyComponent = (props: P) => (
     <ErrorBoundary>
       <Suspense 
         fallback={
@@ -34,10 +34,10 @@ const withLazyLoading = <P extends object>(
           />
         }
       >
-        <Component {...props} ref={ref} />
+        <Component {...props} />
       </Suspense>
     </ErrorBoundary>
-  ));
+  );
 
   LazyComponent.displayName = `LazyLoaded(${Component.displayName || Component.name || 'Component'})`;
   

@@ -12,7 +12,7 @@ import type { PaymentIntent } from '@stripe/stripe-js';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
-import { LoadingSpinner, ProgressBar } from '@/components/ui/LoadingStates';
+import { ProgressBar } from '@/components/ui/LoadingStates';
 import { PaymentFormSkeleton } from '@/components/ui/SkeletonLoader';
 import { clsx } from 'clsx';
 

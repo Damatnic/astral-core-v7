@@ -8,7 +8,6 @@
 import React, { Suspense } from 'react';
 import LoadingFallback from '@/components/ui/LoadingFallback';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { useRouter } from 'next/navigation';
 
 // Create lazy loading wrappers for page components
 const createLazyPageComponent = (
@@ -17,7 +16,7 @@ const createLazyPageComponent = (
 ) => {
   const LazyComponent = React.lazy(() => import(importPath));
   
-  const LazyPageWrapper = (props: any) => (
+  const LazyPageWrapper = (props: Record<string, unknown>) => (
     <ErrorBoundary>
       <Suspense
         fallback={
@@ -42,16 +41,7 @@ const createLazyPageComponent = (
   return LazyPageWrapper;
 };
 
-// Create a HOC for pages that need router
-const withRouter = <P extends object>(Component: React.ComponentType<P>) => {
-  const WithRouterComponent = (props: P) => {
-    const router = useRouter();
-    return <Component {...props} router={router} />;
-  };
-  
-  WithRouterComponent.displayName = `WithRouter(${Component.displayName || Component.name})`;
-  return WithRouterComponent;
-};
+
 
 // Define preload functions
 export const preloadJournalPage = () => import('@/app/journal/page');

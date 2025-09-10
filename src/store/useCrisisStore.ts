@@ -1,11 +1,26 @@
 import { create } from 'zustand';
 import type { CrisisAssessmentInput, CrisisIntervention } from '@/lib/types/crisis';
 
+interface CrisisResource {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  type: 'hotline' | 'article' | 'video' | 'exercise';
+}
+
+interface CrisisAssessmentResult {
+  riskLevel: 'low' | 'moderate' | 'high' | 'severe';
+  recommendations: string[];
+  intervention?: CrisisIntervention;
+  resources: CrisisResource[];
+}
+
 interface CrisisState {
   isInCrisis: boolean;
   currentIntervention: CrisisIntervention | null;
   assessmentInProgress: boolean;
-  resources: any;
+  resources: CrisisResource[] | null;
 
   // Actions
   setInCrisis: (inCrisis: boolean) => void;
@@ -13,12 +28,12 @@ interface CrisisState {
   setAssessmentInProgress: (inProgress: boolean) => void;
 
   // Async actions
-  performAssessment: (assessment: CrisisAssessmentInput) => Promise<any>;
+  performAssessment: (assessment: CrisisAssessmentInput) => Promise<CrisisAssessmentResult>;
   fetchResources: () => Promise<void>;
   endIntervention: () => void;
 }
 
-export const useCrisisStore = create<CrisisState>((set, get) => ({
+export const useCrisisStore = create<CrisisState>((set) => ({
   isInCrisis: false,
   currentIntervention: null,
   assessmentInProgress: false,
@@ -58,7 +73,7 @@ export const useCrisisStore = create<CrisisState>((set, get) => ({
           status: 'ACTIVE',
           startTime: new Date(),
           followUpRequired: result.severity !== 'LOW',
-          followUpDate: result.followUpDate ? new Date(result.followUpDate) : undefined
+          ...(result.followUpDate && { followUpDate: new Date(result.followUpDate) })
         };
 
         set({

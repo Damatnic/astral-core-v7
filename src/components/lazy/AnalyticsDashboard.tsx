@@ -16,7 +16,7 @@ const AnalyticsDashboard = React.lazy(() => import('@/components/AnalyticsDashbo
 const withAnalyticsLoading = <P extends object>(
   Component: React.ComponentType<P>
 ) => {
-  const LazyAnalytics = React.forwardRef<any, P>((props, ref) => (
+  const LazyAnalytics = (props: P) => (
     <ErrorBoundary>
       <Suspense 
         fallback={
@@ -28,10 +28,10 @@ const withAnalyticsLoading = <P extends object>(
           />
         }
       >
-        <Component {...props} ref={ref} />
+        <Component {...props} />
       </Suspense>
     </ErrorBoundary>
-  ));
+  );
 
   LazyAnalytics.displayName = `LazyAnalytics(${Component.displayName || Component.name || 'Component'})`;
   

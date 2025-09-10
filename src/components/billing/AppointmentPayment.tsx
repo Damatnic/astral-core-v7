@@ -181,7 +181,7 @@ const AppointmentPayment = ({
     }
   };
 
-  const handlePaymentSuccess = (paymentIntent: { id: string; status: string }) => {
+  const handlePaymentSuccess = () => {
     setShowPaymentForm(false);
     setClientSecret(null);
     onPaymentSuccess?.();

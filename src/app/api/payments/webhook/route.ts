@@ -690,9 +690,10 @@ async function handlePaymentRetryLogic(
   invoiceId: string,
   userId: string,
   subscriptionId: string,
-  _amount: number
+  amount: number
 ): Promise<void> {
   try {
+    console.log(`Processing payment retry for invoice ${invoiceId}, amount: ${amount}`);
     // Get current invoice to check retry metadata
     const invoice = await prisma.invoice.findUnique({
       where: { stripeInvoiceId: invoiceId }

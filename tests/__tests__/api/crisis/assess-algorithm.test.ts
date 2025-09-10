@@ -3,8 +3,7 @@ import { getServerSession } from 'next-auth';
 import { 
   createAPIRequest, 
   createAuthenticatedSession,
-  createPHIMock,
-  testAPIEndpoint
+  createPHIMock
 } from '../../../utils/api-test-helpers';
 import { mockPrisma, resetPrismaMocks } from '../../../mocks/prisma';
 import type { CrisisSeverity, InterventionType } from '@prisma/client';
@@ -47,10 +46,11 @@ jest.mock('@/lib/logger', () => ({
   logError: jest.fn()
 }));
 
+import { phiService } from '@/lib/security/phi-service';
+import { audit } from '@/lib/security/audit';
+import { rateLimiters } from '@/lib/security/rate-limit';
+
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
-const { phiService } = require('@/lib/security/phi-service');
-const { audit } = require('@/lib/security/audit');
-const { rateLimiters } = require('@/lib/security/rate-limit');
 
 describe('Crisis Assessment Algorithm Tests', () => {
   beforeEach(() => {
@@ -308,7 +308,7 @@ describe('Crisis Assessment Algorithm Tests', () => {
     testCases.forEach(({ severity, expectedIntervention, description }) => {
       it(description, async () => {
         const assessmentData = createAssessmentData({
-          severity: severity as any // Type assertion for test
+          severity: severity as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
         });
 
         const request = createAPIRequest('http://localhost:3000/api/crisis/assess', {

@@ -102,15 +102,17 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 }
 
-async function handleThumbnail(_fileId: string, _userId: string) {
+async function handleThumbnail(fileId: string, userId: string) {
   try {
     // This would serve the thumbnail file
     // For now, return a placeholder response
+    console.log(`Thumbnail requested for file ${fileId} by user ${userId}`);
     return NextResponse.json(
       { error: 'Thumbnail service not implemented' },
       { status: HTTP_STATUS.NOT_IMPLEMENTED }
     );
-  } catch (_error: unknown) {
+  } catch (error: unknown) {
+    console.error('Thumbnail error:', error);
     return NextResponse.json(
       { error: 'Thumbnail not available' },
       { status: HTTP_STATUS.NOT_FOUND }

@@ -265,7 +265,7 @@ export class CompactErrorBoundary extends Component<CompactErrorBoundaryProps, C
                 Something went wrong
               </h3>
               <p className='text-sm text-red-700 dark:text-red-300 mt-1'>
-                This component couldn't load properly. Try refreshing the page.
+                This component couldn&apos;t load properly. Try refreshing the page.
               </p>
               <div className='mt-2'>
                 <button

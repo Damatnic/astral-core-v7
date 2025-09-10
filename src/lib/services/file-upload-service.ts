@@ -1,11 +1,9 @@
-import { createWriteStream, createReadStream, promises as fs } from 'fs';
+import { createReadStream, promises as fs } from 'fs';
 import { join } from 'path';
-import { pipeline } from 'stream/promises';
 import sharp from 'sharp';
 import { logError, logWarning } from '@/lib/logger';
-import { lookup } from 'mime-types';
 import crypto from 'crypto';
-import prisma from '@/lib/db/prisma';
+import { prisma } from '@/lib/db';
 import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import { notificationService } from './notification-service';
@@ -267,7 +265,7 @@ export class FileUploadService {
     } = {}
   ) {
     try {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
 
       // Check if user has admin access or is requesting their own files
       const user = await prisma.user.findUnique({
@@ -318,7 +316,7 @@ export class FileUploadService {
       return {
         files: files.map(file => ({
           ...file,
-          metadata: file.metadata as any
+          metadata: file.metadata as Record<string, unknown>
         })),
         total,
         hasMore: (filters.offset || 0) + files.length < total
@@ -349,7 +347,7 @@ export class FileUploadService {
       // Delete physical file
       try {
         await fs.unlink(fullPath);
-      } catch (error) {
+      } catch {
         logWarning(
           'Physical file not found, continuing with database deletion',
           'file-upload-service'
@@ -357,7 +355,7 @@ export class FileUploadService {
       }
 
       // Delete thumbnail if exists
-      const metadata = fileRecord.metadata as any;
+      const metadata = fileRecord.metadata as Record<string, unknown>;
       if (metadata?.thumbnailUrl) {
         const thumbnailPath = join(
           this.baseUploadDir,
@@ -367,7 +365,7 @@ export class FileUploadService {
         );
         try {
           await fs.unlink(thumbnailPath);
-        } catch (error) {
+        } catch {
           logWarning('Thumbnail file not found', 'file-upload-service');
         }
       }
@@ -565,7 +563,7 @@ export class FileUploadService {
     return crypto.createHash('sha256').update(buffer).digest('hex');
   }
 
-  private async checkFileAccess(fileRecord: any, userId: string) {
+  private async checkFileAccess(fileRecord: Record<string, unknown>, userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { role: true }

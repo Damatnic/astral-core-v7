@@ -1,7 +1,7 @@
-import prisma from '@/lib/db/prisma';
+import { prisma } from '@/lib/db';
 import { websocketServer } from '@/lib/websocket/server';
-import { NotificationType, NotificationPriority } from '@prisma/client';
-import { phiService } from '@/lib/security/phi-service';
+import { NotificationType, NotificationPriority, Prisma } from '@prisma/client';
+
 import { audit } from '@/lib/security/audit';
 import { logError, logInfo, logCleanup } from '@/lib/logger';
 
@@ -12,16 +12,10 @@ interface NotificationPayload {
   type: NotificationType;
   priority?: NotificationPriority;
   actionUrl?: string;
-  metadata?: any;
+  metadata?: Prisma.InputJsonValue;
 }
 
-interface EmailNotification {
-  to: string;
-  subject: string;
-  body: string;
-  template?: string;
-  data?: any;
-}
+
 
 interface PushNotification {
   userId: string;
@@ -29,7 +23,7 @@ interface PushNotification {
   body: string;
   icon?: string;
   badge?: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -76,21 +70,47 @@ export class NotificationService {
           message: payload.message,
           type: payload.type,
           priority: payload.priority || 'NORMAL',
-          actionUrl: payload.actionUrl,
-          metadata: payload.metadata
+          actionUrl: payload.actionUrl || null,
+          metadata: payload.metadata || Prisma.JsonNull
         }
       });
 
       // Send real-time notification via WebSocket
-      websocketServer.sendToUser(payload.userId, 'notification:new', {
-        id: notification.id,
+      // Map priority to WebSocket type
+      const mapPriority = (priority: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' => {
+        switch (priority) {
+          case 'LOW': return 'LOW';
+          case 'NORMAL': return 'MEDIUM';
+          case 'HIGH': return 'HIGH';
+          case 'URGENT': return 'URGENT';
+          default: return 'MEDIUM';
+        }
+      };
+
+      const notificationMessage: {
+        type: 'notification';
+        notificationId: string;
+        title: string;
+        message: string;
+        priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+        timestamp: number;
+        metadata: Record<string, unknown>;
+        actionUrl?: string;
+      } = {
+        type: 'notification' as const,
+        notificationId: notification.id,
         title: notification.title,
         message: notification.message,
-        type: notification.type,
-        priority: notification.priority,
-        actionUrl: notification.actionUrl,
-        timestamp: notification.createdAt
-      });
+        priority: mapPriority(notification.priority),
+        timestamp: notification.createdAt.getTime(),
+        metadata: {}
+      };
+
+      if (notification.actionUrl) {
+        notificationMessage.actionUrl = notification.actionUrl;
+      }
+
+      websocketServer.sendToUser(payload.userId, 'notification:new', notificationMessage);
 
       // Send push notification if user has enabled it
       await this.sendPushNotification({
@@ -118,7 +138,7 @@ export class NotificationService {
         payload.userId
       );
     } catch (error) {
-      logError('Failed to create notification', error, 'notification-service');
+      logError('Failed to create notification', error instanceof Error ? error : new Error(String(error)), 'notification-service');
       throw error;
     }
   }
@@ -152,14 +172,14 @@ export class NotificationService {
 
       try {
         // Create all notifications in database
-        const created = await prisma.notification.createMany({
+        await prisma.notification.createMany({
           data: batch.map(n => ({
             userId: n.userId,
             title: n.title,
             message: n.message,
             type: n.type,
             priority: n.priority || 'NORMAL',
-            actionUrl: n.actionUrl,
+            actionUrl: n.actionUrl || null,
             metadata: n.metadata
           }))
         });
@@ -169,7 +189,7 @@ export class NotificationService {
           websocketServer.sendToUser(notification.userId, 'notification:new', notification);
         });
       } catch (error) {
-        logError('Batch notification error', error, 'notification-service');
+        logError('Batch notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');
         // Re-queue failed notifications for retry
         this.notificationQueue.unshift(...batch);
       }
@@ -272,7 +292,11 @@ export class NotificationService {
       type?: NotificationType;
     } = {}
   ) {
-    const where: any = { userId };
+    const where: {
+      userId: string;
+      isRead?: boolean;
+      type?: NotificationType;
+    } = { userId };
 
     if (options.unreadOnly) {
       where.isRead = false;
@@ -395,7 +419,7 @@ export class NotificationService {
         type: notification.type
       });
     } catch (error) {
-      logError('Push notification error', error, 'notification-service');
+      logError('Push notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');
     }
   }
 
@@ -407,7 +431,7 @@ export class NotificationService {
    * @param {any} notification - Notification data for email content
    * @returns {Promise<void>}
    */
-  private async sendEmailNotification(userId: string, notification: any): Promise<void> {
+  private async sendEmailNotification(userId: string, notification: NotificationPayload): Promise<void> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -423,7 +447,7 @@ export class NotificationService {
         subject: notification.title
       });
     } catch (error) {
-      logError('Email notification error', error, 'notification-service');
+      logError('Email notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');
     }
   }
 
@@ -736,4 +760,27 @@ export class NotificationService {
   }
 }
 
-/**\n * Pre-configured notification service instance for application-wide use\n * Handles all notification types with automatic batching and real-time delivery\n * @example\n * ```typescript\n * import { notificationService } from '@/lib/services/notification-service';\n * \n * // Send appointment reminder\n * await notificationService.sendAppointmentReminder(\n *   'patient_123',\n *   'appt_456',\n *   new Date()\n * );\n * \n * // Create custom notification\n * await notificationService.createNotification({\n *   userId: 'user_123',\n *   title: 'Custom Alert',\n *   message: 'This is a custom message',\n *   type: 'SYSTEM'\n * });\n * ```\n */\nexport const notificationService = new NotificationService();
+/**
+ * Pre-configured notification service instance for application-wide use
+ * Handles all notification types with automatic batching and real-time delivery
+ * @example
+ * ```typescript
+ * import { notificationService } from '@/lib/services/notification-service';
+ * 
+ * // Send appointment reminder
+ * await notificationService.sendAppointmentReminder(
+ *   'patient_123',
+ *   'appt_456',
+ *   new Date()
+ * );
+ * 
+ * // Create custom notification
+ * await notificationService.createNotification({
+ *   userId: 'user_123',
+ *   title: 'Custom Alert',
+ *   message: 'This is a custom message',
+ *   type: 'SYSTEM'
+ * });
+ * ```
+ */
+export const notificationService = new NotificationService();

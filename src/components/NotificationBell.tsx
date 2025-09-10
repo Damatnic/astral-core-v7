@@ -30,14 +30,15 @@ export default function NotificationBell() {
     if (showDropdown && notifications.length === 0) {
       fetchNotifications();
     }
-  }, [showDropdown]);
+  }, [showDropdown, notifications.length]);
 
   // Listen for new notifications
   useEffect(() => {
     if (!on) return;
 
-    const unsubscribe = on('notification:new', notification => {
-      setNotifications(prev => [notification, ...prev]);
+    const unsubscribe = on('notification:new', (notification: unknown) => {
+      const typedNotification = notification as Notification;
+      setNotifications((prev: Notification[]) => [typedNotification, ...prev]);
       // Play notification sound
       playNotificationSound();
     });
@@ -66,7 +67,7 @@ export default function NotificationBell() {
         setNotifications(data.data.items);
       }
     } catch (error) {
-      logError('Error fetching notifications', error, 'NotificationBell');
+      logError('Error fetching notifications', error as Error, 'NotificationBell');
     } finally {
       setLoading(false);
     }
@@ -84,7 +85,7 @@ export default function NotificationBell() {
         prev.map(n => (n.id === notificationId ? { ...n, isRead: true } : n))
       );
     } catch (error) {
-      logError('Error marking notification as read', error, 'NotificationBell');
+      logError('Error marking notification as read', error as Error, 'NotificationBell');
     }
   };
 
@@ -98,7 +99,7 @@ export default function NotificationBell() {
 
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch (error) {
-      logError('Error marking all as read', error, 'NotificationBell');
+      logError('Error marking all as read', error as Error, 'NotificationBell');
     }
   };
 
@@ -110,7 +111,7 @@ export default function NotificationBell() {
 
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } catch (error) {
-      logError('Error deleting notification', error, 'NotificationBell');
+      logError('Error deleting notification', error as Error, 'NotificationBell');
     }
   };
 

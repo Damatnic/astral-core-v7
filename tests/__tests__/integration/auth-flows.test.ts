@@ -14,8 +14,7 @@ import {
   createAuthenticatedSession,
   createDatabaseMock,
   createEncryptionMock,
-  createRateLimitMock,
-  createValidationMock
+  createRateLimitMock
 } from '../../utils/api-test-helpers';
 
 // Mock all dependencies
@@ -70,11 +69,11 @@ jest.mock('@/lib/logger', () => ({
   logError: jest.fn()
 }));
 
-const prisma = require('@/lib/db/prisma').default;
-const { encryption } = require('@/lib/security/encryption');
-const { audit } = require('@/lib/security/audit');
-const { rateLimiters } = require('@/lib/security/rate-limit');
-const { mfaService } = require('@/lib/services/mfa-service');
+import prisma from '@/lib/db/prisma';
+import { encryption } from '@/lib/security/encryption';
+import { audit } from '@/lib/security/audit';
+import { rateLimiters } from '@/lib/security/rate-limit';
+import { mfaService } from '@/lib/services/mfa-service';
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
 const mockedHash = hash as jest.MockedFunction<typeof hash>;
 const mockedCompare = compare as jest.MockedFunction<typeof compare>;
@@ -538,7 +537,7 @@ describe('Authentication Flow Integration Tests', () => {
         mockedGetServerSession.mockResolvedValue(createAuthenticatedSession({
           id: `user-${role}`,
           email: `${role.toLowerCase()}@example.com`,
-          role: role as any
+          role: role as 'USER' | 'THERAPIST' | 'ADMIN'
         }));
 
         mfaService.setupTotp.mockResolvedValue({
@@ -657,7 +656,7 @@ describe('Authentication Flow Integration Tests', () => {
         new Promise(resolve => setTimeout(() => resolve(mockSetup), 100))
       );
 
-      const requests = Array.from({ length: 5 }, (_, i) =>
+      const requests = Array.from({ length: 5 }, () =>
         createAPIRequest('http://localhost:3000/api/auth/mfa/setup', {
           method: 'POST',
           body: { method: 'TOTP' }
@@ -693,11 +692,6 @@ describe('Authentication Flow Integration Tests', () => {
       // Test MFA rate limit
       mockedGetServerSession.mockResolvedValue(createAuthenticatedSession());
       rateLimiters.mfa = createRateLimitMock(false); // Rate limited
-
-      const mfaRequest = createAPIRequest('http://localhost:3000/api/auth/mfa/setup', {
-        method: 'POST',
-        body: { method: 'TOTP' }
-      });
 
       // Note: This would need to be implemented in the actual MFA endpoint
       // For now, we verify the rate limiter would be called

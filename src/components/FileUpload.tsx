@@ -328,6 +328,7 @@ export default function FileUpload({
                   <div className='flex items-center space-x-3'>
                     <div className='flex-shrink-0'>
                       {file.preview ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={file.preview}
                           alt=''

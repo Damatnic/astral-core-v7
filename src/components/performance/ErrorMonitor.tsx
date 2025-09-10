@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Bug, AlertCircle, TrendingDown, Filter, Download, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Bug, AlertCircle, TrendingDown, Filter, Download } from 'lucide-react';
 import { useErrorMonitoring, ErrorEvent, ErrorPattern } from '@/lib/performance/error-monitoring';
 
 interface ErrorCardProps {
@@ -209,8 +209,7 @@ interface ErrorMonitorProps {
 
 const ErrorMonitor: React.FC<ErrorMonitorProps> = ({
   showPatterns = true,
-  maxErrors = 50,
-  refreshInterval = 30000
+  maxErrors = 50
 }) => {
   const { errors, patterns, stats, subscribe, exportData } = useErrorMonitoring();
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());

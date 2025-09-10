@@ -4,7 +4,6 @@
  */
 
 import { ValidationService, commonSchemas } from '@/lib/security/validation';
-import { z } from 'zod';
 
 describe('ValidationService - Comprehensive Security Tests', () => {
   describe('Input Sanitization - XSS Prevention', () => {

@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     const since = searchParams.get('since');
     
     // Build query filters
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (url) {
       where.url = {
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper function to calculate Web Vitals statistics
-async function calculateVitalsStats(where: any) {
+async function calculateVitalsStats(where: Record<string, unknown>) {
   try {
     const records = await prisma.performanceMetric.findMany({
       where: {
@@ -201,12 +201,13 @@ async function calculateVitalsStats(where: any) {
     records.forEach(record => {
       if (record.vitals) {
         const vitals = JSON.parse(record.vitals as string);
-        Object.entries(vitals).forEach(([metric, data]: [string, any]) => {
+        Object.entries(vitals).forEach(([metric, data]) => {
+          const vitalData = data as { value: number; rating: string };
           if (!vitalsData[metric]) {
             vitalsData[metric] = { values: [], ratings: [] };
           }
-          vitalsData[metric].values.push(data.value);
-          vitalsData[metric].ratings.push(data.rating);
+          vitalsData[metric].values.push(vitalData.value);
+          vitalsData[metric].ratings.push(vitalData.rating);
         });
       }
     });

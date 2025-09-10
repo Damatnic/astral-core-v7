@@ -1,7 +1,13 @@
-import { z } from 'zod';
-import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import type { CrisisSeverity } from '@prisma/client';
+
+interface SessionData {
+  mood?: number;
+  anxiety?: number;
+  stress?: number;
+  content?: string;
+  duration?: number;
+}
 
 // Enhanced AI Therapy Assistant - Better than v5
 export class AITherapyAssistant {
@@ -135,7 +141,7 @@ export class AITherapyAssistant {
     return 'LOW';
   }
 
-  private generateInsights(patterns: string[], sessionData: any): string[] {
+  private generateInsights(patterns: string[], sessionData: SessionData): string[] {
     const insights: string[] = [];
 
     if (patterns.includes('all-or-nothing')) {
@@ -154,7 +160,7 @@ export class AITherapyAssistant {
       );
     }
 
-    if (sessionData.mood <= 3 && sessionData.anxiety >= 7) {
+    if ((sessionData.mood ?? 5) <= 3 && (sessionData.anxiety ?? 5) >= 7) {
       insights.push(
         'The combination of low mood and high anxiety suggests you may benefit from grounding techniques.'
       );
@@ -213,8 +219,7 @@ export class AITherapyAssistant {
 
   async generateTherapeuticResponse(
     userId: string,
-    message: string,
-    context?: any
+    message: string
   ): Promise<{
     response: string;
     suggestedFollowUp: string[];

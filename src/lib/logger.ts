@@ -15,7 +15,7 @@ export interface LogEntry {
   level: LogLevel;
   message: string;
   context?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   userId?: string;
   sessionId?: string;
   requestId?: string;
@@ -55,7 +55,7 @@ class Logger {
     }
   }
 
-  private sanitizeData(data: any): any {
+  private sanitizeData(data: unknown): Record<string, unknown> | unknown {
     if (!data) return data;
 
     // Fields that should never be logged
@@ -80,7 +80,7 @@ class Logger {
       'apiKey'
     ];
 
-    const sanitize = (obj: any): any => {
+    const sanitize = (obj: unknown): unknown => {
       if (typeof obj !== 'object' || obj === null) {
         return obj;
       }
@@ -89,7 +89,7 @@ class Logger {
         return obj.map(sanitize);
       }
 
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         const lowerKey = key.toLowerCase();
         if (sensitiveFields.some(field => lowerKey.includes(field))) {
@@ -114,23 +114,26 @@ class Logger {
     level: LogLevel,
     message: string,
     context?: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     error?: Error
   ): LogEntry {
-    return {
+    const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
-      message,
-      context,
-      metadata: metadata ? this.sanitizeData(metadata) : undefined,
-      error: error
-        ? ({
-            name: error.name,
-            message: error.message,
-            stack: !this.isProduction ? error.stack : undefined
-          } as any)
-        : undefined
+      message
     };
+    
+    if (context) entry.context = context;
+    if (metadata) entry.metadata = this.sanitizeData(metadata) as Record<string, unknown>;
+    if (error) {
+      entry.error = {
+        name: error.name,
+        message: error.message,
+        stack: !this.isProduction ? error.stack : undefined
+      } as Error;
+    }
+    
+    return entry;
   }
 
   private writeLog(entry: LogEntry): void {
@@ -171,24 +174,24 @@ class Logger {
   public error(
     message: string,
     context?: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     error?: Error
   ): void {
     const entry = this.createLogEntry(LogLevel.ERROR, message, context, metadata, error);
     this.writeLog(entry);
   }
 
-  public warn(message: string, context?: string, metadata?: Record<string, any>): void {
+  public warn(message: string, context?: string, metadata?: Record<string, unknown>): void {
     const entry = this.createLogEntry(LogLevel.WARN, message, context, metadata);
     this.writeLog(entry);
   }
 
-  public info(message: string, context?: string, metadata?: Record<string, any>): void {
+  public info(message: string, context?: string, metadata?: Record<string, unknown>): void {
     const entry = this.createLogEntry(LogLevel.INFO, message, context, metadata);
     this.writeLog(entry);
   }
 
-  public debug(message: string, context?: string, metadata?: Record<string, any>): void {
+  public debug(message: string, context?: string, metadata?: Record<string, unknown>): void {
     const entry = this.createLogEntry(LogLevel.DEBUG, message, context, metadata);
     this.writeLog(entry);
   }
@@ -197,7 +200,7 @@ class Logger {
   public audit(
     action: string,
     userId: string,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     sessionId?: string,
     requestId?: string
   ): void {
@@ -206,11 +209,12 @@ class Logger {
       level: LogLevel.INFO,
       message: `AUDIT: ${action}`,
       context: 'AUDIT',
-      metadata: this.sanitizeData(details),
-      userId,
-      sessionId,
-      requestId
+      userId
     };
+    
+    if (details) entry.metadata = this.sanitizeData(details) as Record<string, unknown>;
+    if (sessionId) entry.sessionId = sessionId;
+    if (requestId) entry.requestId = requestId;
 
     // Audit logs should always be written regardless of log level
     this.writeLog(entry);
@@ -225,29 +229,33 @@ export const logError = (
   message: string,
   error?: Error,
   context?: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ) => {
   logger.error(message, context, metadata, error);
 };
 
-export const logWarning = (message: string, context?: string, metadata?: Record<string, any>) => {
+export const logWarning = (message: string, context?: string, metadata?: Record<string, unknown>) => {
   logger.warn(message, context, metadata);
 };
 
-export const logInfo = (message: string, context?: string, metadata?: Record<string, any>) => {
+export const logInfo = (message: string, context?: string, metadata?: Record<string, unknown>) => {
   logger.info(message, context, metadata);
 };
 
-export const logDebug = (message: string, context?: string, metadata?: Record<string, any>) => {
+export const logDebug = (message: string, context?: string, metadata?: Record<string, unknown>) => {
   logger.debug(message, context, metadata);
 };
 
 export const logAudit = (
   action: string,
   userId: string,
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
   sessionId?: string,
   requestId?: string
 ) => {
   logger.audit(action, userId, details, sessionId, requestId);
+};
+
+export const logCleanup = (message: string, context?: string, metadata?: Record<string, unknown>) => {
+  logger.info(`[CLEANUP] ${message}`, context, metadata);
 };

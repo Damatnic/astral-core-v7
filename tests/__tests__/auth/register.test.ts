@@ -1,6 +1,5 @@
 import { POST } from '@/app/api/auth/register/route';
-import { NextRequest } from 'next/server';
-import { createMockRequest, createMockUser, mockApiResponse } from '../../utils/test-helpers';
+import { createMockRequest, createMockUser } from '../../utils/test-helpers';
 import { mockPrisma, resetPrismaMocks, mockPrismaImplementations } from '../../mocks/prisma';
 
 // Mock dependencies
@@ -153,7 +152,7 @@ describe('/api/auth/register', () => {
     });
 
     it('should reject registration when rate limited', async () => {
-      const { rateLimiters } = require('@/lib/security/rate-limit');
+      const { rateLimiters } = await import('@/lib/security/rate-limit');
       rateLimiters.auth.check.mockResolvedValue({ allowed: false });
 
       const request = createMockRequest('http://localhost:3000/api/auth/register', {
@@ -195,7 +194,7 @@ describe('/api/auth/register', () => {
     });
 
     it('should properly hash password before saving', async () => {
-      const { hash } = require('bcryptjs');
+      const { hash } = await import('bcryptjs');
 
       mockPrismaImplementations.user.findUniqueNotFound();
       mockPrismaImplementations.user.createSuccess(createMockUser());

@@ -18,7 +18,7 @@ export default function TherapistDashboard({ user }: TherapistDashboardProps) {
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
           <div className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow'>
-            <h2 className='text-xl font-semibold mb-4'>Today's Sessions</h2>
+            <h2 className='text-xl font-semibold mb-4'>Today&apos;s Sessions</h2>
             <p className='text-3xl font-bold text-blue-600'>5</p>
           </div>
 
@@ -59,7 +59,7 @@ export default function TherapistDashboard({ user }: TherapistDashboardProps) {
           </div>
 
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow p-6'>
-            <h2 className='text-xl font-semibold mb-4'>Today's Schedule</h2>
+            <h2 className='text-xl font-semibold mb-4'>Today&apos;s Schedule</h2>
             <p className='text-gray-500'>Schedule implementation coming soon...</p>
           </div>
         </div>

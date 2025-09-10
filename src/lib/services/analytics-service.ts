@@ -1,6 +1,4 @@
-import prisma from '@/lib/db/prisma';
-import { audit } from '@/lib/security/audit';
-import { phiService } from '@/lib/security/phi-service';
+import { prisma } from '@/lib/db';
 import { UserRole } from '@prisma/client';
 
 interface DateRange {
@@ -35,7 +33,12 @@ interface CrisisMetrics {
   averageResponseTime: number;
   resolutionRate: number;
   escalationRate: number;
-  recentAlerts: any[];
+  recentAlerts: Array<{
+    id: string;
+    severity: string;
+    timestamp: Date;
+    status: string;
+  }>;
 }
 
 interface UserEngagementMetrics {
@@ -79,7 +82,16 @@ export class AnalyticsService {
     aggregateLevel: 'user' | 'therapist' | 'system' = 'user'
   ): Promise<WellnessMetrics> {
     try {
-      const where: any = {
+      const where: {
+        date: {
+          gte: Date;
+          lte: Date;
+        };
+        userId?: string;
+        user?: {
+          therapistId: string;
+        };
+      } = {
         date: {
           gte: dateRange.startDate,
           lte: dateRange.endDate
@@ -173,7 +185,14 @@ export class AnalyticsService {
     role: UserRole = 'CLIENT'
   ): Promise<TherapyMetrics> {
     try {
-      const where: any = {
+      const where: {
+        scheduledAt: {
+          gte: Date;
+          lte: Date;
+        };
+        clientId?: string;
+        therapistId?: string;
+      } = {
         scheduledAt: {
           gte: dateRange.startDate,
           lte: dateRange.endDate
@@ -231,7 +250,7 @@ export class AnalyticsService {
       let goalCount = 0;
 
       treatmentPlans.forEach(plan => {
-        const goals = plan.goals as any[];
+        const goals = plan.goals as Array<{ progress?: number }>;
         if (goals) {
           goals.forEach(goal => {
             if (typeof goal.progress === 'number') {
@@ -338,7 +357,7 @@ export class AnalyticsService {
         dailyActive,
         weeklyActive,
         monthlyActive,
-        sessions,
+        , // sessions - unused
         messages,
         journalEntries,
         wellnessEntries
@@ -631,7 +650,12 @@ export class AnalyticsService {
   }
 
   // Generate reports
-  async generateWellnessReport(userId: string, dateRange: DateRange): Promise<any> {
+  async generateWellnessReport(userId: string, dateRange: DateRange): Promise<{
+    analytics: WellnessMetrics;
+    chartData: unknown[];
+    insights: string[];
+    reportGenerated: Date;
+  }> {
     try {
       const analytics = await this.getWellnessAnalytics(userId, dateRange, 'user');
 
@@ -657,10 +681,10 @@ export class AnalyticsService {
       });
 
       return {
-        summary: analytics,
+        analytics: analytics,
         chartData: wellnessData,
         insights: this.generateWellnessInsights(analytics, wellnessData),
-        recommendations: this.generateWellnessRecommendations(analytics)
+        reportGenerated: new Date()
       };
     } catch (error) {
       console.error('Error generating wellness report:', error);
@@ -668,7 +692,7 @@ export class AnalyticsService {
     }
   }
 
-  private generateWellnessInsights(analytics: WellnessMetrics, data: any[]): string[] {
+  private generateWellnessInsights(analytics: WellnessMetrics, data: Array<{ exercise?: boolean; meditation?: boolean; sleep?: number }>): string[] {
     const insights: string[] = [];
 
     if (analytics.moodTrend === 'improving') {

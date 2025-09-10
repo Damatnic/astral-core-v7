@@ -298,7 +298,7 @@ const CurrentSubscriptionCard = ({
                 <div className='p-3 bg-orange-50 border border-orange-200 rounded-md dark:bg-orange-900/20 dark:border-orange-800'>
                   <p className='text-sm text-orange-800 dark:text-orange-200'>
                     Your subscription will be canceled at the end of the current billing period.
-                    You'll continue to have access until {formatDate(subscription.cancelAt)}.
+                    You&apos;ll continue to have access until {formatDate(subscription.cancelAt)}.
                   </p>
                 </div>
                 <Button

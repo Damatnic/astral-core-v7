@@ -1,7 +1,5 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
 import { rateLimiter } from '@/lib/security/rate-limit';
 import { audit } from '@/lib/security/audit';
 import { phiService } from '@/lib/security/phi-service';
@@ -592,8 +590,9 @@ export class WebSocketServer {
   }
 
   // Helper methods
-  private async verifySession(token: string): Promise<any> {
-    // Implement session verification logic
+  private async verifySession(token: string): Promise<string | null> {
+    // Implement session verification logic based on token
+    console.log(`Verifying session token: ${token.substring(0, 10)}...`);
     // This would integrate with NextAuth or your auth system
     return null;
   }
@@ -612,7 +611,7 @@ export class WebSocketServer {
     return !!member;
   }
 
-  private async getRecentMessages(conversationId: string): Promise<any[]> {
+  private async getRecentMessages(conversationId: string): Promise<unknown[]> {
     const messages = await prisma.message.findMany({
       where: { conversationId },
       include: {
@@ -654,11 +653,13 @@ export class WebSocketServer {
   }
 
   private async sendPushNotifications(conversationId: string, senderId: string, content: string) {
-    // Implement push notification logic
+    // Implement push notification logic 
+    console.log(`Push notification for conversation ${conversationId} from sender ${senderId}: ${content.substring(0, 50)}...`);
     // This would integrate with FCM, APNS, or web push
   }
 
-  private async getCrisisResources(severity: string): Promise<any[]> {
+  private async getCrisisResources(severity: string): Promise<unknown[]> {
+    console.log(`Getting crisis resources for severity: ${severity}`);
     return [
       { type: 'hotline', number: '988', description: 'Suicide & Crisis Lifeline' },
       { type: 'text', number: '741741', description: 'Crisis Text Line' },
@@ -685,7 +686,7 @@ export class WebSocketServer {
 
   public getOnlineUsers(): string[] {
     return Array.from(this.presence.entries())
-      .filter(([_, data]) => data.status === 'online')
+      .filter(([, data]) => data.status === 'online')
       .map(([userId]) => userId);
   }
 

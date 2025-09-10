@@ -3,6 +3,8 @@
  * Tests core encryption functionality without complex mock management
  */
 
+import { EncryptionService } from '@/lib/security/encryption';
+
 describe('EncryptionService - Simplified Tests', () => {
   const mockKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -19,15 +21,12 @@ describe('EncryptionService - Simplified Tests', () => {
     // Test basic encryption service functionality without mocking crypto
     // This tests the constructor and basic validation
     expect(() => {
-      const { EncryptionService } = require('@/lib/security/encryption');
       const service = new EncryptionService(mockKey);
       expect(service).toBeInstanceOf(EncryptionService);
     }).not.toThrow();
   });
 
   it('should handle constructor errors correctly', () => {
-    const { EncryptionService } = require('@/lib/security/encryption');
-    
     expect(() => new EncryptionService('')).toThrow('Encryption key is required');
     
     // Test with invalid environment
@@ -39,8 +38,6 @@ describe('EncryptionService - Simplified Tests', () => {
   });
 
   it('should validate password strength requirements', () => {
-    const { EncryptionService } = require('@/lib/security/encryption');
-    
     // These are static methods that don't rely on crypto mocking
     const service = new EncryptionService(mockKey);
     
@@ -54,7 +51,6 @@ describe('EncryptionService - Simplified Tests', () => {
   });
 
   it('should handle null and undefined inputs safely', () => {
-    const { EncryptionService } = require('@/lib/security/encryption');
     const service = new EncryptionService(mockKey);
     
     const testObj = {
@@ -70,7 +66,6 @@ describe('EncryptionService - Simplified Tests', () => {
   });
 
   it('should provide error handling for invalid operations', () => {
-    const { EncryptionService } = require('@/lib/security/encryption');
     const service = new EncryptionService(mockKey);
 
     // Test malformed hash validation
