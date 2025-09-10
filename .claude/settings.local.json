@@ -32,7 +32,12 @@
       "Read(//h//**)",
       "mcp__ide__getDiagnostics",
       "Bash(npx next:*)",
-      "Bash(cmd /c \"dir src\\app\\api\\analytics\\dashboard\\ /a\")"
+      "Bash(cmd /c \"dir src\\app\\api\\analytics\\dashboard\\ /a\")",
+      "Bash(vercel:*)",
+      "Bash(node:*)",
+      "Bash(powershell:*)",
+      "Bash(cmd /c:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

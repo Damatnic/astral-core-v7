@@ -1,0 +1,62 @@
+name: Sync Environment Variables to Vercel
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.env.production'
+    branches:
+      - master
+      - main
+
+jobs:
+  sync-env:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+      
+      - name: Sync Environment Variables
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          # Read .env.production and sync to Vercel
+          if [ -f .env.production ]; then
+            echo "📦 Syncing environment variables to Vercel..."
+            
+            # Parse and add each variable
+            while IFS= read -r line; do
+              # Skip comments and empty lines
+              if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
+                continue
+              fi
+              
+              # Extract key and value
+              if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+                key="${BASH_REMATCH[1]}"
+                value="${BASH_REMATCH[2]}"
+                
+                # Remove quotes from value
+                value="${value%\"}"
+                value="${value#\"}"
+                
+                # Add to Vercel
+                echo "$value" | vercel env add "$key" production --token=$VERCEL_TOKEN --yes || true
+              fi
+            done < .env.production
+            
+            echo "✅ Environment variables synced successfully!"
+          else
+            echo "⚠️ .env.production file not found"
+          fi
