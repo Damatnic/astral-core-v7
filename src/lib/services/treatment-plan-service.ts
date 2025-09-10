@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { phiService } from '@/lib/service';
+import { phiService } from '@/lib/security/phi-service';
 
 interface CreateTreatmentPlanDto {
   patientId: string;
