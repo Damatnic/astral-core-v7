@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { analyticsService } from '@/lib/services/analytics-service';
-import { rateLimiter } from '@/lib/security/rate-limiter';
+import { rateLimiter } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 
 // GET /api/analytics/dashboard - Get dashboard analytics

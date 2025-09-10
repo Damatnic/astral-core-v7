@@ -2,7 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
-import { rateLimiter } from '@/lib/security/rate-limiter';
+import { rateLimiter } from '@/lib/security/rate-limit';
 import { audit } from '@/lib/security/audit';
 import { phiService } from '@/lib/security/phi-service';
 import prisma from '@/lib/db/prisma';

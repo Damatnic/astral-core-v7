@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mfaService } from '@/lib/services/mfa-service';
-import { rateLimiter } from '@/lib/security/rate-limiter';
+import { rateLimiter } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
