@@ -3,8 +3,8 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // Enable experimental features for better code splitting
   experimental: {
-    // Optimize CSS loading
-    optimizeCss: true
+    // Optimize CSS loading - disabled due to missing critters dependency
+    // optimizeCss: true
   },
 
   // Enable gzip compression
