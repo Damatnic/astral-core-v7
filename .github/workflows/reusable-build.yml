@@ -79,7 +79,7 @@ jobs:
 
       - name: 'Cache Dependencies'
         id: cache-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ inputs.working_directory }}/node_modules
@@ -167,7 +167,7 @@ jobs:
           fi
 
       - name: 'Cache Build Output'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ inputs.working_directory }}/.next
