@@ -49,9 +49,9 @@ export class MessagingService {
           participants: {
             create: data.participantIds.map(userId => ({
               userId,
-              role: userId === data.createdBy ? 'admin' : 'member',
-            })),
-          },
+              role: userId === data.createdBy ? 'admin' : 'member'
+            }))
+          }
         },
         include: {
           participants: {
@@ -61,12 +61,12 @@ export class MessagingService {
                   id: true,
                   name: true,
                   email: true,
-                  image: true,
-                },
-              },
-            },
-          },
-        },
+                  image: true
+                }
+              }
+            }
+          }
+        }
       });
 
       // Notify participants via WebSocket
@@ -76,7 +76,7 @@ export class MessagingService {
             conversationId: conversation.id,
             type: conversation.type,
             title: conversation.title,
-            participants: conversation.participants,
+            participants: conversation.participants
           });
         }
       });
@@ -104,8 +104,8 @@ export class MessagingService {
       const participant = await prisma.conversationParticipant.findFirst({
         where: {
           conversationId: data.conversationId,
-          userId: data.senderId,
-        },
+          userId: data.senderId
+        }
       });
 
       if (!participant) {
@@ -123,7 +123,7 @@ export class MessagingService {
           content: encryptedContent,
           type: data.type || 'text',
           attachments: data.attachments || [],
-          metadata: data.metadata,
+          metadata: data.metadata
         },
         include: {
           sender: {
@@ -131,10 +131,10 @@ export class MessagingService {
               id: true,
               name: true,
               email: true,
-              image: true,
-            },
-          },
-        },
+              image: true
+            }
+          }
+        }
       });
 
       // Update conversation last activity
@@ -142,8 +142,8 @@ export class MessagingService {
         where: { id: data.conversationId },
         data: {
           lastMessage: data.content.substring(0, 100),
-          lastActivity: new Date(),
-        },
+          lastActivity: new Date()
+        }
       });
 
       // Get all participants
@@ -153,17 +153,17 @@ export class MessagingService {
           user: {
             select: {
               id: true,
-              name: true,
-            },
-          },
-        },
+              name: true
+            }
+          }
+        }
       });
 
       // Send real-time notification to all participants
       participants.forEach(p => {
         websocketServer.sendToUser(p.userId, 'message:new', {
           ...message,
-          content: data.content, // Send unencrypted to authorized users
+          content: data.content // Send unencrypted to authorized users
         });
 
         // Send push notification if not the sender
@@ -188,7 +188,7 @@ export class MessagingService {
 
       return {
         ...message,
-        content: data.content, // Return unencrypted
+        content: data.content // Return unencrypted
       };
     } catch (error) {
       console.error('Error sending message:', error);
@@ -203,9 +203,9 @@ export class MessagingService {
         participants: {
           some: {
             userId: filters.userId,
-            isArchived: filters.isArchived || false,
-          },
-        },
+            isArchived: filters.isArchived || false
+          }
+        }
       };
 
       if (filters.type) {
@@ -222,10 +222,10 @@ export class MessagingService {
                   id: true,
                   name: true,
                   email: true,
-                  image: true,
-                },
-              },
-            },
+                  image: true
+                }
+              }
+            }
           },
           messages: {
             take: 1,
@@ -234,13 +234,13 @@ export class MessagingService {
               sender: {
                 select: {
                   id: true,
-                  name: true,
-                },
-              },
-            },
-          },
+                  name: true
+                }
+              }
+            }
+          }
         },
-        orderBy: { lastActivity: 'desc' },
+        orderBy: { lastActivity: 'desc' }
       });
 
       // Calculate unread counts
@@ -250,7 +250,7 @@ export class MessagingService {
           return {
             ...conv,
             unreadCount,
-            lastMessage: conv.messages[0] || null,
+            lastMessage: conv.messages[0] || null
           };
         })
       );
@@ -281,8 +281,8 @@ export class MessagingService {
       const participant = await prisma.conversationParticipant.findFirst({
         where: {
           conversationId,
-          userId,
-        },
+          userId
+        }
       });
 
       if (!participant) {
@@ -291,7 +291,7 @@ export class MessagingService {
 
       const where: any = {
         conversationId,
-        isDeleted: false,
+        isDeleted: false
       };
 
       if (options.before) {
@@ -306,37 +306,37 @@ export class MessagingService {
               id: true,
               name: true,
               email: true,
-              image: true,
-            },
+              image: true
+            }
           },
           readReceipts: {
             select: {
               userId: true,
-              readAt: true,
-            },
-          },
+              readAt: true
+            }
+          }
         },
         orderBy: { createdAt: 'desc' },
         take: options.limit || 50,
-        skip: options.offset || 0,
+        skip: options.offset || 0
       });
 
       // Decrypt messages
       const decryptedMessages = await Promise.all(
         messages.map(async msg => ({
           ...msg,
-          content: await phiService.decryptField(msg.content),
+          content: await phiService.decryptField(msg.content)
         }))
       );
 
       // Update last read time
       await prisma.conversationParticipant.update({
         where: {
-          id: participant.id,
+          id: participant.id
         },
         data: {
-          lastRead: new Date(),
-        },
+          lastRead: new Date()
+        }
       });
 
       return decryptedMessages.reverse();
@@ -354,9 +354,9 @@ export class MessagingService {
         where: {
           messageId_userId: {
             messageId,
-            userId,
-          },
-        },
+            userId
+          }
+        }
       });
 
       if (existing) return existing;
@@ -365,8 +365,8 @@ export class MessagingService {
       const receipt = await prisma.messageReadReceipt.create({
         data: {
           messageId,
-          userId,
-        },
+          userId
+        }
       });
 
       // Get message details
@@ -374,8 +374,8 @@ export class MessagingService {
         where: { id: messageId },
         select: {
           conversationId: true,
-          senderId: true,
-        },
+          senderId: true
+        }
       });
 
       if (message) {
@@ -383,7 +383,7 @@ export class MessagingService {
         websocketServer.sendToUser(message.senderId, 'message:read', {
           messageId,
           userId,
-          readAt: receipt.readAt,
+          readAt: receipt.readAt
         });
       }
 
@@ -402,8 +402,8 @@ export class MessagingService {
         where: {
           id: messageId,
           senderId: userId,
-          isDeleted: false,
-        },
+          isDeleted: false
+        }
       });
 
       if (!message) {
@@ -419,16 +419,16 @@ export class MessagingService {
         data: {
           content: encryptedContent,
           isEdited: true,
-          editedAt: new Date(),
+          editedAt: new Date()
         },
         include: {
           sender: {
             select: {
               id: true,
-              name: true,
-            },
-          },
-        },
+              name: true
+            }
+          }
+        }
       });
 
       // Notify participants
@@ -436,13 +436,13 @@ export class MessagingService {
         websocketServer.sendToUser('conversation:' + message.conversationId, 'message:edited', {
           messageId,
           content: newContent,
-          editedAt: updated.editedAt,
+          editedAt: updated.editedAt
         });
       }
 
       return {
         ...updated,
-        content: newContent,
+        content: newContent
       };
     } catch (error) {
       console.error('Error editing message:', error);
@@ -457,8 +457,8 @@ export class MessagingService {
       const message = await prisma.message.findFirst({
         where: {
           id: messageId,
-          senderId: userId,
-        },
+          senderId: userId
+        }
       });
 
       if (!message) {
@@ -471,14 +471,14 @@ export class MessagingService {
         data: {
           isDeleted: true,
           deletedAt: new Date(),
-          content: '[Message deleted]',
-        },
+          content: '[Message deleted]'
+        }
       });
 
       // Notify participants
       if (message.conversationId) {
         websocketServer.sendToUser('conversation:' + message.conversationId, 'message:deleted', {
-          messageId,
+          messageId
         });
       }
 
@@ -495,8 +495,8 @@ export class MessagingService {
       const participant = await prisma.conversationParticipant.findFirst({
         where: {
           conversationId,
-          userId,
-        },
+          userId
+        }
       });
 
       if (!participant) {
@@ -505,7 +505,7 @@ export class MessagingService {
 
       await prisma.conversationParticipant.update({
         where: { id: participant.id },
-        data: { isArchived: true },
+        data: { isArchived: true }
       });
 
       return { success: true };
@@ -521,8 +521,8 @@ export class MessagingService {
       const participant = await prisma.conversationParticipant.findFirst({
         where: {
           conversationId,
-          userId,
-        },
+          userId
+        }
       });
 
       if (!participant) {
@@ -531,7 +531,7 @@ export class MessagingService {
 
       await prisma.conversationParticipant.update({
         where: { id: participant.id },
-        data: { isMuted },
+        data: { isMuted }
       });
 
       return { success: true };
@@ -547,10 +547,10 @@ export class MessagingService {
       const where: any = {
         conversation: {
           participants: {
-            some: { userId },
-          },
+            some: { userId }
+          }
         },
-        isDeleted: false,
+        isDeleted: false
       };
 
       if (conversationId) {
@@ -564,19 +564,19 @@ export class MessagingService {
           sender: {
             select: {
               id: true,
-              name: true,
-            },
+              name: true
+            }
           },
           conversation: {
             select: {
               id: true,
               title: true,
-              type: true,
-            },
-          },
+              type: true
+            }
+          }
         },
         orderBy: { createdAt: 'desc' },
-        take: 50,
+        take: 50
       });
 
       // Decrypt and filter
@@ -586,7 +586,7 @@ export class MessagingService {
           if (decrypted.toLowerCase().includes(query.toLowerCase())) {
             return {
               ...msg,
-              content: decrypted,
+              content: decrypted
             };
           }
           return null;
@@ -608,15 +608,15 @@ export class MessagingService {
         AND: [
           {
             participants: {
-              some: { userId: userId1 },
-            },
+              some: { userId: userId1 }
+            }
           },
           {
             participants: {
-              some: { userId: userId2 },
-            },
-          },
-        ],
+              some: { userId: userId2 }
+            }
+          }
+        ]
       },
       include: {
         participants: {
@@ -626,12 +626,12 @@ export class MessagingService {
                 id: true,
                 name: true,
                 email: true,
-                image: true,
-              },
-            },
-          },
-        },
-      },
+                image: true
+              }
+            }
+          }
+        }
+      }
     });
   }
 
@@ -639,8 +639,8 @@ export class MessagingService {
     const participant = await prisma.conversationParticipant.findFirst({
       where: {
         conversationId,
-        userId,
-      },
+        userId
+      }
     });
 
     if (!participant) return 0;
@@ -649,13 +649,13 @@ export class MessagingService {
       where: {
         conversationId,
         createdAt: {
-          gt: participant.lastRead || new Date(0),
+          gt: participant.lastRead || new Date(0)
         },
         senderId: {
-          not: userId,
+          not: userId
         },
-        isDeleted: false,
-      },
+        isDeleted: false
+      }
     });
   }
 
@@ -665,7 +665,7 @@ export class MessagingService {
       type: 'THERAPY',
       participantIds: [therapistId, clientId],
       title: 'Therapy Session',
-      createdBy: therapistId,
+      createdBy: therapistId
     });
   }
 
@@ -675,15 +675,16 @@ export class MessagingService {
       type: 'CRISIS',
       participantIds: [userId, responderId],
       title: 'Crisis Support',
-      createdBy: responderId,
+      createdBy: responderId
     });
 
     // Send initial message
     await this.sendMessage({
       conversationId: conversation.id,
       senderId: responderId,
-      content: 'Hello, I\'m here to help. You\'re not alone. Can you tell me what\'s happening right now?',
-      metadata: { isCrisisResponse: true },
+      content:
+        "Hello, I'm here to help. You're not alone. Can you tell me what's happening right now?",
+      metadata: { isCrisisResponse: true }
     });
 
     return conversation;

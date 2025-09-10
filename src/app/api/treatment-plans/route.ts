@@ -23,11 +23,7 @@ export async function GET(request: NextRequest) {
     const planId = searchParams.get('planId');
 
     // Rate limiting
-    const allowed = await rateLimiter.checkLimit(
-      `treatment-plans:${session.user.id}`,
-      30,
-      60000
-    );
+    const allowed = await rateLimiter.checkLimit(`treatment-plans:${session.user.id}`, 30, 60000);
     if (!allowed) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.RATE_LIMIT },
@@ -40,19 +36,16 @@ export async function GET(request: NextRequest) {
       const plan = await treatmentPlanService.getTreatmentPlan(planId, session.user.id);
       return NextResponse.json({
         success: true,
-        data: plan,
+        data: plan
       });
     }
 
     // Get plans for a specific client
     if (clientId) {
-      const plans = await treatmentPlanService.getClientTreatmentPlans(
-        clientId,
-        session.user.id
-      );
+      const plans = await treatmentPlanService.getClientTreatmentPlans(clientId, session.user.id);
       return NextResponse.json({
         success: true,
-        data: plans,
+        data: plans
       });
     }
 
@@ -61,13 +54,13 @@ export async function GET(request: NextRequest) {
     if (session.user.role === 'THERAPIST') {
       // Get therapist's profile
       const therapistProfile = await prisma.therapistProfile.findUnique({
-        where: { userId: session.user.id },
+        where: { userId: session.user.id }
       });
 
       if (!therapistProfile) {
         return NextResponse.json({
           success: true,
-          data: [],
+          data: []
         });
       }
 
@@ -80,46 +73,43 @@ export async function GET(request: NextRequest) {
               user: {
                 select: {
                   name: true,
-                  email: true,
-                },
-              },
-            },
-          },
+                  email: true
+                }
+              }
+            }
+          }
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'desc' }
       });
     } else if (session.user.role === 'CLIENT') {
       // Get client's profile
       const clientProfile = await prisma.clientProfile.findFirst({
-        where: { userId: session.user.id },
+        where: { userId: session.user.id }
       });
 
       if (!clientProfile) {
         return NextResponse.json({
           success: true,
-          data: [],
+          data: []
         });
       }
 
-      plans = await treatmentPlanService.getClientTreatmentPlans(
-        clientProfile.id,
-        session.user.id
-      );
+      plans = await treatmentPlanService.getClientTreatmentPlans(clientProfile.id, session.user.id);
     } else {
       return NextResponse.json({
         success: true,
-        data: [],
+        data: []
       });
     }
 
     return NextResponse.json({
       success: true,
-      data: plans,
+      data: plans
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching treatment plans:', error);
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.SERVER_ERROR },
+      { error: error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
@@ -149,7 +139,7 @@ export async function POST(request: NextRequest) {
 
     // Get therapist profile
     const therapistProfile = await prisma.therapistProfile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id }
     });
 
     if (!therapistProfile) {
@@ -165,15 +155,18 @@ export async function POST(request: NextRequest) {
       therapistId: therapistProfile.id,
       clientId: body.clientId,
       startDate: new Date(validated.startDate),
-      reviewDate: new Date(validated.reviewDate),
+      reviewDate: new Date(validated.reviewDate)
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Treatment plan created successfully',
-      data: plan,
-    }, { status: HTTP_STATUS.CREATED });
-  } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Treatment plan created successfully',
+        data: plan
+      },
+      { status: HTTP_STATUS.CREATED }
+    );
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.issues },
@@ -183,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     console.error('Error creating treatment plan:', error);
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.SERVER_ERROR },
+      { error: error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
@@ -222,7 +215,7 @@ export async function PUT(request: NextRequest) {
 
     // Get therapist profile
     const therapistProfile = await prisma.therapistProfile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id }
     });
 
     if (!therapistProfile) {
@@ -242,9 +235,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Treatment plan updated successfully',
-      data: updatedPlan,
+      data: updatedPlan
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.issues },
@@ -254,7 +247,7 @@ export async function PUT(request: NextRequest) {
 
     console.error('Error updating treatment plan:', error);
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.SERVER_ERROR },
+      { error: error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }

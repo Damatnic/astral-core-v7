@@ -1,0 +1,463 @@
+name: 'Dependency Management'
+
+on:
+  schedule:
+    # Check for dependency updates daily at 4 AM UTC
+    - cron: '0 4 * * *'
+    # Run security audit weekly on Mondays at 6 AM UTC
+    - cron: '0 6 * * 1'
+  push:
+    branches: ['main', 'master']
+    paths:
+      - 'package*.json'
+  pull_request:
+    branches: ['main', 'master']
+    paths:
+      - 'package*.json'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of dependency update'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - 'security'
+          - 'patch'
+          - 'minor'
+          - 'major'
+          - 'all'
+      auto_merge:
+        description: 'Auto-merge safe updates'
+        required: false
+        default: false
+        type: boolean
+
+# Cancel previous runs for the same workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18.17'
+
+jobs:
+  # Dependency audit and vulnerability scanning
+  dependency-audit:
+    name: 'Dependency Security Audit'
+    runs-on: ubuntu-latest
+    
+    outputs:
+      vulnerabilities_found: ${{ steps.audit.outputs.vulnerabilities_found }}
+      audit_result: ${{ steps.audit.outputs.audit_result }}
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Run npm audit'
+        id: audit
+        run: |
+          echo "🔍 Running npm security audit..."
+          
+          # Run audit and capture output
+          npm audit --audit-level=moderate --json > npm-audit-output.json 2>/dev/null || audit_exit_code=$?
+          
+          # Check if vulnerabilities were found
+          if [ -s npm-audit-output.json ]; then
+            vulnerabilities=$(jq -r '.metadata.vulnerabilities | to_entries[] | select(.value > 0) | "\(.key): \(.value)"' npm-audit-output.json 2>/dev/null || echo "")
+            if [ -n "$vulnerabilities" ]; then
+              echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+              echo "Vulnerabilities found:"
+              echo "$vulnerabilities"
+            else
+              echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Set audit result
+          if [ "${audit_exit_code:-0}" -eq 0 ]; then
+            echo "audit_result=success" >> $GITHUB_OUTPUT
+          else
+            echo "audit_result=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 'Run Snyk Test'
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --severity-threshold=medium --json > snyk-test-results.json
+        continue-on-error: true
+
+      - name: 'Check Outdated Dependencies'
+        run: |
+          echo "📊 Checking for outdated dependencies..."
+          npm outdated --json > outdated-deps.json 2>/dev/null || true
+          
+          if [ -s outdated-deps.json ]; then
+            echo "Found outdated dependencies:"
+            jq -r 'to_entries[] | "- \(.key): \(.value.current) → \(.value.latest)"' outdated-deps.json || true
+          else
+            echo "No outdated dependencies found."
+          fi
+
+      - name: 'Generate Dependency Report'
+        run: |
+          echo "# 📦 Dependency Security Report" > dependency-report.md
+          echo "" >> dependency-report.md
+          echo "**Scan Date:** $(date -u)" >> dependency-report.md
+          echo "**Repository:** ${{ github.repository }}" >> dependency-report.md
+          echo "" >> dependency-report.md
+          
+          echo "## 🔒 Security Status" >> dependency-report.md
+          echo "" >> dependency-report.md
+          
+          if [ -f npm-audit-output.json ] && [ -s npm-audit-output.json ]; then
+            echo "### npm audit Results" >> dependency-report.md
+            if [ "${{ steps.audit.outputs.vulnerabilities_found }}" = "true" ]; then
+              echo "⚠️ **Vulnerabilities detected!**" >> dependency-report.md
+              echo "" >> dependency-report.md
+              jq -r '.vulnerabilities | to_entries[] | "- **\(.key)**: \(.value.severity) severity (\(.value.via | length) advisories)"' npm-audit-output.json >> dependency-report.md 2>/dev/null || true
+            else
+              echo "✅ No vulnerabilities found in npm audit." >> dependency-report.md
+            fi
+          fi
+          
+          echo "" >> dependency-report.md
+          echo "## 📊 Outdated Dependencies" >> dependency-report.md
+          echo "" >> dependency-report.md
+          
+          if [ -f outdated-deps.json ] && [ -s outdated-deps.json ]; then
+            echo "| Package | Current | Latest | Type |" >> dependency-report.md
+            echo "|---------|---------|--------|------|" >> dependency-report.md
+            jq -r 'to_entries[] | "| \(.key) | \(.value.current) | \(.value.latest) | \(.value.type) |"' outdated-deps.json >> dependency-report.md 2>/dev/null || true
+          else
+            echo "✅ All dependencies are up to date." >> dependency-report.md
+          fi
+          
+          echo "" >> dependency-report.md
+          echo "## 🎯 Recommendations" >> dependency-report.md
+          echo "" >> dependency-report.md
+          echo "- Update dependencies with security vulnerabilities immediately" >> dependency-report.md
+          echo "- Review and test minor updates before merging" >> dependency-report.md
+          echo "- Be cautious with major version updates" >> dependency-report.md
+          echo "- Monitor for new vulnerabilities regularly" >> dependency-report.md
+
+      - name: 'Upload Audit Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-results
+          path: |
+            npm-audit-output.json
+            snyk-test-results.json
+            outdated-deps.json
+            dependency-report.md
+          retention-days: 30
+
+  # Create PRs for dependency updates
+  dependency-updates:
+    name: 'Create Dependency Updates'
+    runs-on: ubuntu-latest
+    needs: [dependency-audit]
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    strategy:
+      matrix:
+        update_type: 
+          - security
+          - patch
+          - minor
+        exclude:
+          - update_type: ${{ github.event.inputs.update_type != 'all' && github.event.inputs.update_type != matrix.update_type && 'excluded' || 'included' }}
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Install Update Tools'
+        run: |
+          npm install -g npm-check-updates
+
+      - name: 'Create Security Updates Branch'
+        if: matrix.update_type == 'security'
+        run: |
+          branch_name="deps/security-updates-$(date +%Y%m%d)"
+          git checkout -b "$branch_name"
+          echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
+          
+          # Fix security vulnerabilities
+          npm audit fix --audit-level=moderate || true
+          
+          echo "UPDATE_DESCRIPTION=Security vulnerability fixes" >> $GITHUB_ENV
+
+      - name: 'Create Patch Updates Branch'
+        if: matrix.update_type == 'patch'
+        run: |
+          branch_name="deps/patch-updates-$(date +%Y%m%d)"
+          git checkout -b "$branch_name"
+          echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
+          
+          # Update patch versions
+          ncu --target patch --upgrade || true
+          
+          echo "UPDATE_DESCRIPTION=Patch version updates" >> $GITHUB_ENV
+
+      - name: 'Create Minor Updates Branch'
+        if: matrix.update_type == 'minor'
+        run: |
+          branch_name="deps/minor-updates-$(date +%Y%m%d)"
+          git checkout -b "$branch_name"
+          echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
+          
+          # Update minor versions
+          ncu --target minor --upgrade || true
+          
+          echo "UPDATE_DESCRIPTION=Minor version updates" >> $GITHUB_ENV
+
+      - name: 'Install Updated Dependencies'
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          fi
+
+      - name: 'Run Tests After Update'
+        run: |
+          # Generate Prisma client if needed
+          if [ -f prisma/schema.prisma ]; then
+            npm run db:generate || true
+          fi
+          
+          # Run tests to ensure updates don't break functionality
+          npm run test:ci || echo "Tests failed - will be noted in PR"
+        env:
+          DATABASE_URL: "postgresql://test:test@localhost:5432/testdb"
+          NEXTAUTH_SECRET: "test-secret-for-ci"
+          NEXTAUTH_URL: "http://localhost:3000"
+
+      - name: 'Check for Changes'
+        id: changes
+        run: |
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 'Commit and Push Changes'
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action - Dependency Bot"
+          
+          git add .
+          git commit -m "deps: ${{ env.UPDATE_DESCRIPTION }}
+
+          Automated dependency updates for ${{ matrix.update_type }} versions.
+          
+          - Updates performed on $(date -u)
+          - Tests run after updates
+          - Please review changes before merging"
+          
+          git push -u origin "${{ env.BRANCH_NAME }}"
+
+      - name: 'Create Pull Request'
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🤖 Dependency Updates: ${{ env.UPDATE_DESCRIPTION }}`;
+            const body = `## 📦 Automated Dependency Updates
+            
+            This PR contains **${{ matrix.update_type }}** dependency updates.
+            
+            ### 🔍 What's Changed
+            - Automated dependency updates for ${{ matrix.update_type }} versions
+            - Security vulnerabilities addressed (if any)
+            - Package-lock.json updated accordingly
+            
+            ### ✅ Testing Status
+            - Automated tests were run after updates
+            - Please verify all functionality works as expected
+            
+            ### 🎯 Review Checklist
+            - [ ] Review the updated dependencies
+            - [ ] Check for breaking changes in updated packages
+            - [ ] Verify tests pass locally
+            - [ ] Test critical application functionality
+            
+            ### 🤖 Auto-merge
+            ${${{ github.event.inputs.auto_merge }} === true && matrix.update_type === 'security' ? 
+              '⚠️ This PR will auto-merge in 1 hour if CI passes (security updates)' : 
+              'Manual review and merge required'}
+            
+            ---
+            *This PR was automatically created by the Dependency Management workflow.*`;
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              head: '${{ env.BRANCH_NAME }}',
+              base: 'main',
+              body: body,
+              draft: false
+            });
+            
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ['dependencies', '${{ matrix.update_type }}-update', 'automated']
+            });
+            
+            console.log(`Created PR #${pr.number}: ${pr.html_url}`);
+
+  # Auto-merge security updates if enabled and tests pass
+  auto-merge-security:
+    name: 'Auto-merge Security Updates'
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, dependency-updates]
+    if: github.event.inputs.auto_merge == 'true' && needs.dependency-audit.outputs.vulnerabilities_found == 'true'
+    
+    steps:
+      - name: 'Wait for CI to Complete'
+        run: |
+          echo "⏳ Waiting 1 hour for CI to complete..."
+          sleep 3600  # Wait 1 hour
+
+      - name: 'Auto-merge Security PR'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find recent dependency security PRs
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:deps/security-updates-*`,
+              sort: 'created',
+              direction: 'desc'
+            });
+            
+            for (const pr of prs) {
+              // Check if PR has security-update label
+              const hasSecurityLabel = pr.labels.some(label => label.name === 'security-update');
+              if (!hasSecurityLabel) continue;
+              
+              // Check if all required checks have passed
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+              
+              const allChecksPassed = checks.check_runs.every(check => 
+                check.status === 'completed' && check.conclusion === 'success'
+              );
+              
+              if (allChecksPassed) {
+                // Auto-merge the PR
+                await github.rest.pulls.merge({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  commit_title: `Merge security dependency updates (#${pr.number})`,
+                  merge_method: 'squash'
+                });
+                
+                console.log(`✅ Auto-merged security PR #${pr.number}`);
+              } else {
+                console.log(`⏳ PR #${pr.number} checks still pending or failed`);
+              }
+            }
+
+  # Dependency report summary
+  dependency-summary:
+    name: 'Dependency Summary'
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, dependency-updates]
+    if: always()
+    
+    steps:
+      - name: 'Download Audit Results'
+        uses: actions/download-artifact@v4
+        with:
+          name: dependency-audit-results
+        continue-on-error: true
+
+      - name: 'Generate Summary Report'
+        run: |
+          echo "# 📋 Dependency Management Summary" > dependency-summary.md
+          echo "" >> dependency-summary.md
+          echo "**Run Date:** $(date -u)" >> dependency-summary.md
+          echo "**Repository:** ${{ github.repository }}" >> dependency-summary.md
+          echo "" >> dependency-summary.md
+          
+          echo "## 🏆 Status Overview" >> dependency-summary.md
+          echo "" >> dependency-summary.md
+          echo "| Task | Status |" >> dependency-summary.md
+          echo "|------|--------|" >> dependency-summary.md
+          echo "| Security Audit | ${{ needs.dependency-audit.result == 'success' && '✅ Completed' || '❌ Failed' }} |" >> dependency-summary.md
+          echo "| Dependency Updates | ${{ needs.dependency-updates.result == 'success' && '✅ Completed' || needs.dependency-updates.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} |" >> dependency-summary.md
+          
+          echo "" >> dependency-summary.md
+          echo "## 🔍 Key Findings" >> dependency-summary.md
+          echo "" >> dependency-summary.md
+          
+          if [ "${{ needs.dependency-audit.outputs.vulnerabilities_found }}" = "true" ]; then
+            echo "⚠️ **Security vulnerabilities detected**" >> dependency-summary.md
+            echo "- Immediate action required for security updates" >> dependency-summary.md
+            echo "- Check created PRs for automated fixes" >> dependency-summary.md
+          else
+            echo "✅ **No security vulnerabilities found**" >> dependency-summary.md
+          fi
+          
+          echo "" >> dependency-summary.md
+          echo "## 📈 Next Actions" >> dependency-summary.md
+          echo "" >> dependency-summary.md
+          echo "- Review and merge any created dependency update PRs" >> dependency-summary.md
+          echo "- Test updated dependencies thoroughly" >> dependency-summary.md
+          echo "- Monitor for new vulnerabilities" >> dependency-summary.md
+          echo "- Consider upgrading major versions after testing" >> dependency-summary.md
+
+      - name: 'Upload Summary Report'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-management-summary
+          path: dependency-summary.md
+          retention-days: 90
+
+      - name: 'Send Notification on Security Issues'
+        if: needs.dependency-audit.outputs.vulnerabilities_found == 'true'
+        run: |
+          echo "🚨 Security vulnerabilities detected!"
+          echo "Please review the dependency audit results and merge security updates promptly."

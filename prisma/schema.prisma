@@ -795,7 +795,101 @@ model BillingAddress {
   @@index([customerId])
 }
 
+// ==================== PERFORMANCE MONITORING ====================
+
+model PerformanceMetric {
+  id              String   @id @default(cuid())
+  url             String
+  timestamp       DateTime @default(now())
+  userAgent       String
+  clientIP        String?
+  sessionId       String?
+  userId          String?
+  vitals          String?  @db.Text // JSON string of Web Vitals data
+  metadata        Json?    @db.JsonB
+  createdAt       DateTime @default(now())
+  
+  @@index([url])
+  @@index([timestamp])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model ErrorMetric {
+  id              String   @id @default(cuid())
+  message         String   @db.Text
+  stack           String?  @db.Text
+  filename        String?
+  lineno          Int?
+  colno           Int?
+  url             String
+  timestamp       DateTime @default(now())
+  userAgent       String
+  userId          String?
+  sessionId       String
+  severity        ErrorSeverity
+  type            ErrorType
+  resolved        Boolean  @default(false)
+  resolvedAt      DateTime?
+  context         Json?    @db.JsonB
+  createdAt       DateTime @default(now())
+  
+  @@index([severity])
+  @@index([type])
+  @@index([timestamp])
+  @@index([userId])
+  @@index([resolved])
+}
+
+model QueryMetric {
+  id              String      @id @default(cuid())
+  query           String      @db.Text
+  operation       QueryOperation
+  duration        Float
+  timestamp       DateTime    @default(now())
+  rows            Int         @default(0)
+  table           String?
+  userId          String?
+  endpoint        String?
+  success         Boolean     @default(true)
+  errorMessage    String?     @db.Text
+  cached          Boolean?
+  createdAt       DateTime    @default(now())
+  
+  @@index([operation])
+  @@index([duration])
+  @@index([timestamp])
+  @@index([table])
+  @@index([userId])
+  @@index([success])
+}
+
 // ==================== ENUMS ====================
+
+enum ErrorSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ErrorType {
+  JAVASCRIPT
+  UNHANDLED_REJECTION
+  RESOURCE
+  NETWORK
+  CUSTOM
+}
+
+enum QueryOperation {
+  SELECT
+  INSERT
+  UPDATE
+  DELETE
+  UPSERT
+  CREATE
+  DROP
+}
 
 enum UserRole {
   ADMIN

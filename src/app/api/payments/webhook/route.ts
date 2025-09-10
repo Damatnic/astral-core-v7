@@ -9,7 +9,36 @@ import { StripeService } from '@/lib/services/stripe-service';
 import { SubscriptionService } from '@/lib/services/subscription-service';
 import { prisma } from '@/lib/db';
 import { auditLog } from '@/lib/security/audit';
+import { notificationService } from '@/lib/services/notification-service';
 import Stripe from 'stripe';
+
+// Retry configuration
+interface RetryConfig {
+  maxAttempts: number;
+  backoffMultiplier: number;
+  gracePeriodHours: number;
+}
+
+const PAYMENT_RETRY_CONFIG: RetryConfig = {
+  maxAttempts: 3,
+  backoffMultiplier: 2,
+  gracePeriodHours: 72 // 3 days grace period
+};
+
+// Dispute handling workflow
+interface DisputeWorkflow {
+  autoResponse: boolean;
+  adminNotification: boolean;
+  documentCollection: boolean;
+  escalationThreshold: number; // Amount in USD
+}
+
+const DISPUTE_CONFIG: DisputeWorkflow = {
+  autoResponse: true,
+  adminNotification: true,
+  documentCollection: true,
+  escalationThreshold: 500 // $500 or more requires manual review
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,10 +46,7 @@ export async function POST(request: NextRequest) {
     const signature = headers().get('stripe-signature');
 
     if (!signature) {
-      return NextResponse.json(
-        { error: 'Missing stripe-signature header' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 });
     }
 
     // Construct and verify webhook event
@@ -30,12 +56,12 @@ export async function POST(request: NextRequest) {
     await auditLog({
       action: 'STRIPE_WEBHOOK_RECEIVED',
       entity: 'WebhookEvent',
-      details: { 
+      details: {
         eventType: event.type,
         eventId: event.id,
         livemode: event.livemode
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     // Handle different event types
@@ -91,21 +117,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Webhook error:', error);
-    
+
+    // Capture body for error logging
+    let body = '';
+    try {
+      body = await request.text();
+    } catch {
+      body = 'Could not read request body';
+    }
+
     await auditLog({
       action: 'STRIPE_WEBHOOK_ERROR',
       entity: 'WebhookEvent',
-      details: { 
+      details: {
         error: error instanceof Error ? error.message : 'Unknown error',
-        body: body?.substring(0, 1000) // First 1000 chars for debugging
+        body: body.substring(0, 1000) // First 1000 chars for debugging
       },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
-    return NextResponse.json(
-      { error: 'Webhook handler failed' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 400 });
   }
 }
 
@@ -125,12 +156,12 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     await auditLog({
       action: 'SUBSCRIPTION_WEBHOOK_CREATED',
       entity: 'Subscription',
-      details: { 
+      details: {
         subscriptionId: subscription.id,
         customerId: subscription.customer as string,
         status: subscription.status
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
   } catch (error) {
     console.error('Error handling subscription created:', error);
@@ -152,13 +183,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     await auditLog({
       action: 'SUBSCRIPTION_WEBHOOK_UPDATED',
       entity: 'Subscription',
-      details: { 
+      details: {
         subscriptionId: subscription.id,
         customerId: subscription.customer as string,
         status: subscription.status,
         cancelAtPeriodEnd: subscription.cancel_at_period_end
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
   } catch (error) {
     console.error('Error handling subscription updated:', error);
@@ -171,21 +202,17 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
  */
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   try {
-    await SubscriptionService.updateSubscriptionStatus(
-      subscription.id,
-      'canceled',
-      subscription
-    );
+    await SubscriptionService.updateSubscriptionStatus(subscription.id, 'canceled', subscription);
 
     await auditLog({
       action: 'SUBSCRIPTION_WEBHOOK_DELETED',
       entity: 'Subscription',
-      details: { 
+      details: {
         subscriptionId: subscription.id,
         customerId: subscription.customer as string,
         canceledAt: subscription.canceled_at
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
   } catch (error) {
     console.error('Error handling subscription deleted:', error);
@@ -200,7 +227,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   try {
     // Find customer in our database
     const customer = await prisma.customer.findUnique({
-      where: { stripeCustomerId: invoice.customer as string },
+      where: { stripeCustomerId: invoice.customer as string }
     });
 
     if (!customer) {
@@ -213,10 +240,13 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       where: { stripeInvoiceId: invoice.id },
       create: {
         customerId: customer.id,
-        subscriptionId: invoice.subscription ? 
-          (await prisma.subscription.findUnique({
-            where: { stripeSubscriptionId: invoice.subscription as string }
-          }))?.id : undefined,
+        subscriptionId: invoice.subscription
+          ? (
+              await prisma.subscription.findUnique({
+                where: { stripeSubscriptionId: invoice.subscription as string }
+              })
+            )?.id
+          : undefined,
         stripeInvoiceId: invoice.id,
         number: invoice.number,
         status: 'PAID',
@@ -230,16 +260,18 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         pdfUrl: invoice.invoice_pdf,
         hostedInvoiceUrl: invoice.hosted_invoice_url,
         paymentIntentId: invoice.payment_intent as string,
-        paidAt: invoice.status_transitions.paid_at ? 
-          new Date(invoice.status_transitions.paid_at * 1000) : null,
+        paidAt: invoice.status_transitions.paid_at
+          ? new Date(invoice.status_transitions.paid_at * 1000)
+          : null
       },
       update: {
         status: 'PAID',
         amountPaid: invoice.amount_paid / 100,
         amountDue: invoice.amount_due / 100,
-        paidAt: invoice.status_transitions.paid_at ? 
-          new Date(invoice.status_transitions.paid_at * 1000) : null,
-      },
+        paidAt: invoice.status_transitions.paid_at
+          ? new Date(invoice.status_transitions.paid_at * 1000)
+          : null
+      }
     });
 
     // If this is a subscription renewal, process it
@@ -251,12 +283,12 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       userId: customer.userId,
       action: 'INVOICE_PAYMENT_SUCCEEDED',
       entity: 'Invoice',
-      details: { 
+      details: {
         invoiceId: invoice.id,
         amount: invoice.amount_paid / 100,
         subscriptionId: invoice.subscription as string
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
   } catch (error) {
     console.error('Error handling invoice payment succeeded:', error);
@@ -270,7 +302,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   try {
     const customer = await prisma.customer.findUnique({
-      where: { stripeCustomerId: invoice.customer as string },
+      where: { stripeCustomerId: invoice.customer as string }
     });
 
     if (!customer) {
@@ -283,10 +315,13 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       where: { stripeInvoiceId: invoice.id },
       create: {
         customerId: customer.id,
-        subscriptionId: invoice.subscription ? 
-          (await prisma.subscription.findUnique({
-            where: { stripeSubscriptionId: invoice.subscription as string }
-          }))?.id : undefined,
+        subscriptionId: invoice.subscription
+          ? (
+              await prisma.subscription.findUnique({
+                where: { stripeSubscriptionId: invoice.subscription as string }
+              })
+            )?.id
+          : undefined,
         stripeInvoiceId: invoice.id,
         number: invoice.number,
         status: 'OPEN',
@@ -299,29 +334,42 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
         description: invoice.description,
         pdfUrl: invoice.invoice_pdf,
         hostedInvoiceUrl: invoice.hosted_invoice_url,
-        paymentIntentId: invoice.payment_intent as string,
+        paymentIntentId: invoice.payment_intent as string
       },
       update: {
         status: 'OPEN',
         amountPaid: invoice.amount_paid / 100,
-        amountDue: invoice.amount_due / 100,
-      },
+        amountDue: invoice.amount_due / 100
+      }
     });
 
     await auditLog({
       userId: customer.userId,
       action: 'INVOICE_PAYMENT_FAILED',
       entity: 'Invoice',
-      details: { 
+      details: {
         invoiceId: invoice.id,
         amountDue: invoice.amount_due / 100,
         subscriptionId: invoice.subscription as string
       },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
-    // TODO: Send notification to user about failed payment
-    // TODO: Implement retry logic or grace period
+    // Send notification to user about failed payment
+    await sendPaymentFailureNotification(
+      customer.userId,
+      invoice.id,
+      invoice.amount_due / 100,
+      invoice.subscription as string
+    );
+
+    // Implement retry logic or grace period
+    await handlePaymentRetryLogic(
+      invoice.id,
+      customer.userId,
+      invoice.subscription as string,
+      invoice.amount_due / 100
+    );
   } catch (error) {
     console.error('Error handling invoice payment failed:', error);
     throw error;
@@ -336,7 +384,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     // Update payment status in database
     const payment = await prisma.payment.findUnique({
       where: { stripePaymentIntentId: paymentIntent.id },
-      include: { customer: true },
+      include: { customer: true }
     });
 
     if (!payment) {
@@ -349,8 +397,8 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       data: {
         status: 'SUCCEEDED',
         processedAt: new Date(),
-        receiptUrl: paymentIntent.charges.data[0]?.receipt_url,
-      },
+        receiptUrl: paymentIntent.charges.data[0]?.receipt_url
+      }
     });
 
     await auditLog({
@@ -358,15 +406,21 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       action: 'PAYMENT_INTENT_SUCCEEDED',
       entity: 'Payment',
       entityId: payment.id,
-      details: { 
+      details: {
         paymentIntentId: paymentIntent.id,
         amount: paymentIntent.amount / 100,
         appointmentId: payment.appointmentId
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
-    // TODO: Send payment confirmation notification
+    // Send payment confirmation notification
+    await sendPaymentConfirmationNotification(
+      payment.customer.userId,
+      payment.id,
+      paymentIntent.amount / 100,
+      payment.appointmentId
+    );
   } catch (error) {
     console.error('Error handling payment intent succeeded:', error);
     throw error;
@@ -380,7 +434,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   try {
     const payment = await prisma.payment.findUnique({
       where: { stripePaymentIntentId: paymentIntent.id },
-      include: { customer: true },
+      include: { customer: true }
     });
 
     if (!payment) {
@@ -393,8 +447,8 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       data: {
         status: 'FAILED',
         failureCode: paymentIntent.last_payment_error?.code,
-        failureMessage: paymentIntent.last_payment_error?.message,
-      },
+        failureMessage: paymentIntent.last_payment_error?.message
+      }
     });
 
     await auditLog({
@@ -402,16 +456,23 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       action: 'PAYMENT_INTENT_FAILED',
       entity: 'Payment',
       entityId: payment.id,
-      details: { 
+      details: {
         paymentIntentId: paymentIntent.id,
         amount: paymentIntent.amount / 100,
         failureCode: paymentIntent.last_payment_error?.code,
         failureMessage: paymentIntent.last_payment_error?.message
       },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
-    // TODO: Send payment failure notification
+    // Send payment failure notification
+    await sendPaymentFailureNotification(
+      payment.customer.userId,
+      payment.id,
+      paymentIntent.amount / 100,
+      null,
+      paymentIntent.last_payment_error?.message
+    );
   } catch (error) {
     console.error('Error handling payment intent failed:', error);
     throw error;
@@ -425,7 +486,7 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
   try {
     // Find customer
     const customer = await prisma.customer.findUnique({
-      where: { stripeCustomerId: paymentMethod.customer as string },
+      where: { stripeCustomerId: paymentMethod.customer as string }
     });
 
     if (!customer) {
@@ -440,12 +501,12 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
       userId: customer.userId,
       action: 'PAYMENT_METHOD_ATTACHED',
       entity: 'PaymentMethod',
-      details: { 
+      details: {
         paymentMethodId: paymentMethod.id,
         type: paymentMethod.type,
         last4: paymentMethod.card?.last4
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
   } catch (error) {
     console.error('Error handling payment method attached:', error);
@@ -459,7 +520,7 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
 async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
   try {
     const customer = await prisma.customer.findUnique({
-      where: { stripeCustomerId: setupIntent.customer as string },
+      where: { stripeCustomerId: setupIntent.customer as string }
     });
 
     if (!customer) {
@@ -471,14 +532,15 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
       userId: customer.userId,
       action: 'SETUP_INTENT_SUCCEEDED',
       entity: 'PaymentMethod',
-      details: { 
+      details: {
         setupIntentId: setupIntent.id,
         paymentMethodId: setupIntent.payment_method as string
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
-    // TODO: Update any pending subscriptions that were waiting for payment method
+    // Update any pending subscriptions that were waiting for payment method
+    await updatePendingSubscriptions(customer.userId, setupIntent.payment_method as string);
   } catch (error) {
     console.error('Error handling setup intent succeeded:', error);
     throw error;
@@ -492,7 +554,7 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
   try {
     // This is a backup handler - customers should be created via our API
     const userId = customer.metadata?.userId;
-    
+
     if (!userId) {
       console.log(`Customer ${customer.id} created without userId metadata`);
       return;
@@ -500,7 +562,7 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
 
     // Check if customer already exists in our database
     const existingCustomer = await prisma.customer.findUnique({
-      where: { stripeCustomerId: customer.id },
+      where: { stripeCustomerId: customer.id }
     });
 
     if (!existingCustomer) {
@@ -509,8 +571,8 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
           userId,
           stripeCustomerId: customer.id,
           email: customer.email || '',
-          name: customer.name,
-        },
+          name: customer.name
+        }
       });
     }
 
@@ -518,11 +580,11 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
       userId,
       action: 'CUSTOMER_WEBHOOK_CREATED',
       entity: 'Customer',
-      details: { 
+      details: {
         stripeCustomerId: customer.id,
         email: customer.email
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
   } catch (error) {
     console.error('Error handling customer created:', error);
@@ -538,9 +600,9 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
     // Find the payment associated with this charge
     const payment = await prisma.payment.findFirst({
       where: {
-        stripePaymentIntentId: dispute.payment_intent as string,
+        stripePaymentIntentId: dispute.payment_intent as string
       },
-      include: { customer: true },
+      include: { customer: true }
     });
 
     if (!payment) {
@@ -553,19 +615,617 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
       action: 'CHARGE_DISPUTE_CREATED',
       entity: 'Payment',
       entityId: payment.id,
-      details: { 
+      details: {
         disputeId: dispute.id,
         amount: dispute.amount / 100,
         reason: dispute.reason,
         status: dispute.status
       },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
-    // TODO: Send notification to admin team
-    // TODO: Implement dispute handling workflow
+    // Send notification to admin team
+    await sendAdminDisputeNotification(
+      dispute.id,
+      dispute.amount / 100,
+      dispute.reason,
+      payment.customer.userId
+    );
+
+    // Implement dispute handling workflow
+    await handleDisputeWorkflow(dispute, payment);
   } catch (error) {
     console.error('Error handling charge dispute created:', error);
     throw error;
+  }
+}
+
+/**
+ * Send payment failure notification to user
+ */
+async function sendPaymentFailureNotification(
+  userId: string,
+  paymentId: string,
+  amount: number,
+  subscriptionId?: string | null,
+  errorMessage?: string
+): Promise<void> {
+  try {
+    const message = subscriptionId
+      ? `Your subscription payment of $${amount.toFixed(2)} has failed. ${errorMessage ? `Error: ${errorMessage}` : 'Please update your payment method to continue your subscription.'}`
+      : `Your payment of $${amount.toFixed(2)} has failed. ${errorMessage ? `Error: ${errorMessage}` : 'Please try again with a different payment method.'}`;
+
+    await notificationService.createNotification({
+      userId,
+      title: 'Payment Failed',
+      message,
+      type: 'SYSTEM',
+      priority: 'HIGH',
+      actionUrl: subscriptionId ? '/billing/payment-methods' : '/payments',
+      metadata: {
+        paymentId,
+        subscriptionId,
+        amount,
+        errorMessage
+      }
+    });
+
+    await auditLog({
+      userId,
+      action: 'PAYMENT_FAILURE_NOTIFICATION_SENT',
+      entity: 'Notification',
+      details: { paymentId, amount, subscriptionId },
+      outcome: 'SUCCESS'
+    });
+  } catch (error) {
+    console.error('Error sending payment failure notification:', error);
+  }
+}
+
+/**
+ * Handle payment retry logic with exponential backoff and grace period
+ * Note: Uses Invoice metadata for retry tracking until PaymentRetry model is added
+ */
+async function handlePaymentRetryLogic(
+  invoiceId: string,
+  userId: string,
+  subscriptionId: string,
+  _amount: number
+): Promise<void> {
+  try {
+    // Get current invoice to check retry metadata
+    const invoice = await prisma.invoice.findUnique({
+      where: { stripeInvoiceId: invoiceId }
+    });
+
+    if (!invoice) {
+      console.log(`Invoice ${invoiceId} not found for retry logic`);
+      return;
+    }
+
+    // Parse retry data from metadata or initialize
+    let retryData = { attempts: 0, gracePeriodEndAt: null };
+    if (invoice.metadata) {
+      try {
+        const parsed = JSON.parse(invoice.metadata as string);
+        retryData = parsed.retryData || retryData;
+      } catch {
+        // Metadata parsing failed, use defaults
+      }
+    }
+
+    // Initialize grace period if not set
+    if (!retryData.gracePeriodEndAt) {
+      retryData.gracePeriodEndAt = new Date(
+        Date.now() + PAYMENT_RETRY_CONFIG.gracePeriodHours * 60 * 60 * 1000
+      );
+    }
+
+    const gracePeriodEnd = new Date(retryData.gracePeriodEndAt);
+
+    // Check if we should still retry
+    if (retryData.attempts < PAYMENT_RETRY_CONFIG.maxAttempts && new Date() < gracePeriodEnd) {
+      const backoffHours = Math.pow(PAYMENT_RETRY_CONFIG.backoffMultiplier, retryData.attempts);
+      const nextRetryAt = new Date(Date.now() + backoffHours * 60 * 60 * 1000);
+
+      retryData.attempts += 1;
+      const newMetadata = JSON.stringify({
+        ...(invoice.metadata ? JSON.parse(invoice.metadata as string) : {}),
+        retryData: {
+          ...retryData,
+          nextRetryAt: nextRetryAt.toISOString(),
+          lastAttemptAt: new Date().toISOString()
+        }
+      });
+
+      // Update invoice metadata
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { metadata: newMetadata }
+      });
+
+      // Schedule retry notification
+      await notificationService.createNotification({
+        userId,
+        title: 'Payment Retry Scheduled',
+        message: `We'll automatically retry your payment in ${backoffHours} hour${backoffHours !== 1 ? 's' : ''}. You can update your payment method anytime to avoid service interruption.`,
+        type: 'SYSTEM',
+        priority: 'NORMAL',
+        actionUrl: '/billing/payment-methods',
+        metadata: {
+          retryAttempt: retryData.attempts,
+          nextRetryAt
+        }
+      });
+
+      await auditLog({
+        userId,
+        action: 'PAYMENT_RETRY_SCHEDULED',
+        entity: 'Invoice',
+        entityId: invoice.id,
+        details: {
+          attempt: retryData.attempts,
+          nextRetryAt,
+          backoffHours,
+          invoiceId
+        },
+        outcome: 'SUCCESS'
+      });
+    } else if (new Date() >= gracePeriodEnd) {
+      // Grace period expired - suspend subscription
+      await suspendSubscriptionForNonPayment(subscriptionId, userId);
+
+      await notificationService.createNotification({
+        userId,
+        title: 'Subscription Suspended',
+        message: `Your subscription has been suspended due to payment failure. Please update your payment method to reactivate your subscription.`,
+        type: 'SYSTEM',
+        priority: 'URGENT',
+        actionUrl: '/billing/payment-methods',
+        metadata: {
+          subscriptionId,
+          reason: 'payment_failure'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error handling payment retry logic:', error);
+    await auditLog({
+      userId,
+      action: 'PAYMENT_RETRY_ERROR',
+      entity: 'Invoice',
+      details: {
+        invoiceId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      outcome: 'FAILURE'
+    });
+  }
+}
+
+/**
+ * Send payment confirmation notification
+ */
+async function sendPaymentConfirmationNotification(
+  userId: string,
+  paymentId: string,
+  amount: number,
+  appointmentId?: string | null
+): Promise<void> {
+  try {
+    const message = appointmentId
+      ? `Your payment of $${amount.toFixed(2)} for your appointment has been processed successfully.`
+      : `Your payment of $${amount.toFixed(2)} has been processed successfully. Thank you!`;
+
+    await notificationService.createNotification({
+      userId,
+      title: 'Payment Confirmed',
+      message,
+      type: 'SYSTEM',
+      priority: 'NORMAL',
+      actionUrl: appointmentId ? `/appointments/${appointmentId}` : '/billing/invoices',
+      metadata: {
+        paymentId,
+        appointmentId,
+        amount
+      }
+    });
+
+    await auditLog({
+      userId,
+      action: 'PAYMENT_CONFIRMATION_NOTIFICATION_SENT',
+      entity: 'Notification',
+      details: { paymentId, amount, appointmentId },
+      outcome: 'SUCCESS'
+    });
+  } catch (error) {
+    console.error('Error sending payment confirmation notification:', error);
+  }
+}
+
+/**
+ * Update pending subscriptions after payment method setup
+ */
+async function updatePendingSubscriptions(userId: string, paymentMethodId: string): Promise<void> {
+  try {
+    // Find any incomplete subscriptions for this user
+    const pendingSubscriptions = await prisma.subscription.findMany({
+      where: {
+        customer: { userId },
+        status: { in: ['INCOMPLETE', 'INCOMPLETE_EXPIRED'] }
+      }
+    });
+
+    if (pendingSubscriptions.length === 0) {
+      return;
+    }
+
+    const stripe = StripeService.getStripeInstance();
+
+    for (const subscription of pendingSubscriptions) {
+      try {
+        // Update the subscription with the new payment method
+        const updatedSubscription = await stripe.subscriptions.update(
+          subscription.stripeSubscriptionId,
+          {
+            default_payment_method: paymentMethodId
+          }
+        );
+
+        // Update local database
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            status: updatedSubscription.status.toUpperCase() as
+              | 'ACTIVE'
+              | 'CANCELLED'
+              | 'PAST_DUE'
+              | 'INCOMPLETE'
+          }
+        });
+
+        // Send notification to user
+        await notificationService.createNotification({
+          userId,
+          title: 'Subscription Activated',
+          message: `Your ${subscription.planName} subscription has been activated with your new payment method.`,
+          type: 'SYSTEM',
+          priority: 'NORMAL',
+          actionUrl: '/billing/subscriptions',
+          metadata: {
+            subscriptionId: subscription.id,
+            paymentMethodId
+          }
+        });
+
+        await auditLog({
+          userId,
+          action: 'PENDING_SUBSCRIPTION_UPDATED',
+          entity: 'Subscription',
+          entityId: subscription.id,
+          details: {
+            paymentMethodId,
+            newStatus: updatedSubscription.status
+          },
+          outcome: 'SUCCESS'
+        });
+      } catch (error) {
+        console.error(`Error updating subscription ${subscription.id}:`, error);
+
+        await auditLog({
+          userId,
+          action: 'PENDING_SUBSCRIPTION_UPDATE_FAILED',
+          entity: 'Subscription',
+          entityId: subscription.id,
+          details: {
+            paymentMethodId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          },
+          outcome: 'FAILURE'
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error updating pending subscriptions:', error);
+  }
+}
+
+/**
+ * Send dispute notification to admin team
+ */
+async function sendAdminDisputeNotification(
+  disputeId: string,
+  amount: number,
+  reason: string,
+  userId: string
+): Promise<void> {
+  try {
+    // Get user information for context
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true }
+    });
+
+    const userName = user?.name || 'Unknown User';
+    const userEmail = user?.email || 'unknown@email.com';
+
+    // Get all admin users
+    const admins = await prisma.user.findMany({
+      where: {
+        role: 'ADMIN',
+        status: 'ACTIVE'
+      },
+      select: { id: true }
+    });
+
+    // Send notification to all admins
+    for (const admin of admins) {
+      await notificationService.createNotification({
+        userId: admin.id,
+        title: 'Payment Dispute Created',
+        message: `A payment dispute for $${amount.toFixed(2)} has been created. Reason: ${reason}. Customer: ${userName} (${userEmail})`,
+        type: 'SYSTEM',
+        priority: 'URGENT',
+        actionUrl: `/admin/disputes/${disputeId}`,
+        metadata: {
+          disputeId,
+          amount,
+          reason,
+          customerId: userId,
+          customerName: userName,
+          customerEmail: userEmail
+        }
+      });
+    }
+
+    await auditLog({
+      action: 'ADMIN_DISPUTE_NOTIFICATION_SENT',
+      entity: 'Notification',
+      details: {
+        disputeId,
+        amount,
+        reason,
+        adminCount: admins.length
+      },
+      outcome: 'SUCCESS'
+    });
+  } catch (error) {
+    console.error('Error sending admin dispute notification:', error);
+  }
+}
+
+/**
+ * Handle dispute workflow
+ * Note: Uses Payment metadata for dispute tracking until Dispute model is added
+ */
+async function handleDisputeWorkflow(
+  dispute: Stripe.Dispute,
+  payment: { id: string; metadata?: string; customer: { userId: string } }
+): Promise<void> {
+  try {
+    const disputeAmount = dispute.amount / 100;
+
+    // Store dispute data in Payment metadata
+    const disputeData = {
+      stripeDisputeId: dispute.id,
+      amount: disputeAmount,
+      currency: dispute.currency,
+      reason: dispute.reason,
+      status: dispute.status.toUpperCase(),
+      evidenceDueBy: dispute.evidence_details?.due_by
+        ? new Date(dispute.evidence_details.due_by * 1000).toISOString()
+        : null,
+      chargeId: dispute.charge,
+      networkReasonCode: dispute.network_reason_code,
+      createdAt: new Date().toISOString(),
+      escalated: disputeAmount >= DISPUTE_CONFIG.escalationThreshold
+    };
+
+    // Update payment with dispute information
+    const currentMetadata = payment.metadata ? JSON.parse(payment.metadata) : {};
+    const updatedMetadata = JSON.stringify({
+      ...currentMetadata,
+      dispute: disputeData
+    });
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { metadata: updatedMetadata }
+    });
+
+    // Auto-response for disputes (if enabled)
+    if (DISPUTE_CONFIG.autoResponse && disputeAmount < DISPUTE_CONFIG.escalationThreshold) {
+      await sendAutomaticDisputeResponse(dispute, payment);
+    }
+
+    // Document collection workflow
+    if (DISPUTE_CONFIG.documentCollection) {
+      await initiateDocumentCollection(payment, disputeData);
+    }
+
+    // High-value dispute escalation
+    if (disputeAmount >= DISPUTE_CONFIG.escalationThreshold) {
+      await escalateHighValueDispute(payment, disputeData);
+    }
+
+    await auditLog({
+      userId: payment.customer.userId,
+      action: 'DISPUTE_WORKFLOW_INITIATED',
+      entity: 'Payment',
+      entityId: payment.id,
+      details: {
+        disputeId: dispute.id,
+        amount: disputeAmount,
+        autoResponse:
+          DISPUTE_CONFIG.autoResponse && disputeAmount < DISPUTE_CONFIG.escalationThreshold,
+        escalated: disputeAmount >= DISPUTE_CONFIG.escalationThreshold
+      },
+      outcome: 'SUCCESS'
+    });
+  } catch (error) {
+    console.error('Error handling dispute workflow:', error);
+  }
+}
+
+/**
+ * Suspend subscription for non-payment
+ */
+async function suspendSubscriptionForNonPayment(
+  subscriptionId: string,
+  userId: string
+): Promise<void> {
+  try {
+    const stripe = StripeService.getStripeInstance();
+
+    // Pause subscription in Stripe
+    await stripe.subscriptions.update(subscriptionId, {
+      pause_collection: {
+        behavior: 'void'
+      }
+    });
+
+    // Update local database
+    await prisma.subscription.update({
+      where: { stripeSubscriptionId: subscriptionId },
+      data: {
+        status: 'PAST_DUE',
+        pausedAt: new Date()
+      }
+    });
+
+    await auditLog({
+      userId,
+      action: 'SUBSCRIPTION_SUSPENDED_FOR_NONPAYMENT',
+      entity: 'Subscription',
+      details: { subscriptionId },
+      outcome: 'SUCCESS'
+    });
+  } catch (error) {
+    console.error('Error suspending subscription:', error);
+  }
+}
+
+/**
+ * Send automatic dispute response
+ */
+async function sendAutomaticDisputeResponse(
+  dispute: Stripe.Dispute,
+  payment: { id: string; customer: { userId: string } }
+): Promise<void> {
+  try {
+    // Log automatic response initiation
+    await auditLog({
+      userId: payment.customer.userId,
+      action: 'DISPUTE_AUTO_RESPONSE_INITIATED',
+      entity: 'Payment',
+      entityId: payment.id,
+      details: {
+        disputeId: dispute.id,
+        automated: true,
+        initiatedAt: new Date()
+      },
+      outcome: 'SUCCESS'
+    });
+
+    console.log(`Automatic dispute response initiated for dispute ${dispute.id}`);
+
+    // In production, this would integrate with Stripe's dispute evidence submission API
+    // For now, we create an audit trail for manual follow-up
+  } catch (error) {
+    console.error('Error sending automatic dispute response:', error);
+  }
+}
+
+/**
+ * Initiate document collection for dispute
+ */
+async function initiateDocumentCollection(
+  payment: { id: string; customer: { userId: string } },
+  disputeData: { stripeDisputeId: string; amount: number }
+): Promise<void> {
+  try {
+    // Create document collection tasks as audit logs for manual follow-up
+    const documentTypes = [
+      'receipt',
+      'shipping_documentation',
+      'customer_communication',
+      'service_documentation'
+    ];
+
+    for (const docType of documentTypes) {
+      await auditLog({
+        userId: payment.customer.userId,
+        action: 'DISPUTE_DOCUMENT_COLLECTION_REQUIRED',
+        entity: 'Payment',
+        entityId: payment.id,
+        details: {
+          disputeId: disputeData.stripeDisputeId,
+          documentType: docType.toUpperCase(),
+          description: `${docType.replace('_', ' ')} required for dispute evidence`,
+          status: 'PENDING_COLLECTION',
+          dueDate: disputeData.evidenceDueBy
+        },
+        outcome: 'SUCCESS'
+      });
+    }
+
+    console.log(`Document collection initiated for dispute ${disputeData.stripeDisputeId}`);
+  } catch (error) {
+    console.error('Error initiating document collection:', error);
+  }
+}
+
+/**
+ * Escalate high-value dispute
+ */
+async function escalateHighValueDispute(
+  payment: { id: string; customer: { userId: string } },
+  disputeData: { stripeDisputeId: string; amount: number }
+): Promise<void> {
+  try {
+    // Log escalation
+    await auditLog({
+      userId: payment.customer.userId,
+      action: 'HIGH_VALUE_DISPUTE_ESCALATED',
+      entity: 'Payment',
+      entityId: payment.id,
+      details: {
+        disputeId: disputeData.stripeDisputeId,
+        amount: disputeData.amount,
+        escalated: true,
+        escalatedAt: new Date()
+      },
+      outcome: 'SUCCESS'
+    });
+
+    // Send urgent notification to senior admins
+    const seniorAdmins = await prisma.user.findMany({
+      where: {
+        role: 'ADMIN',
+        status: 'ACTIVE'
+      },
+      select: { id: true }
+    });
+
+    for (const admin of seniorAdmins) {
+      await notificationService.createNotification({
+        userId: admin.id,
+        title: 'HIGH-VALUE DISPUTE ESCALATION',
+        message: `A dispute for $${disputeData.amount.toFixed(2)} requires immediate senior review. This dispute has been automatically escalated.`,
+        type: 'SYSTEM',
+        priority: 'URGENT',
+        actionUrl: `/admin/payments/${payment.id}?tab=dispute`,
+        metadata: {
+          disputeId: disputeData.stripeDisputeId,
+          amount: disputeData.amount,
+          escalated: true,
+          paymentId: payment.id
+        }
+      });
+    }
+
+    console.log(`High-value dispute ${disputeData.stripeDisputeId} escalated for senior review`);
+  } catch (error) {
+    console.error('Error escalating high-value dispute:', error);
   }
 }

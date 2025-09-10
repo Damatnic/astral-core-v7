@@ -17,7 +17,7 @@ declare module 'next-auth' {
       role: 'ADMIN' | 'THERAPIST' | 'CLIENT' | 'CRISIS_RESPONDER' | 'SUPERVISOR';
     };
   }
-  
+
   interface User {
     role: 'ADMIN' | 'THERAPIST' | 'CLIENT' | 'CRISIS_RESPONDER' | 'SUPERVISOR';
   }
@@ -32,13 +32,13 @@ declare module 'next-auth/jwt' {
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
-  
+
   providers: [
     CredentialsProvider({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -55,39 +55,24 @@ export const authOptions: NextAuthOptions = {
             role: true,
             status: true,
             lockedUntil: true,
-            loginAttempts: true,
-          },
+            loginAttempts: true
+          }
         });
 
         if (!user || !user.password) {
-          await audit.logFailure(
-            'LOGIN',
-            'User',
-            'Invalid credentials',
-            undefined
-          );
+          await audit.logFailure('LOGIN', 'User', 'Invalid credentials', undefined);
           throw new Error('Invalid credentials');
         }
 
         // Check if account is locked
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-          await audit.logFailure(
-            'LOGIN',
-            'User',
-            'Account locked',
-            user.id
-          );
+          await audit.logFailure('LOGIN', 'User', 'Account locked', user.id);
           throw new Error('Account is locked. Please try again later.');
         }
 
         // Check if account is active
         if (user.status !== 'ACTIVE') {
-          await audit.logFailure(
-            'LOGIN',
-            'User',
-            `Account status: ${user.status}`,
-            user.id
-          );
+          await audit.logFailure('LOGIN', 'User', `Account status: ${user.status}`, user.id);
           throw new Error('Account is not active');
         }
 
@@ -98,9 +83,9 @@ export const authOptions: NextAuthOptions = {
           // Increment login attempts
           const attempts = user.loginAttempts + 1;
           const maxAttempts = parseInt(process.env['MAX_LOGIN_ATTEMPTS'] || '5');
-          
+
           const updateData: any = { loginAttempts: attempts };
-          
+
           // Lock account if max attempts exceeded
           if (attempts >= maxAttempts) {
             const lockoutMinutes = parseInt(process.env['LOCKOUT_DURATION_MINUTES'] || '15');
@@ -110,7 +95,7 @@ export const authOptions: NextAuthOptions = {
 
           await prisma.user.update({
             where: { id: user.id },
-            data: updateData,
+            data: updateData
           });
 
           await audit.logFailure(
@@ -129,27 +114,21 @@ export const authOptions: NextAuthOptions = {
           data: {
             loginAttempts: 0,
             lockedUntil: null,
-            lastLogin: new Date(),
-          },
+            lastLogin: new Date()
+          }
         });
 
-        await audit.logSuccess(
-          'LOGIN',
-          'User',
-          user.id,
-          { method: 'credentials' },
-          user.id
-        );
+        await audit.logSuccess('LOGIN', 'User', user.id, { method: 'credentials' }, user.id);
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: user.role
         };
-      },
+      }
     }),
-    
+
     GoogleProvider({
       clientId: process.env['GOOGLE_CLIENT_ID']!,
       clientSecret: process.env['GOOGLE_CLIENT_SECRET']!,
@@ -159,11 +138,11 @@ export const authOptions: NextAuthOptions = {
           name: profile.name,
           email: profile.email,
           image: profile.picture,
-          role: 'CLIENT' as const,
+          role: 'CLIENT' as const
         };
-      },
+      }
     }),
-    
+
     GitHubProvider({
       clientId: process.env['GITHUB_ID']!,
       clientSecret: process.env['GITHUB_SECRET']!,
@@ -173,10 +152,10 @@ export const authOptions: NextAuthOptions = {
           name: profile.name || profile.login,
           email: profile.email,
           image: profile.avatar_url,
-          role: 'CLIENT' as const,
+          role: 'CLIENT' as const
         };
-      },
-    }),
+      }
+    })
   ],
 
   callbacks: {
@@ -184,7 +163,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider !== 'credentials') {
         // For OAuth providers, ensure user exists in database
         const existingUser = await prisma.user.findUnique({
-          where: { email: user.email! },
+          where: { email: user.email! }
         });
 
         if (!existingUser) {
@@ -195,8 +174,8 @@ export const authOptions: NextAuthOptions = {
               name: user.name || null,
               image: user.image || null,
               role: 'CLIENT',
-              emailVerified: new Date(),
-            },
+              emailVerified: new Date()
+            }
           });
         }
 
@@ -240,33 +219,27 @@ export const authOptions: NextAuthOptions = {
       if (url === baseUrl || url === `${baseUrl}/`) {
         return `${baseUrl}/dashboard`;
       }
-      
+
       // Allow relative URLs
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`;
       }
-      
+
       // Allow URLs on the same origin
       if (new URL(url).origin === baseUrl) {
         return url;
       }
-      
+
       return baseUrl;
-    },
+    }
   },
 
   events: {
     async signOut({ token }) {
       if (token?.id) {
-        await audit.logSuccess(
-          'LOGOUT',
-          'User',
-          token.id as string,
-          undefined,
-          token.id as string
-        );
+        await audit.logSuccess('LOGOUT', 'User', token.id as string, undefined, token.id as string);
       }
-    },
+    }
   },
 
   pages: {
@@ -274,19 +247,19 @@ export const authOptions: NextAuthOptions = {
     signOut: '/auth/logout',
     error: '/auth/error',
     verifyRequest: '/auth/verify',
-    newUser: '/onboarding',
+    newUser: '/onboarding'
   },
 
   session: {
     strategy: 'jwt',
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60 // 24 hours
   },
 
   jwt: {
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60 // 24 hours
   },
 
   secret: process.env['NEXTAUTH_SECRET']!,
-  
-  debug: process.env['NODE_ENV'] === 'development',
+
+  debug: process.env['NODE_ENV'] === 'development'
 };

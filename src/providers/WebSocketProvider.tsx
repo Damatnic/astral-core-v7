@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { logError } from '@/lib/logger';
+import { logSystemEvent } from '@/lib/notification-logger';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 
@@ -15,18 +17,18 @@ interface WebSocketProviderProps {
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const { data: session } = useSession();
-  const websocket = useWebSocket({ 
+  const websocket = useWebSocket({
     autoConnect: !!session?.user,
     reconnectionAttempts: 5,
-    reconnectionDelay: 2000,
+    reconnectionDelay: 2000
   });
 
   // Handle connection state changes
   useEffect(() => {
     if (websocket.isConnected) {
-      console.log('Connected to real-time server');
+      logSystemEvent('realtime-connect', 'Connected to real-time server');
     } else if (websocket.connectionError) {
-      console.error('WebSocket error:', websocket.connectionError);
+      logError('WebSocket error', websocket.connectionError, 'WebSocketProvider');
     }
   }, [websocket.isConnected, websocket.connectionError]);
 
@@ -34,29 +36,29 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   useEffect(() => {
     if (!websocket.on) return;
 
-    const unsubscribe = websocket.on('notification:new', (notification) => {
+    const unsubscribe = websocket.on('notification:new', notification => {
       // Show toast notification
       switch (notification.type) {
         case 'message':
           toast(`New message from ${notification.senderName}`, {
             icon: '💬',
-            duration: 4000,
+            duration: 4000
           });
           break;
         case 'appointment':
           toast(`Appointment reminder: ${notification.message}`, {
             icon: '📅',
-            duration: 5000,
+            duration: 5000
           });
           break;
         case 'crisis':
           toast.error(notification.message, {
-            duration: 0, // Don't auto-dismiss crisis notifications
+            duration: 0 // Don't auto-dismiss crisis notifications
           });
           break;
         default:
           toast(notification.message, {
-            duration: 4000,
+            duration: 4000
           });
       }
     });
@@ -68,7 +70,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   useEffect(() => {
     if (!websocket.on) return;
 
-    const unsubscribe = websocket.on('crisis:new', (data) => {
+    const unsubscribe = websocket.on('crisis:new', data => {
       // For therapists - show crisis alert
       if (session?.user?.role === 'THERAPIST') {
         toast.error(`Crisis Alert: User needs immediate assistance (${data.severity})`, {
@@ -78,8 +80,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             onClick: () => {
               // Navigate to crisis response page
               window.location.href = `/crisis/respond/${data.interventionId}`;
-            },
-          },
+            }
+          }
         });
       }
     });
@@ -91,7 +93,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   useEffect(() => {
     if (!websocket.on || session?.user?.role !== 'THERAPIST') return;
 
-    const unsubscribe = websocket.on('session:request', (data) => {
+    const unsubscribe = websocket.on('session:request', data => {
       toast(`Session request from client for appointment ${data.appointmentId}`, {
         icon: '🎥',
         duration: 6000,
@@ -99,19 +101,15 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           label: 'Join',
           onClick: () => {
             window.location.href = `/therapy/session/${data.appointmentId}`;
-          },
-        },
+          }
+        }
       });
     });
 
     return unsubscribe;
   }, [websocket, session]);
 
-  return (
-    <WebSocketContext.Provider value={websocket}>
-      {children}
-    </WebSocketContext.Provider>
-  );
+  return <WebSocketContext.Provider value={websocket}>{children}</WebSocketContext.Provider>;
 }
 
 export function useWebSocketContext() {

@@ -8,14 +8,14 @@ interface WellnessState {
   stats: WellnessStats | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   setTodayData: (data: WellnessDataInput | null) => void;
   setWeeklyData: (data: WellnessDataInput[]) => void;
   setStats: (stats: WellnessStats | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  
+
   // Async actions
   fetchTodayData: () => Promise<void>;
   fetchWeeklyData: () => Promise<void>;
@@ -30,75 +30,75 @@ export const useWellnessStore = create<WellnessState>()(
       stats: null,
       isLoading: false,
       error: null,
-      
-      setTodayData: (data) => set({ todayData: data }),
-      setWeeklyData: (data) => set({ weeklyData: data }),
-      setStats: (stats) => set({ stats }),
-      setLoading: (loading) => set({ isLoading: loading }),
-      setError: (error) => set({ error }),
-      
+
+      setTodayData: data => set({ todayData: data }),
+      setWeeklyData: data => set({ weeklyData: data }),
+      setStats: stats => set({ stats }),
+      setLoading: loading => set({ isLoading: loading }),
+      setError: error => set({ error }),
+
       fetchTodayData: async () => {
         set({ isLoading: true, error: null });
         try {
           const response = await fetch('/api/wellness/data?limit=1');
           if (response.ok) {
             const data = await response.json();
-            set({ 
+            set({
               todayData: data.data?.items?.[0] || null,
-              isLoading: false 
+              isLoading: false
             });
           } else {
             throw new Error('Failed to fetch wellness data');
           }
         } catch (error) {
-          set({ 
+          set({
             error: error instanceof Error ? error.message : 'An error occurred',
-            isLoading: false 
+            isLoading: false
           });
         }
       },
-      
+
       fetchWeeklyData: async () => {
         set({ isLoading: true, error: null });
         try {
           const weekAgo = new Date();
           weekAgo.setDate(weekAgo.getDate() - 7);
-          
+
           const response = await fetch(
             `/api/wellness/data?startDate=${weekAgo.toISOString()}&limit=7`
           );
-          
+
           if (response.ok) {
             const data = await response.json();
-            set({ 
+            set({
               weeklyData: data.data?.items || [],
-              isLoading: false 
+              isLoading: false
             });
           } else {
             throw new Error('Failed to fetch weekly data');
           }
         } catch (error) {
-          set({ 
+          set({
             error: error instanceof Error ? error.message : 'An error occurred',
-            isLoading: false 
+            isLoading: false
           });
         }
       },
-      
-      submitWellnessData: async (data) => {
+
+      submitWellnessData: async data => {
         set({ isLoading: true, error: null });
         try {
           const response = await fetch('/api/wellness/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            body: JSON.stringify(data)
           });
-          
+
           if (response.ok) {
             const result = await response.json();
-            set({ 
+            set({
               todayData: result.data,
-              isLoading: false 
+              isLoading: false
             });
             return true;
           } else {
@@ -106,21 +106,21 @@ export const useWellnessStore = create<WellnessState>()(
             throw new Error(error.error || 'Failed to submit wellness data');
           }
         } catch (error) {
-          set({ 
+          set({
             error: error instanceof Error ? error.message : 'An error occurred',
-            isLoading: false 
+            isLoading: false
           });
           return false;
         }
-      },
+      }
     }),
     {
       name: 'wellness-storage',
-      partialize: (state) => ({ 
+      partialize: state => ({
         todayData: state.todayData,
         weeklyData: state.weeklyData,
-        stats: state.stats,
-      }),
+        stats: state.stats
+      })
     }
   )
 );

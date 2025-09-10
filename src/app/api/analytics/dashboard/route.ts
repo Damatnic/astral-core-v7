@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { analyticsService } from '@/lib/services/analytics-service';
-import { rateLimiter } from '@/lib/security/rate-limit';
+import { rateLimiters } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 
 // GET /api/analytics/dashboard - Get dashboard analytics
@@ -17,12 +17,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Rate limiting
-    const allowed = await rateLimiter.checkLimit(
-      `analytics:${session.user.id}`,
-      30,
-      300000 // 5 minutes
-    );
-    if (!allowed) {
+    const identifier = rateLimiters.api.getIdentifier(request);
+    const rateLimit = await rateLimiters.api.check(identifier);
+    if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.RATE_LIMIT },
         { status: HTTP_STATUS.TOO_MANY_REQUESTS }
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30');
-    
+
     // Validate days parameter
     if (days < 1 || days > 365) {
       return NextResponse.json(
@@ -42,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     const dateRange = {
       startDate: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
-      endDate: new Date(),
+      endDate: new Date()
     };
 
     const analytics = await analyticsService.getDashboardAnalytics(
@@ -54,13 +51,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: analytics,
-      dateRange,
+      dateRange
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting dashboard analytics:', error);
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.SERVER_ERROR },
+      { error: error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }

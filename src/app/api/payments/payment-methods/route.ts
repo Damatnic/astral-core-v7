@@ -14,17 +14,17 @@ import { z } from 'zod';
 
 // Validation schemas
 const setupIntentSchema = z.object({
-  returnUrl: z.string().url().optional(),
+  returnUrl: z.string().url().optional()
 });
 
 const attachPaymentMethodSchema = z.object({
   paymentMethodId: z.string().min(1),
-  setAsDefault: z.boolean().optional(),
+  setAsDefault: z.boolean().optional()
 });
 
 const updatePaymentMethodSchema = z.object({
   paymentMethodId: z.string().min(1),
-  isDefault: z.boolean().optional(),
+  isDefault: z.boolean().optional()
 });
 
 /**
@@ -36,32 +36,26 @@ export async function GET(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'payment-methods-read', 20, 60000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
 
     // Get user's customer record
     const customer = await prisma.customer.findUnique({
-      where: { userId },
+      where: { userId }
     });
 
     if (!customer) {
       return NextResponse.json({
         paymentMethods: [],
-        success: true,
+        success: true
       });
     }
 
@@ -69,12 +63,9 @@ export async function GET(request: NextRequest) {
     const dbPaymentMethods = await prisma.paymentMethod.findMany({
       where: {
         customerId: customer.id,
-        isActive: true,
+        isActive: true
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'asc' }
-      ]
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
     });
 
     // Get fresh data from Stripe for active payment methods
@@ -85,7 +76,7 @@ export async function GET(request: NextRequest) {
       const stripeMethod = stripePaymentMethods.find(
         sm => sm.id === dbMethod.stripePaymentMethodId
       );
-      
+
       return {
         id: dbMethod.id,
         stripePaymentMethodId: dbMethod.stripePaymentMethodId,
@@ -95,7 +86,7 @@ export async function GET(request: NextRequest) {
         isActive: dbMethod.isActive,
         createdAt: dbMethod.createdAt,
         // Include fresh Stripe data if available
-        stripeData: stripeMethod || null,
+        stripeData: stripeMethod || null
       };
     });
 
@@ -103,34 +94,30 @@ export async function GET(request: NextRequest) {
       userId,
       action: 'PAYMENT_METHODS_RETRIEVED',
       entity: 'PaymentMethod',
-      details: { 
+      details: {
         count: paymentMethods.length,
         customerId: customer.id
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       paymentMethods,
-      success: true,
+      success: true
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     await auditLog({
       userId: session?.user?.id,
       action: 'PAYMENT_METHODS_RETRIEVAL_FAILED',
       entity: 'PaymentMethod',
       details: { error: error instanceof Error ? error.message : 'Unknown error' },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
     console.error('Error retrieving payment methods:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve payment methods' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to retrieve payment methods' }, { status: 500 });
   }
 }
 
@@ -143,19 +130,13 @@ export async function POST(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'setup-intent-create', 10, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many setup attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many setup attempts' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -165,9 +146,9 @@ export async function POST(request: NextRequest) {
     const validationResult = setupIntentSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request data',
-          details: validationResult.error.errors 
+          details: validationResult.error.errors
         },
         { status: 400 }
       );
@@ -176,14 +157,11 @@ export async function POST(request: NextRequest) {
     // Get or create customer
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { customer: true },
+      include: { customer: true }
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     let customer = user.customer;
@@ -191,7 +169,7 @@ export async function POST(request: NextRequest) {
       const customerResult = await StripeService.createCustomer({
         userId: user.id,
         email: user.email,
-        name: user.name || undefined,
+        name: user.name || undefined
       });
       customer = customerResult.customer;
     }
@@ -203,39 +181,35 @@ export async function POST(request: NextRequest) {
       userId,
       action: 'SETUP_INTENT_CREATED_API',
       entity: 'PaymentMethod',
-      details: { 
+      details: {
         setupIntentId: setupIntent.id,
         customerId: customer.id
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       setupIntent: {
         id: setupIntent.id,
         client_secret: setupIntent.client_secret,
-        status: setupIntent.status,
+        status: setupIntent.status
       },
       success: true,
-      message: 'Setup intent created successfully',
+      message: 'Setup intent created successfully'
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     await auditLog({
       userId: session?.user?.id,
       action: 'SETUP_INTENT_CREATION_FAILED',
       entity: 'PaymentMethod',
       details: { error: error instanceof Error ? error.message : 'Unknown error' },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
     console.error('Error creating setup intent:', error);
-    return NextResponse.json(
-      { error: 'Failed to create setup intent' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create setup intent' }, { status: 500 });
   }
 }
 
@@ -248,19 +222,13 @@ export async function PUT(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'payment-method-update', 10, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many update attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many update attempts' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -272,9 +240,9 @@ export async function PUT(request: NextRequest) {
       const validationResult = attachPaymentMethodSchema.safeParse(body);
       if (!validationResult.success) {
         return NextResponse.json(
-          { 
+          {
             error: 'Invalid request data',
-            details: validationResult.error.errors 
+            details: validationResult.error.errors
           },
           { status: 400 }
         );
@@ -284,21 +252,15 @@ export async function PUT(request: NextRequest) {
 
       // Get customer
       const customer = await prisma.customer.findUnique({
-        where: { userId },
+        where: { userId }
       });
 
       if (!customer) {
-        return NextResponse.json(
-          { error: 'Customer not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
       }
 
       // Store payment method
-      const paymentMethod = await StripeService.storePaymentMethod(
-        customer.id,
-        paymentMethodId
-      );
+      const paymentMethod = await StripeService.storePaymentMethod(customer.id, paymentMethodId);
 
       // Set as default if requested
       if (setAsDefault) {
@@ -306,15 +268,15 @@ export async function PUT(request: NextRequest) {
         await prisma.paymentMethod.updateMany({
           where: {
             customerId: customer.id,
-            isDefault: true,
+            isDefault: true
           },
-          data: { isDefault: false },
+          data: { isDefault: false }
         });
 
         // Set new default
         await prisma.paymentMethod.update({
           where: { id: paymentMethod.id },
-          data: { isDefault: true },
+          data: { isDefault: true }
         });
       }
 
@@ -323,27 +285,26 @@ export async function PUT(request: NextRequest) {
         action: 'PAYMENT_METHOD_ATTACHED',
         entity: 'PaymentMethod',
         entityId: paymentMethod.id,
-        details: { 
+        details: {
           paymentMethodId,
           setAsDefault
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
 
       return NextResponse.json({
         paymentMethod,
         success: true,
-        message: 'Payment method added successfully',
+        message: 'Payment method added successfully'
       });
-
     } else {
       // Update existing payment method
       const validationResult = updatePaymentMethodSchema.safeParse(body);
       if (!validationResult.success) {
         return NextResponse.json(
-          { 
+          {
             error: 'Invalid request data',
-            details: validationResult.error.errors 
+            details: validationResult.error.errors
           },
           { status: 400 }
         );
@@ -353,28 +314,22 @@ export async function PUT(request: NextRequest) {
 
       // Get customer and payment method
       const customer = await prisma.customer.findUnique({
-        where: { userId },
+        where: { userId }
       });
 
       if (!customer) {
-        return NextResponse.json(
-          { error: 'Customer not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
       }
 
       const paymentMethod = await prisma.paymentMethod.findFirst({
         where: {
           customerId: customer.id,
-          stripePaymentMethodId: paymentMethodId,
-        },
+          stripePaymentMethodId: paymentMethodId
+        }
       });
 
       if (!paymentMethod) {
-        return NextResponse.json(
-          { error: 'Payment method not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Payment method not found' }, { status: 404 });
       }
 
       // Update default status
@@ -384,16 +339,16 @@ export async function PUT(request: NextRequest) {
           await prisma.paymentMethod.updateMany({
             where: {
               customerId: customer.id,
-              isDefault: true,
+              isDefault: true
             },
-            data: { isDefault: false },
+            data: { isDefault: false }
           });
         }
 
         // Update this payment method
         await prisma.paymentMethod.update({
           where: { id: paymentMethod.id },
-          data: { isDefault },
+          data: { isDefault }
         });
       }
 
@@ -402,35 +357,31 @@ export async function PUT(request: NextRequest) {
         action: 'PAYMENT_METHOD_UPDATED',
         entity: 'PaymentMethod',
         entityId: paymentMethod.id,
-        details: { 
+        details: {
           paymentMethodId,
           isDefault
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
 
       return NextResponse.json({
         success: true,
-        message: 'Payment method updated successfully',
+        message: 'Payment method updated successfully'
       });
     }
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     await auditLog({
       userId: session?.user?.id,
       action: 'PAYMENT_METHOD_UPDATE_FAILED',
       entity: 'PaymentMethod',
       details: { error: error instanceof Error ? error.message : 'Unknown error' },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
     console.error('Error updating payment method:', error);
-    return NextResponse.json(
-      { error: 'Failed to update payment method' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update payment method' }, { status: 500 });
   }
 }
 
@@ -443,19 +394,13 @@ export async function DELETE(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'payment-method-delete', 5, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many delete attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many delete attempts' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -463,36 +408,27 @@ export async function DELETE(request: NextRequest) {
     const paymentMethodId = searchParams.get('paymentMethodId');
 
     if (!paymentMethodId) {
-      return NextResponse.json(
-        { error: 'Payment method ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Payment method ID is required' }, { status: 400 });
     }
 
     // Get customer and payment method
     const customer = await prisma.customer.findUnique({
-      where: { userId },
+      where: { userId }
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Customer not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
     const paymentMethod = await prisma.paymentMethod.findFirst({
       where: {
         customerId: customer.id,
-        stripePaymentMethodId: paymentMethodId,
-      },
+        stripePaymentMethodId: paymentMethodId
+      }
     });
 
     if (!paymentMethod) {
-      return NextResponse.json(
-        { error: 'Payment method not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Payment method not found' }, { status: 404 });
     }
 
     // Detach from Stripe
@@ -502,10 +438,10 @@ export async function DELETE(request: NextRequest) {
     // Mark as inactive in database (don't delete for audit purposes)
     await prisma.paymentMethod.update({
       where: { id: paymentMethod.id },
-      data: { 
+      data: {
         isActive: false,
-        isDefault: false,
-      },
+        isDefault: false
+      }
     });
 
     await auditLog({
@@ -514,29 +450,25 @@ export async function DELETE(request: NextRequest) {
       entity: 'PaymentMethod',
       entityId: paymentMethod.id,
       details: { paymentMethodId },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Payment method removed successfully',
+      message: 'Payment method removed successfully'
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     await auditLog({
       userId: session?.user?.id,
       action: 'PAYMENT_METHOD_REMOVAL_FAILED',
       entity: 'PaymentMethod',
       details: { error: error instanceof Error ? error.message : 'Unknown error' },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
     console.error('Error removing payment method:', error);
-    return NextResponse.json(
-      { error: 'Failed to remove payment method' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to remove payment method' }, { status: 500 });
   }
 }

@@ -1,0 +1,82 @@
+# GitLeaks configuration for Astral Core v7
+title = "Astral Core v7 Secret Scanning Configuration"
+
+[extend]
+# Extend default rules
+useDefault = true
+
+[[rules]]
+description = "AWS Access Key"
+regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z]{16,128}['\"]'''
+tags = ["key", "aws"]
+keywords = ["aws"]
+
+[[rules]]
+description = "AWS Secret Key"
+regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z\/\+=]{16,128}['\"]'''
+tags = ["secret", "aws"]
+keywords = ["aws"]
+
+[[rules]]
+description = "Database URL with credentials"
+regex = '''(?i)(database_url|db_url|connection_string)(.{0,20})?['\"]([a-zA-Z]+:\/\/[a-zA-Z0-9_]+:[a-zA-Z0-9_@#$%^&*()!]+@[a-zA-Z0-9.-]+:[0-9]+\/[a-zA-Z0-9_]+)['\"]'''
+tags = ["database", "credentials"]
+keywords = ["database_url", "db_url", "connection_string"]
+
+[[rules]]
+description = "JWT Secret"
+regex = '''(?i)(jwt_secret|nextauth_secret|auth_secret)(.{0,20})?['\"][a-zA-Z0-9_\-+=]{32,}['\"]'''
+tags = ["jwt", "secret"]
+keywords = ["jwt_secret", "nextauth_secret", "auth_secret"]
+
+[[rules]]
+description = "Stripe API Key"
+regex = '''(?i)stripe(.{0,20})?['\"]sk_[a-z]+_[a-zA-Z0-9]{24}['\"]'''
+tags = ["payment", "stripe"]
+keywords = ["stripe"]
+
+[[rules]]
+description = "Encryption Key"
+regex = '''(?i)(encryption_key|secret_key|private_key)(.{0,20})?['\"][a-zA-Z0-9+\/]{32,}={0,2}['\"]'''
+tags = ["encryption", "key"]
+keywords = ["encryption_key", "secret_key", "private_key"]
+
+[[rules]]
+description = "API Keys"
+regex = '''(?i)(api_key|apikey|access_token)(.{0,20})?['\"][a-zA-Z0-9_\-]{16,}['\"]'''
+tags = ["api", "key"]
+keywords = ["api_key", "apikey", "access_token"]
+
+# Allowlist for safe patterns
+[allowlist]
+description = "Safe patterns and test data"
+regexes = [
+  '''test-secret-for-ci''',
+  '''example\.com''',
+  '''localhost''',
+  '''127\.0\.0\.1''',
+  '''0\.0\.0\.0''',
+  '''INSERT_YOUR_''',
+  '''YOUR_SECRET_HERE''',
+  '''REPLACE_WITH_''',
+  '''CHANGEME''',
+  '''<[A-Z_]+>''',
+  '''\$\{[A-Z_]+\}''',
+]
+
+# Files to ignore
+paths = [
+  '''node_modules''',
+  '''.git''',
+  '''.next''',
+  '''coverage''',
+  '''build''',
+  '''dist''',
+  '''*.log''',
+  '''*.lock''',
+  '''package-lock.json''',
+  '''yarn.lock''',
+  '''*.md''',
+  '''.env.example''',
+  '''.env.local.example''',
+]

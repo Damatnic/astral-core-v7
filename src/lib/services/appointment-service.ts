@@ -1,23 +1,39 @@
 import prisma from '@/lib/db/prisma';
 import { audit } from '@/lib/security/audit';
 import { notificationService } from './notification-service';
+import { logError, logWarning } from '@/lib/logger';
+import { logSystemEvent } from '@/lib/notification-logger';
 import { websocketServer } from '@/lib/websocket/server';
 import { AppointmentType, AppointmentStatus } from '@prisma/client';
 import { z } from 'zod';
 
-// Validation schemas
+/**
+ * Zod validation schema for appointment creation
+ * Ensures all required fields are present and valid
+ */
 export const appointmentSchema = z.object({
   therapistId: z.string(),
   scheduledAt: z.string().datetime(),
   duration: z.number().min(15).max(240).default(60),
-  type: z.enum(['INITIAL_CONSULTATION', 'THERAPY_SESSION', 'FOLLOW_UP', 'CRISIS_SESSION', 'GROUP_SESSION', 'ASSESSMENT']),
+  type: z.enum([
+    'INITIAL_CONSULTATION',
+    'THERAPY_SESSION',
+    'FOLLOW_UP',
+    'CRISIS_SESSION',
+    'GROUP_SESSION',
+    'ASSESSMENT'
+  ]),
   location: z.string().optional(),
-  notes: z.string().optional(),
+  notes: z.string().optional()
 });
 
+/**
+ * Zod validation schema for appointment rescheduling
+ * Validates new date/time and optional reason
+ */
 export const rescheduleSchema = z.object({
   newDateTime: z.string().datetime(),
-  reason: z.string().optional(),
+  reason: z.string().optional()
 });
 
 interface CreateAppointmentDto {
@@ -37,15 +53,41 @@ interface TimeSlot {
   reason?: string;
 }
 
+/**
+ * Comprehensive appointment management service for healthcare scheduling
+ * Handles appointment creation, rescheduling, cancellation, and conflict resolution
+ * Integrates with notifications, real-time updates, and audit logging
+ */
 export class AppointmentService {
   private readonly businessHours = {
     start: 9, // 9 AM
-    end: 17,  // 5 PM
+    end: 17 // 5 PM
   };
 
   private readonly workingDays = [1, 2, 3, 4, 5]; // Monday to Friday
 
-  // Create a new appointment
+  /**
+   * Create a new appointment with conflict checking and notifications
+   * Validates time slot availability and sends notifications to all parties
+   * @param {CreateAppointmentDto} data - Appointment creation data
+   * @param {string} data.userId - Client user ID
+   * @param {string} data.therapistId - Therapist user ID
+   * @param {Date} data.scheduledAt - Appointment date and time
+   * @param {number} data.duration - Duration in minutes
+   * @param {AppointmentType} data.type - Type of appointment
+   * @returns {Promise<Appointment>} Created appointment with user and therapist details
+   * @throws {Error} If time slot unavailable or conflicts exist
+   * @example
+   * ```typescript
+   * const appointment = await appointmentService.createAppointment({
+   *   userId: 'patient_123',
+   *   therapistId: 'therapist_456',
+   *   scheduledAt: new Date('2024-12-01T10:00:00Z'),
+   *   duration: 60,
+   *   type: 'THERAPY_SESSION'
+   * });
+   * ```
+   */
   async createAppointment(data: CreateAppointmentDto) {
     try {
       // Check if time slot is available
@@ -74,24 +116,24 @@ export class AppointmentService {
       const appointment = await prisma.appointment.create({
         data: {
           ...data,
-          status: 'SCHEDULED',
+          status: 'SCHEDULED'
         },
         include: {
           user: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
+              email: true
+            }
           },
           therapist: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
-          },
-        },
+              email: true
+            }
+          }
+        }
       });
 
       // Send notifications
@@ -104,13 +146,13 @@ export class AppointmentService {
       websocketServer.sendToUser(data.userId, 'appointment:created', {
         appointmentId: appointment.id,
         scheduledAt: appointment.scheduledAt,
-        therapist: appointment.therapist.name,
+        therapist: appointment.therapist.name
       });
 
       websocketServer.sendToUser(data.therapistId, 'appointment:new', {
         appointmentId: appointment.id,
         scheduledAt: appointment.scheduledAt,
-        client: appointment.user.name,
+        client: appointment.user.name
       });
 
       // Audit log
@@ -124,12 +166,28 @@ export class AppointmentService {
 
       return appointment;
     } catch (error) {
-      console.error('Error creating appointment:', error);
+      logError('Error creating appointment', error, 'appointment-service');
       throw error;
     }
   }
 
-  // Get available time slots for a therapist
+  /**
+   * Get available time slots for a therapist on a specific date
+   * Considers existing appointments, business hours, and therapist availability
+   * @param {string} therapistId - Therapist user ID
+   * @param {Date} date - Date to check availability for
+   * @param {number} [duration=60] - Appointment duration in minutes
+   * @returns {Promise<TimeSlot[]>} Array of time slots with availability status
+   * @example
+   * ```typescript
+   * const slots = await appointmentService.getAvailableSlots(
+   *   'therapist_123',
+   *   new Date('2024-12-01'),
+   *   60
+   * );
+   * const availableSlots = slots.filter(slot => slot.available);
+   * ```
+   */
   async getAvailableSlots(
     therapistId: string,
     date: Date,
@@ -138,7 +196,7 @@ export class AppointmentService {
     try {
       const startOfDay = new Date(date);
       startOfDay.setHours(this.businessHours.start, 0, 0, 0);
-      
+
       const endOfDay = new Date(date);
       endOfDay.setHours(this.businessHours.end, 0, 0, 0);
 
@@ -153,13 +211,13 @@ export class AppointmentService {
           therapistId,
           scheduledAt: {
             gte: startOfDay,
-            lt: endOfDay,
+            lt: endOfDay
           },
           status: {
-            in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'],
-          },
+            in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
+          }
         },
-        orderBy: { scheduledAt: 'asc' },
+        orderBy: { scheduledAt: 'asc' }
       });
 
       // Get therapist availability preferences
@@ -168,10 +226,14 @@ export class AppointmentService {
       // Generate time slots
       const slots: TimeSlot[] = [];
       const slotDuration = 30; // 30-minute slots
-      
-      for (let time = new Date(startOfDay); time < endOfDay; time.setMinutes(time.getMinutes() + slotDuration)) {
+
+      for (
+        let time = new Date(startOfDay);
+        time < endOfDay;
+        time.setMinutes(time.getMinutes() + slotDuration)
+      ) {
         const slotEnd = new Date(time.getTime() + duration * 60000);
-        
+
         // Check if slot fits within business hours
         if (slotEnd > endOfDay) continue;
 
@@ -179,8 +241,8 @@ export class AppointmentService {
         const hasConflict = existingAppointments.some(apt => {
           const aptStart = new Date(apt.scheduledAt);
           const aptEnd = new Date(aptStart.getTime() + apt.duration * 60000);
-          
-          return (time < aptEnd && slotEnd > aptStart);
+
+          return time < aptEnd && slotEnd > aptStart;
         });
 
         // Check therapist availability
@@ -190,18 +252,36 @@ export class AppointmentService {
           start: new Date(time),
           end: new Date(slotEnd),
           available: !hasConflict && isAvailableTime,
-          reason: hasConflict ? 'Booked' : !isAvailableTime ? 'Unavailable' : undefined,
+          reason: hasConflict ? 'Booked' : !isAvailableTime ? 'Unavailable' : undefined
         });
       }
 
       return slots;
     } catch (error) {
-      console.error('Error getting available slots:', error);
+      logError('Error getting available slots', error, 'appointment-service');
       throw error;
     }
   }
 
-  // Reschedule an appointment
+  /**
+   * Reschedule an existing appointment to a new date and time
+   * Validates new time slot availability and sends notifications
+   * @param {string} appointmentId - ID of appointment to reschedule
+   * @param {string} userId - User ID requesting the reschedule (client or therapist)
+   * @param {Date} newDateTime - New appointment date and time
+   * @param {string} [reason] - Optional reason for rescheduling
+   * @returns {Promise<Appointment>} Updated appointment with new schedule
+   * @throws {Error} If appointment not found, unauthorized, or new time unavailable
+   * @example
+   * ```typescript
+   * const rescheduled = await appointmentService.rescheduleAppointment(
+   *   'appt_123',
+   *   'user_456',
+   *   new Date('2024-12-02T14:00:00Z'),
+   *   'Client requested different time'
+   * );
+   * ```
+   */
   async rescheduleAppointment(
     appointmentId: string,
     userId: string,
@@ -217,17 +297,17 @@ export class AppointmentService {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
+              email: true
+            }
           },
           therapist: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
-          },
-        },
+              email: true
+            }
+          }
+        }
       });
 
       if (!appointment) {
@@ -258,24 +338,24 @@ export class AppointmentService {
           scheduledAt: newDateTime,
           status: 'RESCHEDULED',
           rescheduledFrom: appointment.scheduledAt.toISOString(),
-          updatedAt: new Date(),
+          updatedAt: new Date()
         },
         include: {
           user: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
+              email: true
+            }
           },
           therapist: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
-          },
-        },
+              email: true
+            }
+          }
+        }
       });
 
       // Send notifications
@@ -289,14 +369,14 @@ export class AppointmentService {
         appointmentId,
         oldTime: appointment.scheduledAt,
         newTime: newDateTime,
-        reason,
+        reason
       });
 
       websocketServer.sendToUser(appointment.therapistId, 'appointment:rescheduled', {
         appointmentId,
         oldTime: appointment.scheduledAt,
         newTime: newDateTime,
-        reason,
+        reason
       });
 
       // Audit log
@@ -304,27 +384,39 @@ export class AppointmentService {
         'APPOINTMENT_RESCHEDULED',
         'Appointment',
         appointmentId,
-        { 
+        {
           oldTime: appointment.scheduledAt,
           newTime: newDateTime,
-          reason,
+          reason
         },
         userId
       );
 
       return updatedAppointment;
     } catch (error) {
-      console.error('Error rescheduling appointment:', error);
+      logError('Error rescheduling appointment', error, 'appointment-service');
       throw error;
     }
   }
 
-  // Cancel an appointment
-  async cancelAppointment(
-    appointmentId: string,
-    userId: string,
-    reason: string
-  ) {
+  /**
+   * Cancel an appointment with cancellation policy enforcement
+   * Checks cancellation timing and sends appropriate notifications
+   * @param {string} appointmentId - ID of appointment to cancel
+   * @param {string} userId - User ID requesting cancellation (client or therapist)
+   * @param {string} reason - Reason for cancellation
+   * @returns {Promise<Appointment>} Cancelled appointment with cancellation details
+   * @throws {Error} If appointment not found or user unauthorized
+   * @example
+   * ```typescript
+   * const cancelled = await appointmentService.cancelAppointment(
+   *   'appt_123',
+   *   'user_456',
+   *   'Family emergency'
+   * );
+   * ```
+   */
+  async cancelAppointment(appointmentId: string, userId: string, reason: string) {
     try {
       const appointment = await prisma.appointment.findUnique({
         where: { id: appointmentId },
@@ -333,17 +425,17 @@ export class AppointmentService {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
+              email: true
+            }
           },
           therapist: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
-          },
-        },
+              email: true
+            }
+          }
+        }
       });
 
       if (!appointment) {
@@ -356,11 +448,12 @@ export class AppointmentService {
       }
 
       // Check cancellation policy (24 hours notice)
-      const hoursUntilAppointment = (appointment.scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
-      
+      const hoursUntilAppointment =
+        (appointment.scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
+
       if (hoursUntilAppointment < 24 && appointment.userId === userId) {
         // Late cancellation - could implement fees or warnings
-        console.warn('Late cancellation detected');
+        logWarning('Late cancellation detected', 'appointment-service');
       }
 
       // Update appointment
@@ -369,24 +462,24 @@ export class AppointmentService {
         data: {
           status: 'CANCELLED',
           cancelReason: reason,
-          updatedAt: new Date(),
+          updatedAt: new Date()
         },
         include: {
           user: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
+              email: true
+            }
           },
           therapist: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
-          },
-        },
+              email: true
+            }
+          }
+        }
       });
 
       // Send notifications
@@ -396,13 +489,13 @@ export class AppointmentService {
       websocketServer.sendToUser(appointment.userId, 'appointment:cancelled', {
         appointmentId,
         reason,
-        refundEligible: hoursUntilAppointment >= 24,
+        refundEligible: hoursUntilAppointment >= 24
       });
 
       websocketServer.sendToUser(appointment.therapistId, 'appointment:cancelled', {
         appointmentId,
         reason,
-        clientName: appointment.user.name,
+        clientName: appointment.user.name
       });
 
       // Audit log
@@ -416,12 +509,26 @@ export class AppointmentService {
 
       return cancelledAppointment;
     } catch (error) {
-      console.error('Error cancelling appointment:', error);
+      logError('Error cancelling appointment', error, 'appointment-service');
       throw error;
     }
   }
 
-  // Confirm an appointment
+  /**
+   * Confirm a scheduled appointment
+   * Updates appointment status and sends confirmation notifications
+   * @param {string} appointmentId - ID of appointment to confirm
+   * @param {string} userId - User ID confirming the appointment
+   * @returns {Promise<Appointment>} Confirmed appointment
+   * @throws {Error} If appointment not found or user unauthorized
+   * @example
+   * ```typescript
+   * const confirmed = await appointmentService.confirmAppointment(
+   *   'appt_123',
+   *   'therapist_456'
+   * );
+   * ```
+   */
   async confirmAppointment(appointmentId: string, userId: string) {
     try {
       const appointment = await prisma.appointment.findUnique({
@@ -430,16 +537,16 @@ export class AppointmentService {
           user: {
             select: {
               id: true,
-              name: true,
-            },
+              name: true
+            }
           },
           therapist: {
             select: {
               id: true,
-              name: true,
-            },
-          },
-        },
+              name: true
+            }
+          }
+        }
       });
 
       if (!appointment) {
@@ -456,30 +563,46 @@ export class AppointmentService {
         where: { id: appointmentId },
         data: {
           status: 'CONFIRMED',
-          updatedAt: new Date(),
-        },
+          updatedAt: new Date()
+        }
       });
 
       // Send confirmation notifications
       await this.sendAppointmentNotifications(confirmedAppointment, 'CONFIRMED');
 
       // Audit log
-      await audit.logSuccess(
-        'APPOINTMENT_CONFIRMED',
-        'Appointment',
-        appointmentId,
-        {},
-        userId
-      );
+      await audit.logSuccess('APPOINTMENT_CONFIRMED', 'Appointment', appointmentId, {}, userId);
 
       return confirmedAppointment;
     } catch (error) {
-      console.error('Error confirming appointment:', error);
+      logError('Error confirming appointment', error, 'appointment-service');
       throw error;
     }
   }
 
-  // Get appointments for a user
+  /**
+   * Get appointments for a user with filtering and pagination
+   * Returns both appointments as client and as therapist
+   * @param {string} userId - User ID to get appointments for
+   * @param {Object} [filters={}] - Optional filters
+   * @param {AppointmentStatus} [filters.status] - Filter by appointment status
+   * @param {Date} [filters.from] - Filter appointments from this date
+   * @param {Date} [filters.to] - Filter appointments to this date
+   * @param {number} [filters.limit=50] - Maximum appointments to return
+   * @param {number} [filters.offset=0] - Number of appointments to skip
+   * @returns {Promise<Object>} Paginated appointments with metadata
+   * @returns {Appointment[]} returns.appointments - Array of appointments
+   * @returns {number} returns.total - Total number of matching appointments
+   * @returns {boolean} returns.hasMore - Whether more appointments exist
+   * @example
+   * ```typescript
+   * const result = await appointmentService.getUserAppointments('user_123', {
+   *   status: 'SCHEDULED',
+   *   from: new Date('2024-12-01'),
+   *   limit: 20
+   * });
+   * ```
+   */
   async getUserAppointments(
     userId: string,
     filters: {
@@ -492,10 +615,7 @@ export class AppointmentService {
   ) {
     try {
       const where: any = {
-        OR: [
-          { userId },
-          { therapistId: userId },
-        ],
+        OR: [{ userId }, { therapistId: userId }]
       };
 
       if (filters.status) {
@@ -516,42 +636,51 @@ export class AppointmentService {
               select: {
                 id: true,
                 name: true,
-                email: true,
-              },
+                email: true
+              }
             },
             therapist: {
               select: {
                 id: true,
                 name: true,
-                email: true,
-              },
+                email: true
+              }
             },
             sessionNote: {
               select: {
                 id: true,
-                isSigned: true,
-              },
-            },
+                isSigned: true
+              }
+            }
           },
           orderBy: { scheduledAt: 'asc' },
           take: filters.limit || 50,
-          skip: filters.offset || 0,
+          skip: filters.offset || 0
         }),
-        prisma.appointment.count({ where }),
+        prisma.appointment.count({ where })
       ]);
 
       return {
         appointments,
         total,
-        hasMore: (filters.offset || 0) + appointments.length < total,
+        hasMore: (filters.offset || 0) + appointments.length < total
       };
     } catch (error) {
-      console.error('Error fetching user appointments:', error);
+      logError('Error fetching user appointments', error, 'appointment-service');
       throw error;
     }
   }
 
-  // Send appointment reminders
+  /**
+   * Send appointment reminders for upcoming appointments
+   * Automatically called every hour to send 24-hour advance reminders
+   * @returns {Promise<void>}
+   * @example
+   * ```typescript
+   * // Manually trigger reminder sending
+   * await appointmentService.sendReminders();
+   * ```
+   */
   async sendReminders() {
     try {
       // Get appointments in the next 24 hours that haven't been reminded
@@ -562,29 +691,29 @@ export class AppointmentService {
         where: {
           scheduledAt: {
             gte: now,
-            lte: tomorrow,
+            lte: tomorrow
           },
           status: {
-            in: ['SCHEDULED', 'CONFIRMED'],
+            in: ['SCHEDULED', 'CONFIRMED']
           },
-          reminderSent: false,
+          reminderSent: false
         },
         include: {
           user: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
+              email: true
+            }
           },
           therapist: {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
-          },
-        },
+              email: true
+            }
+          }
+        }
       });
 
       for (const appointment of appointmentsToRemind) {
@@ -597,17 +726,29 @@ export class AppointmentService {
         // Mark reminder as sent
         await prisma.appointment.update({
           where: { id: appointment.id },
-          data: { reminderSent: true },
+          data: { reminderSent: true }
         });
       }
 
-      console.log(`Sent ${appointmentsToRemind.length} appointment reminders`);
+      logSystemEvent(
+        'appointment-reminders',
+        `Sent ${appointmentsToRemind.length} appointment reminders`
+      );
     } catch (error) {
-      console.error('Error sending reminders:', error);
+      logError('Error sending reminders', error, 'appointment-service');
     }
   }
 
-  // Helper methods
+  /**
+   * Check if a time slot is available for scheduling
+   * Considers existing appointments and buffer times
+   * @private
+   * @param {string} therapistId - Therapist to check availability for
+   * @param {Date} scheduledAt - Proposed appointment start time
+   * @param {number} duration - Appointment duration in minutes
+   * @param {string} [excludeAppointmentId] - Appointment ID to exclude from conflict check
+   * @returns {Promise<boolean>} True if time slot is available
+   */
   private async isTimeSlotAvailable(
     therapistId: string,
     scheduledAt: Date,
@@ -619,22 +760,19 @@ export class AppointmentService {
     const where: any = {
       therapistId,
       status: {
-        in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'],
+        in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
       },
       OR: [
         {
           AND: [
             { scheduledAt: { lte: scheduledAt } },
-            { scheduledAt: { gte: new Date(scheduledAt.getTime() - 60 * 60000) } }, // 1 hour buffer
-          ],
+            { scheduledAt: { gte: new Date(scheduledAt.getTime() - 60 * 60000) } } // 1 hour buffer
+          ]
         },
         {
-          AND: [
-            { scheduledAt: { lt: endTime } },
-            { scheduledAt: { gt: scheduledAt } },
-          ],
-        },
-      ],
+          AND: [{ scheduledAt: { lt: endTime } }, { scheduledAt: { gt: scheduledAt } }]
+        }
+      ]
     };
 
     if (excludeAppointmentId) {
@@ -645,38 +783,60 @@ export class AppointmentService {
     return conflicts.length === 0;
   }
 
-  private async checkConflicts(
-    therapistId: string,
-    scheduledAt: Date,
-    duration: number
-  ) {
+  /**
+   * Check for appointment conflicts within a time range
+   * @private
+   * @param {string} therapistId - Therapist to check conflicts for
+   * @param {Date} scheduledAt - Proposed appointment start time
+   * @param {number} duration - Appointment duration in minutes
+   * @returns {Promise<Appointment[]>} Array of conflicting appointments
+   */
+  private async checkConflicts(therapistId: string, scheduledAt: Date, duration: number) {
     const endTime = new Date(scheduledAt.getTime() + duration * 60000);
 
     return prisma.appointment.findMany({
       where: {
         therapistId,
         status: {
-          in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'],
+          in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
         },
         scheduledAt: {
-          lt: endTime,
+          lt: endTime
         },
         AND: {
           scheduledAt: {
-            gte: new Date(scheduledAt.getTime() - 60 * 60000),
-          },
-        },
-      },
+            gte: new Date(scheduledAt.getTime() - 60 * 60000)
+          }
+        }
+      }
     });
   }
 
+  /**
+   * Get therapist's available hours for a specific date
+   * Currently returns default business hours, but can be extended for custom schedules
+   * @private
+   * @param {string} therapistId - Therapist ID to get availability for
+   * @param {Date} date - Date to check availability
+   * @returns {Promise<number[]>} Array of available hours (0-23)
+   */
   private async getTherapistAvailability(therapistId: string, date: Date): Promise<number[]> {
     // Default business hours
     // In production, fetch from therapist preferences
-    return Array.from({ length: this.businessHours.end - this.businessHours.start }, 
-                     (_, i) => this.businessHours.start + i);
+    return Array.from(
+      { length: this.businessHours.end - this.businessHours.start },
+      (_, i) => this.businessHours.start + i
+    );
   }
 
+  /**
+   * Send notifications to client and therapist for appointment events
+   * @private
+   * @param {any} appointment - Appointment object with user and therapist details
+   * @param {'CREATED'|'RESCHEDULED'|'CANCELLED'|'CONFIRMED'} action - Type of appointment action
+   * @param {string} [reason] - Optional reason for the action
+   * @returns {Promise<void>}
+   */
   private async sendAppointmentNotifications(
     appointment: any,
     action: 'CREATED' | 'RESCHEDULED' | 'CANCELLED' | 'CONFIRMED',
@@ -687,26 +847,26 @@ export class AppointmentService {
         clientTitle: 'Appointment Scheduled',
         clientMessage: `Your appointment with ${appointment.therapist.name} is confirmed for ${appointment.scheduledAt.toLocaleString()}`,
         therapistTitle: 'New Appointment',
-        therapistMessage: `New appointment with ${appointment.user.name} scheduled for ${appointment.scheduledAt.toLocaleString()}`,
+        therapistMessage: `New appointment with ${appointment.user.name} scheduled for ${appointment.scheduledAt.toLocaleString()}`
       },
       RESCHEDULED: {
         clientTitle: 'Appointment Rescheduled',
         clientMessage: `Your appointment has been rescheduled to ${appointment.scheduledAt.toLocaleString()}${reason ? `. Reason: ${reason}` : ''}`,
         therapistTitle: 'Appointment Rescheduled',
-        therapistMessage: `Appointment with ${appointment.user.name} rescheduled to ${appointment.scheduledAt.toLocaleString()}`,
+        therapistMessage: `Appointment with ${appointment.user.name} rescheduled to ${appointment.scheduledAt.toLocaleString()}`
       },
       CANCELLED: {
         clientTitle: 'Appointment Cancelled',
         clientMessage: `Your appointment scheduled for ${appointment.scheduledAt.toLocaleString()} has been cancelled${reason ? `. Reason: ${reason}` : ''}`,
         therapistTitle: 'Appointment Cancelled',
-        therapistMessage: `Appointment with ${appointment.user.name} has been cancelled${reason ? `. Reason: ${reason}` : ''}`,
+        therapistMessage: `Appointment with ${appointment.user.name} has been cancelled${reason ? `. Reason: ${reason}` : ''}`
       },
       CONFIRMED: {
         clientTitle: 'Appointment Confirmed',
         clientMessage: `Your appointment for ${appointment.scheduledAt.toLocaleString()} has been confirmed`,
         therapistTitle: 'Appointment Confirmed',
-        therapistMessage: `Appointment with ${appointment.user.name} has been confirmed`,
-      },
+        therapistMessage: `Appointment with ${appointment.user.name} has been confirmed`
+      }
     };
 
     const notificationData = actions[action];
@@ -718,7 +878,7 @@ export class AppointmentService {
       message: notificationData.clientMessage,
       type: 'APPOINTMENT',
       priority: action === 'CANCELLED' ? 'HIGH' : 'NORMAL',
-      actionUrl: `/appointments/${appointment.id}`,
+      actionUrl: `/appointments/${appointment.id}`
     });
 
     // Notify therapist
@@ -728,14 +888,21 @@ export class AppointmentService {
       message: notificationData.therapistMessage,
       type: 'APPOINTMENT',
       priority: action === 'CANCELLED' ? 'HIGH' : 'NORMAL',
-      actionUrl: `/appointments/${appointment.id}`,
+      actionUrl: `/appointments/${appointment.id}`
     });
   }
 
+  /**
+   * Schedule a reminder to be sent 24 hours before appointment
+   * Uses setTimeout for demonstration - production should use job queue
+   * @private
+   * @param {any} appointment - Appointment to schedule reminder for
+   * @returns {Promise<void>}
+   */
   private async scheduleReminder(appointment: any) {
     // Schedule reminder 24 hours before appointment
     const reminderTime = new Date(appointment.scheduledAt.getTime() - 24 * 60 * 60 * 1000);
-    
+
     if (reminderTime > new Date()) {
       // In production, use a job queue like Bull or Agenda
       setTimeout(async () => {
@@ -749,9 +916,29 @@ export class AppointmentService {
   }
 }
 
+/**
+ * Pre-configured appointment service instance
+ * Includes automatic reminder scheduling every hour
+ * @example
+ * ```typescript
+ * import { appointmentService } from '@/lib/services/appointment-service';
+ * 
+ * // Create appointment
+ * const appointment = await appointmentService.createAppointment({
+ *   userId: 'patient_123',
+ *   therapistId: 'therapist_456',
+ *   scheduledAt: new Date(),
+ *   duration: 60,
+ *   type: 'THERAPY_SESSION'
+ * });
+ * ```
+ */
 export const appointmentService = new AppointmentService();
 
 // Run reminder service every hour
-setInterval(() => {
-  appointmentService.sendReminders();
-}, 60 * 60 * 1000);
+setInterval(
+  () => {
+    appointmentService.sendReminders();
+  },
+  60 * 60 * 1000
+);

@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import type { 
-  CrisisSeverity, 
-  InterventionType, 
+import type {
+  CrisisSeverity,
+  InterventionType,
   InterventionStatus,
-  RiskLevel 
+  RiskLevel
 } from '@prisma/client';
 
 export const crisisAssessmentSchema = z.object({
@@ -17,7 +17,7 @@ export const crisisAssessmentSchema = z.object({
   hasSupport: z.boolean(),
   hasPlan: z.boolean(),
   hasMeans: z.boolean(),
-  immediateRisk: z.boolean(),
+  immediateRisk: z.boolean()
 });
 
 export const crisisInterventionSchema = z.object({
@@ -31,32 +31,36 @@ export const crisisInterventionSchema = z.object({
     'VIDEO',
     'IN_PERSON',
     'REFERRAL',
-    'EMERGENCY_DISPATCH',
+    'EMERGENCY_DISPATCH'
   ]),
   responderNotes: z.string().optional(),
   resourcesProvided: z.array(z.string()),
   followUpRequired: z.boolean(),
-  followUpDate: z.string().or(z.date()).optional(),
+  followUpDate: z.string().or(z.date()).optional()
 });
 
 export const safetyPlanSchema = z.object({
   warningSignals: z.array(z.string()),
   copingStrategies: z.array(z.string()),
   distractionTechniques: z.array(z.string()),
-  supportContacts: z.array(z.object({
-    name: z.string(),
-    relationship: z.string(),
-    phoneNumber: z.string(),
-    available247: z.boolean(),
-  })),
-  professionalContacts: z.array(z.object({
-    name: z.string(),
-    role: z.string(),
-    phoneNumber: z.string(),
-    afterHours: z.boolean(),
-  })),
+  supportContacts: z.array(
+    z.object({
+      name: z.string(),
+      relationship: z.string(),
+      phoneNumber: z.string(),
+      available247: z.boolean()
+    })
+  ),
+  professionalContacts: z.array(
+    z.object({
+      name: z.string(),
+      role: z.string(),
+      phoneNumber: z.string(),
+      afterHours: z.boolean()
+    })
+  ),
   safeEnvironment: z.array(z.string()),
-  reasonsForLiving: z.array(z.string()),
+  reasonsForLiving: z.array(z.string())
 });
 
 export type CrisisAssessmentInput = z.infer<typeof crisisAssessmentSchema>;
@@ -90,4 +94,45 @@ export interface RiskAssessment {
   };
   protectiveFactors: string[];
   recommendations: string[];
+}
+
+export interface CrisisResource {
+  name: string;
+  number: string;
+  description: string;
+  text: boolean;
+}
+
+export interface CrisisResources {
+  US: {
+    suicide: string;
+    suicideAlt: string;
+    crisis: string;
+    emergency: string;
+  };
+  resources: CrisisResource[];
+}
+
+export interface CrisisAssessmentResponse {
+  success: boolean;
+  severity: CrisisSeverity;
+  interventionId: string;
+  resources: CrisisResources;
+  nextSteps: string[];
+  urgent?: boolean;
+  message?: string;
+  alertsSent?: boolean;
+  error?: string;
+}
+
+export interface CrisisInterventionCreateData {
+  userId: string;
+  severity: CrisisSeverity;
+  triggerEvent: string | null;
+  symptoms: string[];
+  interventionType: InterventionType;
+  status: InterventionStatus;
+  followUpRequired: boolean;
+  followUpDate: Date | null;
+  resourcesProvided: string[];
 }

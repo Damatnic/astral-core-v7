@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
+import { logError, logWarning } from '@/lib/logger';
+import { logSystemEvent } from '@/lib/notification-logger';
 import { useAuthStore } from '@/stores/authStore';
 
 interface WebSocketOptions {
@@ -27,23 +29,23 @@ interface TypingState {
 
 export function useWebSocket(options: WebSocketOptions = {}) {
   const { data: session } = useSession();
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore(state => state.user);
   const socketRef = useRef<Socket | null>(null);
-  
+
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     isConnected: false,
     isConnecting: false,
     error: null,
-    reconnectAttempts: 0,
+    reconnectAttempts: 0
   });
 
   const [presence, setPresence] = useState<PresenceState>({
     onlineUsers: new Set(),
-    userStatuses: new Map(),
+    userStatuses: new Map()
   });
 
   const [typing, setTyping] = useState<TypingState>({
-    typingUsers: new Map(),
+    typingUsers: new Map()
   });
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -55,50 +57,50 @@ export function useWebSocket(options: WebSocketOptions = {}) {
 
     const socket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3000', {
       auth: {
-        token: session.user.id, // In production, use actual session token
+        token: session.user.id // In production, use actual session token
       },
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: options.reconnectionAttempts || 5,
-      reconnectionDelay: options.reconnectionDelay || 1000,
+      reconnectionDelay: options.reconnectionDelay || 1000
     });
 
     socketRef.current = socket;
 
     // Connection events
     socket.on('connect', () => {
-      console.log('WebSocket connected');
+      logSystemEvent('websocket-connect', 'WebSocket connected');
       setConnectionState({
         isConnected: true,
         isConnecting: false,
         error: null,
-        reconnectAttempts: 0,
+        reconnectAttempts: 0
       });
     });
 
-    socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+    socket.on('disconnect', reason => {
+      logSystemEvent('websocket-disconnect', `WebSocket disconnected: ${reason}`);
       setConnectionState(prev => ({
         ...prev,
         isConnected: false,
-        isConnecting: false,
+        isConnecting: false
       }));
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+    socket.on('connect_error', error => {
+      logError('WebSocket connection error', error, 'useWebSocket');
       setConnectionState(prev => ({
         ...prev,
         isConnecting: false,
-        error: error.message,
+        error: error.message
       }));
     });
 
-    socket.on('reconnect_attempt', (attempt) => {
+    socket.on('reconnect_attempt', attempt => {
       setConnectionState(prev => ({
         ...prev,
         isConnecting: true,
-        reconnectAttempts: attempt,
+        reconnectAttempts: attempt
       }));
     });
 
@@ -107,7 +109,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       setPresence(prev => ({
         ...prev,
         onlineUsers: new Set([...prev.onlineUsers, userId]),
-        userStatuses: new Map(prev.userStatuses).set(userId, 'online'),
+        userStatuses: new Map(prev.userStatuses).set(userId, 'online')
       }));
     });
 
@@ -118,7 +120,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
         return {
           ...prev,
           onlineUsers: newOnlineUsers,
-          userStatuses: new Map(prev.userStatuses).set(userId, 'offline'),
+          userStatuses: new Map(prev.userStatuses).set(userId, 'offline')
         };
       });
     });
@@ -126,7 +128,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
     socket.on('presence:update', ({ userId, status }) => {
       setPresence(prev => ({
         ...prev,
-        userStatuses: new Map(prev.userStatuses).set(userId, status),
+        userStatuses: new Map(prev.userStatuses).set(userId, status)
       }));
     });
 
@@ -134,7 +136,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
     socket.on('typing:update', ({ conversationId, typingUsers }) => {
       setTyping(prev => ({
         ...prev,
-        typingUsers: new Map(prev.typingUsers).set(conversationId, new Set(typingUsers)),
+        typingUsers: new Map(prev.typingUsers).set(conversationId, new Set(typingUsers))
       }));
     });
 
@@ -144,17 +146,17 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       setNotifications(messages);
     });
 
-    socket.on('notification:new', (notification) => {
+    socket.on('notification:new', notification => {
       setNotifications(prev => [notification, ...prev]);
       setUnreadCount(prev => prev + 1);
     });
 
     // Error handling
     socket.on('error', ({ message }) => {
-      console.error('WebSocket error:', message);
+      logError('WebSocket error', new Error(message), 'useWebSocket');
       setConnectionState(prev => ({
         ...prev,
-        error: message,
+        error: message
       }));
     });
 
@@ -167,7 +169,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   // Emit events
   const emit = useCallback((event: string, data?: any) => {
     if (!socketRef.current?.connected) {
-      console.warn('Socket not connected');
+      logWarning('Socket not connected', 'useWebSocket');
       return;
     }
     socketRef.current.emit(event, data);
@@ -177,78 +179,123 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   const on = useCallback((event: string, handler: (data: any) => void) => {
     if (!socketRef.current) return;
     socketRef.current.on(event, handler);
-    
+
     return () => {
       socketRef.current?.off(event, handler);
     };
   }, []);
 
   // Presence management
-  const updatePresence = useCallback((status: 'online' | 'away' | 'busy') => {
-    emit('presence:update', { status });
-  }, [emit]);
+  const updatePresence = useCallback(
+    (status: 'online' | 'away' | 'busy') => {
+      emit('presence:update', { status });
+    },
+    [emit]
+  );
 
   // Typing indicators
-  const startTyping = useCallback((conversationId: string) => {
-    emit('typing:start', { conversationId });
-  }, [emit]);
+  const startTyping = useCallback(
+    (conversationId: string) => {
+      emit('typing:start', { conversationId });
+    },
+    [emit]
+  );
 
-  const stopTyping = useCallback((conversationId: string) => {
-    emit('typing:stop', { conversationId });
-  }, [emit]);
+  const stopTyping = useCallback(
+    (conversationId: string) => {
+      emit('typing:stop', { conversationId });
+    },
+    [emit]
+  );
 
   // Message functions
-  const sendMessage = useCallback((conversationId: string, content: string, type = 'text') => {
-    emit('message:send', { conversationId, content, type });
-  }, [emit]);
+  const sendMessage = useCallback(
+    (conversationId: string, content: string, type = 'text') => {
+      emit('message:send', { conversationId, content, type });
+    },
+    [emit]
+  );
 
-  const markMessageRead = useCallback((messageId: string, conversationId: string) => {
-    emit('message:read', { messageId, conversationId });
-  }, [emit]);
+  const markMessageRead = useCallback(
+    (messageId: string, conversationId: string) => {
+      emit('message:read', { messageId, conversationId });
+    },
+    [emit]
+  );
 
   // Conversation management
-  const joinConversation = useCallback((conversationId: string) => {
-    emit('conversation:join', { conversationId });
-  }, [emit]);
+  const joinConversation = useCallback(
+    (conversationId: string) => {
+      emit('conversation:join', { conversationId });
+    },
+    [emit]
+  );
 
-  const leaveConversation = useCallback((conversationId: string) => {
-    emit('conversation:leave', { conversationId });
-  }, [emit]);
+  const leaveConversation = useCallback(
+    (conversationId: string) => {
+      emit('conversation:leave', { conversationId });
+    },
+    [emit]
+  );
 
   // Therapy session functions
-  const startTherapySession = useCallback((appointmentId: string, therapistId: string) => {
-    emit('session:start', { appointmentId, therapistId });
-  }, [emit]);
+  const startTherapySession = useCallback(
+    (appointmentId: string, therapistId: string) => {
+      emit('session:start', { appointmentId, therapistId });
+    },
+    [emit]
+  );
 
-  const endTherapySession = useCallback((appointmentId: string) => {
-    emit('session:end', { appointmentId });
-  }, [emit]);
+  const endTherapySession = useCallback(
+    (appointmentId: string) => {
+      emit('session:end', { appointmentId });
+    },
+    [emit]
+  );
 
-  const updateTherapySession = useCallback((appointmentId: string, update: any) => {
-    emit('session:update', { appointmentId, update });
-  }, [emit]);
+  const updateTherapySession = useCallback(
+    (appointmentId: string, update: any) => {
+      emit('session:update', { appointmentId, update });
+    },
+    [emit]
+  );
 
   // Crisis functions
-  const sendCrisisAlert = useCallback((severity: string, message: string, location?: string) => {
-    emit('crisis:alert', { severity, message, location });
-  }, [emit]);
+  const sendCrisisAlert = useCallback(
+    (severity: string, message: string, location?: string) => {
+      emit('crisis:alert', { severity, message, location });
+    },
+    [emit]
+  );
 
-  const respondToCrisis = useCallback((interventionId: string, response: string) => {
-    emit('crisis:response', { interventionId, response });
-  }, [emit]);
+  const respondToCrisis = useCallback(
+    (interventionId: string, response: string) => {
+      emit('crisis:response', { interventionId, response });
+    },
+    [emit]
+  );
 
   // Group functions
-  const joinGroup = useCallback((groupId: string) => {
-    emit('group:join', { groupId });
-  }, [emit]);
+  const joinGroup = useCallback(
+    (groupId: string) => {
+      emit('group:join', { groupId });
+    },
+    [emit]
+  );
 
-  const leaveGroup = useCallback((groupId: string) => {
-    emit('group:leave', { groupId });
-  }, [emit]);
+  const leaveGroup = useCallback(
+    (groupId: string) => {
+      emit('group:leave', { groupId });
+    },
+    [emit]
+  );
 
-  const sendGroupMessage = useCallback((groupId: string, message: string) => {
-    emit('group:message', { groupId, message });
-  }, [emit]);
+  const sendGroupMessage = useCallback(
+    (groupId: string, message: string) => {
+      emit('group:message', { groupId, message });
+    },
+    [emit]
+  );
 
   // Manual connection control
   const connect = useCallback(() => {
@@ -264,20 +311,29 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   }, []);
 
   // Check if user is online
-  const isUserOnline = useCallback((userId: string): boolean => {
-    return presence.onlineUsers.has(userId);
-  }, [presence.onlineUsers]);
+  const isUserOnline = useCallback(
+    (userId: string): boolean => {
+      return presence.onlineUsers.has(userId);
+    },
+    [presence.onlineUsers]
+  );
 
   // Get user status
-  const getUserStatus = useCallback((userId: string): 'online' | 'away' | 'busy' | 'offline' => {
-    return presence.userStatuses.get(userId) || 'offline';
-  }, [presence.userStatuses]);
+  const getUserStatus = useCallback(
+    (userId: string): 'online' | 'away' | 'busy' | 'offline' => {
+      return presence.userStatuses.get(userId) || 'offline';
+    },
+    [presence.userStatuses]
+  );
 
   // Check if users are typing in conversation
-  const getTypingUsers = useCallback((conversationId: string): string[] => {
-    const users = typing.typingUsers.get(conversationId);
-    return users ? Array.from(users) : [];
-  }, [typing.typingUsers]);
+  const getTypingUsers = useCallback(
+    (conversationId: string): string[] => {
+      const users = typing.typingUsers.get(conversationId);
+      return users ? Array.from(users) : [];
+    },
+    [typing.typingUsers]
+  );
 
   return {
     // Connection state
@@ -328,7 +384,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
     disconnect,
 
     // Socket instance (for advanced use)
-    socket: socketRef.current,
+    socket: socketRef.current
   };
 }
 

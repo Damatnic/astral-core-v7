@@ -35,12 +35,12 @@ interface FileWithPreview extends File {
 const FILE_CATEGORIES = {
   CONSENT_FORM: {
     label: 'Consent Form',
-    accept: { 
+    accept: {
       'application/pdf': ['.pdf'],
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/png': ['.png']
     },
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 10 * 1024 * 1024 // 10MB
   },
   INSURANCE: {
     label: 'Insurance Document',
@@ -49,7 +49,7 @@ const FILE_CATEGORIES = {
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/png': ['.png']
     },
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 5 * 1024 * 1024 // 5MB
   },
   MEDICAL_RECORD: {
     label: 'Medical Record',
@@ -59,7 +59,7 @@ const FILE_CATEGORIES = {
       'image/png': ['.png'],
       'text/plain': ['.txt']
     },
-    maxSize: 20 * 1024 * 1024, // 20MB
+    maxSize: 20 * 1024 * 1024 // 20MB
   },
   SESSION_NOTE: {
     label: 'Session Note',
@@ -68,7 +68,7 @@ const FILE_CATEGORIES = {
       'text/plain': ['.txt'],
       'application/msword': ['.doc']
     },
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 5 * 1024 * 1024 // 5MB
   },
   ASSESSMENT: {
     label: 'Assessment',
@@ -77,7 +77,7 @@ const FILE_CATEGORIES = {
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/png': ['.png']
     },
-    maxSize: 15 * 1024 * 1024, // 15MB
+    maxSize: 15 * 1024 * 1024 // 15MB
   },
   REPORT: {
     label: 'Report',
@@ -86,7 +86,7 @@ const FILE_CATEGORIES = {
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
     },
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 10 * 1024 * 1024 // 10MB
   },
   OTHER: {
     label: 'Other Document',
@@ -96,8 +96,8 @@ const FILE_CATEGORIES = {
       'image/png': ['.png'],
       'text/plain': ['.txt']
     },
-    maxSize: 10 * 1024 * 1024, // 10MB
-  },
+    maxSize: 10 * 1024 * 1024 // 10MB
+  }
 };
 
 export default function FileUpload({
@@ -114,40 +114,48 @@ export default function FileUpload({
   const categoryConfig = FILE_CATEGORIES[category];
   const acceptTypes = accept || categoryConfig.accept;
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
-    // Handle rejected files
-    rejectedFiles.forEach(({ file, errors }) => {
-      errors.forEach((error: any) => {
-        if (error.code === 'file-too-large') {
-          toast.error(`${file.name} is too large (max ${formatFileSize(categoryConfig.maxSize)})`);
-        } else if (error.code === 'file-invalid-type') {
-          toast.error(`${file.name} has invalid file type`);
-        } else {
-          toast.error(`Error with ${file.name}: ${error.message}`);
-        }
+  const onDrop = useCallback(
+    (
+      acceptedFiles: File[],
+      rejectedFiles: { file: File; errors: { code: string; message: string }[] }[]
+    ) => {
+      // Handle rejected files
+      rejectedFiles.forEach(({ file, errors }) => {
+        errors.forEach((error: { code: string; message: string }) => {
+          if (error.code === 'file-too-large') {
+            toast.error(
+              `${file.name} is too large (max ${formatFileSize(categoryConfig.maxSize)})`
+            );
+          } else if (error.code === 'file-invalid-type') {
+            toast.error(`${file.name} has invalid file type`);
+          } else {
+            toast.error(`Error with ${file.name}: ${error.message}`);
+          }
+        });
       });
-    });
 
-    // Add accepted files
-    const newFiles = acceptedFiles.map((file) => {
-      const fileWithPreview = Object.assign(file, {
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-        id: Math.random().toString(36).substr(2, 9),
-        progress: 0,
-        uploading: false,
+      // Add accepted files
+      const newFiles = acceptedFiles.map(file => {
+        const fileWithPreview = Object.assign(file, {
+          preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+          id: Math.random().toString(36).substr(2, 9),
+          progress: 0,
+          uploading: false
+        });
+        return fileWithPreview;
       });
-      return fileWithPreview;
-    });
 
-    setFiles(prev => [...prev, ...newFiles].slice(0, maxFiles));
-  }, [categoryConfig.maxSize, maxFiles]);
+      setFiles(prev => [...prev, ...newFiles].slice(0, maxFiles));
+    },
+    [categoryConfig.maxSize, maxFiles]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: acceptTypes,
     maxSize: categoryConfig.maxSize,
     maxFiles: maxFiles - files.length,
-    disabled: uploading || files.length >= maxFiles,
+    disabled: uploading || files.length >= maxFiles
   });
 
   const removeFile = (fileId: string) => {
@@ -163,9 +171,9 @@ export default function FileUpload({
     try {
       for (const file of files) {
         // Update file state to show uploading
-        setFiles(prev => prev.map(f => 
-          f.id === file.id ? { ...f, uploading: true, progress: 0 } : f
-        ));
+        setFiles(prev =>
+          prev.map(f => (f.id === file.id ? { ...f, uploading: true, progress: 0 } : f))
+        );
 
         try {
           const formData = new FormData();
@@ -176,7 +184,7 @@ export default function FileUpload({
 
           const response = await fetch('/api/files/upload', {
             method: 'POST',
-            body: formData,
+            body: formData
           });
 
           if (!response.ok) {
@@ -188,15 +196,15 @@ export default function FileUpload({
           uploadedFiles.push(result.data);
 
           // Update progress to 100%
-          setFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, progress: 100, uploading: false } : f
-          ));
+          setFiles(prev =>
+            prev.map(f => (f.id === file.id ? { ...f, progress: 100, uploading: false } : f))
+          );
 
           toast.success(`${file.name} uploaded successfully`);
-        } catch (error: any) {
-          setFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, error: error.message, uploading: false } : f
-          ));
+        } catch (error: unknown) {
+          setFiles(prev =>
+            prev.map(f => (f.id === file.id ? { ...f, error: error.message, uploading: false } : f))
+          );
           toast.error(`Failed to upload ${file.name}: ${error.message}`);
         }
       }
@@ -207,7 +215,7 @@ export default function FileUpload({
 
       // Clear successful uploads
       setFiles(prev => prev.filter(f => f.error));
-      
+
       if (files.filter(f => !f.error).length > 0) {
         setDescription('');
       }
@@ -233,11 +241,11 @@ export default function FileUpload({
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className='w-full max-w-2xl mx-auto'>
       <CardHeader>
         <CardTitle>Upload {categoryConfig.label}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className='space-y-6'>
         {/* Drop zone */}
         <div
           {...getRootProps()}
@@ -245,28 +253,24 @@ export default function FileUpload({
             isDragActive
               ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-          } ${
-            uploading || files.length >= maxFiles
-              ? 'opacity-50 cursor-not-allowed'
-              : ''
-          }`}
+          } ${uploading || files.length >= maxFiles ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <input {...getInputProps()} />
-          <div className="space-y-4">
-            <div className="text-6xl">📁</div>
+          <div className='space-y-4'>
+            <div className='text-6xl'>📁</div>
             {isDragActive ? (
-              <p className="text-lg font-medium text-blue-600 dark:text-blue-400">
+              <p className='text-lg font-medium text-blue-600 dark:text-blue-400'>
                 Drop files here...
               </p>
             ) : (
               <div>
-                <p className="text-lg font-medium text-gray-900 dark:text-white">
+                <p className='text-lg font-medium text-gray-900 dark:text-white'>
                   Drop files here or click to browse
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                <p className='text-sm text-gray-500 dark:text-gray-400 mt-2'>
                   Max {maxFiles} files, up to {formatFileSize(categoryConfig.maxSize)} each
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
                   Accepted: {Object.values(acceptTypes).flat().join(', ')}
                 </p>
               </div>
@@ -276,29 +280,29 @@ export default function FileUpload({
 
         {/* File options */}
         {files.length > 0 && (
-          <div className="space-y-4">
+          <div className='space-y-4'>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+              <label className='block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2'>
                 Description (Optional)
               </label>
               <textarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={e => setDescription(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Add a description for these files..."
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+                placeholder='Add a description for these files...'
               />
             </div>
 
-            <div className="flex items-center">
+            <div className='flex items-center'>
               <input
-                type="checkbox"
-                id="private"
+                type='checkbox'
+                id='private'
                 checked={isPrivate}
-                onChange={(e) => setIsPrivate(e.target.checked)}
-                className="mr-2"
+                onChange={e => setIsPrivate(e.target.checked)}
+                className='mr-2'
               />
-              <label htmlFor="private" className="text-sm text-gray-700 dark:text-gray-200">
+              <label htmlFor='private' className='text-sm text-gray-700 dark:text-gray-200'>
                 Keep files private (only you can access)
               </label>
             </div>
@@ -307,12 +311,12 @@ export default function FileUpload({
 
         {/* File list */}
         {files.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-medium text-gray-900 dark:text-white">
+          <div className='space-y-2'>
+            <h4 className='font-medium text-gray-900 dark:text-white'>
               Files to upload ({files.length}/{maxFiles})
             </h4>
-            <div className="space-y-2">
-              {files.map((file) => (
+            <div className='space-y-2'>
+              {files.map(file => (
                 <div
                   key={file.id}
                   className={`flex items-center justify-between p-3 border rounded-lg ${
@@ -321,46 +325,42 @@ export default function FileUpload({
                       : 'border-gray-200 dark:border-gray-600'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
+                  <div className='flex items-center space-x-3'>
+                    <div className='flex-shrink-0'>
                       {file.preview ? (
                         <img
                           src={file.preview}
-                          alt=""
-                          className="w-10 h-10 object-cover rounded"
+                          alt=''
+                          className='w-10 h-10 object-cover rounded'
                           onLoad={() => URL.revokeObjectURL(file.preview!)}
                         />
                       ) : (
-                        <div className="text-2xl">{getFileIcon(file.type)}</div>
+                        <div className='text-2xl'>{getFileIcon(file.type)}</div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <div className='min-w-0 flex-1'>
+                      <p className='text-sm font-medium text-gray-900 dark:text-white truncate'>
                         {file.name}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {formatFileSize(file.size)}
-                      </p>
+                      <p className='text-sm text-gray-500'>{formatFileSize(file.size)}</p>
                       {file.error && (
-                        <p className="text-sm text-red-600 dark:text-red-400">
-                          {file.error}
-                        </p>
+                        <p className='text-sm text-red-600 dark:text-red-400'>{file.error}</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className='flex items-center space-x-2'>
                     {file.uploading && (
-                      <div className="w-8 h-8">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <div className='w-8 h-8'>
+                        <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600'></div>
                       </div>
                     )}
                     {!file.uploading && !file.error && (
                       <Button
-                        size="sm"
-                        variant="ghost"
+                        size='sm'
+                        variant='ghost'
                         onClick={() => removeFile(file.id!)}
-                        className="text-red-600 hover:text-red-700"
+                        className='text-red-600 hover:text-red-700'
                       >
                         Remove
                       </Button>
@@ -374,19 +374,14 @@ export default function FileUpload({
 
         {/* Upload button */}
         {files.length > 0 && (
-          <div className="flex justify-end space-x-2">
-            <Button
-              variant="ghost"
-              onClick={() => setFiles([])}
-              disabled={uploading}
-            >
+          <div className='flex justify-end space-x-2'>
+            <Button variant='ghost' onClick={() => setFiles([])} disabled={uploading}>
               Clear All
             </Button>
-            <Button
-              onClick={uploadFiles}
-              disabled={uploading || files.length === 0}
-            >
-              {uploading ? 'Uploading...' : `Upload ${files.length} file${files.length !== 1 ? 's' : ''}`}
+            <Button onClick={uploadFiles} disabled={uploading || files.length === 0}>
+              {uploading
+                ? 'Uploading...'
+                : `Upload ${files.length} file${files.length !== 1 ? 's' : ''}`}
             </Button>
           </div>
         )}

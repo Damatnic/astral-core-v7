@@ -6,20 +6,20 @@ import { sessionNoteSchema } from '@/lib/types/therapy';
 import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import prisma from '@/lib/db/prisma';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 
 // Ensure user is a therapist
 async function requireTherapist() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session?.user) {
     throw new Error('Unauthorized');
   }
-  
+
   if (session.user.role !== 'THERAPIST' && session.user.role !== 'ADMIN') {
     throw new Error('Forbidden: Therapist access required');
   }
-  
+
   return session.user;
 }
 
@@ -27,7 +27,7 @@ async function requireTherapist() {
 export async function GET(request: NextRequest) {
   try {
     const user = await requireTherapist();
-    
+
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
     const appointmentId = searchParams.get('appointmentId');
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Get therapist profile
     const therapistProfile = await prisma.therapistProfile.findUnique({
-      where: { userId: user.id },
+      where: { userId: user.id }
     });
 
     if (!therapistProfile) {
@@ -46,8 +46,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const where: any = { therapistId: therapistProfile.id };
-    
+    const where: {
+      therapistId: string;
+      clientId?: string;
+      appointmentId?: string;
+    } = { therapistId: therapistProfile.id };
+
     if (clientId) where.clientId = clientId;
     if (appointmentId) where.appointmentId = appointmentId;
 
@@ -60,25 +64,25 @@ export async function GET(request: NextRequest) {
             appointment: {
               include: {
                 user: {
-                  select: { name: true, email: true },
-                },
-              },
+                  select: { name: true, email: true }
+                }
+              }
             },
             client: {
               include: {
                 user: {
-                  select: { name: true, email: true },
-                },
-              },
-            },
+                  select: { name: true, email: true }
+                }
+              }
+            }
           },
           orderBy: { sessionDate: 'desc' },
           take: limit,
-          skip: offset,
+          skip: offset
         },
         { userId: user.id, userRole: user.role }
       ),
-      prisma.sessionNote.count({ where }),
+      prisma.sessionNote.count({ where })
     ]);
 
     return NextResponse.json({
@@ -88,22 +92,19 @@ export async function GET(request: NextRequest) {
         total,
         page: Math.floor(offset / limit) + 1,
         limit,
-        hasMore: offset + limit < total,
-      },
+        hasMore: offset + limit < total
+      }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
         { status: HTTP_STATUS.UNAUTHORIZED }
       );
     }
-    
+
     if (error.message.startsWith('Forbidden')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: HTTP_STATUS.FORBIDDEN }
-      );
+      return NextResponse.json({ error: error.message }, { status: HTTP_STATUS.FORBIDDEN });
     }
 
     console.error('Error fetching session notes:', error);
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     // Get therapist profile
     const therapistProfile = await prisma.therapistProfile.findUnique({
-      where: { userId: user.id },
+      where: { userId: user.id }
     });
 
     if (!therapistProfile) {
@@ -137,11 +138,11 @@ export async function POST(request: NextRequest) {
     const appointment = await prisma.appointment.findFirst({
       where: {
         id: validated.appointmentId,
-        therapistId: user.id,
+        therapistId: user.id
       },
       include: {
-        user: true,
-      },
+        user: true
+      }
     });
 
     if (!appointment) {
@@ -155,8 +156,8 @@ export async function POST(request: NextRequest) {
     const clientProfile = await prisma.clientProfile.findFirst({
       where: {
         userId: appointment.userId,
-        therapistId: therapistProfile.id,
-      },
+        therapistId: therapistProfile.id
+      }
     });
 
     if (!clientProfile) {
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
         clientId: clientProfile.id,
         therapistId: therapistProfile.id,
         sessionDate: new Date(validated.sessionDate),
-        isSigned: false,
+        isSigned: false
       },
       { userId: user.id, userRole: user.role, resourceType: 'SessionNote' }
     );
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
     // Update appointment status
     await prisma.appointment.update({
       where: { id: appointment.id },
-      data: { status: 'COMPLETED' },
+      data: { status: 'COMPLETED' }
     });
 
     await audit.logSuccess(
@@ -191,18 +192,21 @@ export async function POST(request: NextRequest) {
       sessionNote.id,
       {
         clientId: clientProfile.id,
-        appointmentId: appointment.id,
+        appointmentId: appointment.id
       },
       user.id,
       request
     );
 
-    return NextResponse.json({
-      success: true,
-      message: 'Session note created successfully',
-      data: sessionNote,
-    }, { status: HTTP_STATUS.CREATED });
-  } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Session note created successfully',
+        data: sessionNote
+      },
+      { status: HTTP_STATUS.CREATED }
+    );
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.issues },
@@ -232,7 +236,7 @@ export async function PUT(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const action = searchParams.get('action'); // 'update' or 'sign'
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Note ID is required' },
@@ -242,7 +246,7 @@ export async function PUT(request: NextRequest) {
 
     // Get therapist profile
     const therapistProfile = await prisma.therapistProfile.findUnique({
-      where: { userId: user.id },
+      where: { userId: user.id }
     });
 
     if (!therapistProfile) {
@@ -256,8 +260,8 @@ export async function PUT(request: NextRequest) {
     const existingNote = await prisma.sessionNote.findFirst({
       where: {
         id,
-        therapistId: therapistProfile.id,
-      },
+        therapistId: therapistProfile.id
+      }
     });
 
     if (!existingNote) {
@@ -273,8 +277,8 @@ export async function PUT(request: NextRequest) {
         where: { id },
         data: {
           isSigned: true,
-          signedAt: new Date(),
-        },
+          signedAt: new Date()
+        }
       });
 
       await audit.logSuccess(
@@ -289,7 +293,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Session note signed successfully',
-        data: signed,
+        data: signed
       });
     } else {
       // Regular update (only if not signed)
@@ -303,20 +307,18 @@ export async function PUT(request: NextRequest) {
       const body = await request.json();
       const validated = sessionNoteSchema.partial().parse(body);
 
-      const updated = await phiService.update(
-        'SessionNote',
-        { id },
-        validated,
-        { userId: user.id, userRole: user.role }
-      );
+      const updated = await phiService.update('SessionNote', { id }, validated, {
+        userId: user.id,
+        userRole: user.role
+      });
 
       return NextResponse.json({
         success: true,
         message: 'Session note updated successfully',
-        data: updated,
+        data: updated
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.issues },

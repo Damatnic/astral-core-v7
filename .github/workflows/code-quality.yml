@@ -1,0 +1,519 @@
+name: 'Code Quality & Testing'
+
+on:
+  push:
+    branches: ['main', 'master', 'develop']
+  pull_request:
+    branches: ['main', 'master', 'develop']
+  schedule:
+    # Run quality checks daily at 1 AM UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of quality check to run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - 'full'
+          - 'lint-only'
+          - 'test-only'
+          - 'format-only'
+
+# Cancel previous runs for the same workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18.17'
+
+jobs:
+  # ESLint and code formatting
+  lint-and-format:
+    name: 'Lint & Format Check'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type != 'test-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Run ESLint'
+        run: |
+          echo "🔍 Running ESLint analysis..."
+          npm run lint -- --format=json --output-file=eslint-results.json || true
+          npm run lint -- --format=stylish
+
+      - name: 'Check Prettier Formatting'
+        run: |
+          echo "✨ Checking code formatting..."
+          npx prettier --check "**/*.{ts,tsx,js,jsx,json,md}" || {
+            echo "❌ Code formatting issues found!"
+            echo "Run 'npm run format' to fix formatting issues."
+            exit 1
+          }
+
+      - name: 'Upload ESLint Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eslint-results
+          path: eslint-results.json
+          retention-days: 30
+
+      - name: 'ESLint Annotations'
+        uses: ataylorme/eslint-annotate-action@v2
+        if: always()
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "eslint-results.json"
+
+  # TypeScript checking
+  typescript-check:
+    name: 'TypeScript Check'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type != 'test-only' && github.event.inputs.check_type != 'format-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Generate Prisma Client'
+        run: npm run db:generate
+        env:
+          DATABASE_URL: "postgresql://test:test@localhost:5432/testdb"
+
+      - name: 'Run TypeScript Check'
+        run: |
+          echo "🔧 Running TypeScript type checking..."
+          npm run typecheck
+
+      - name: 'Check for Unused Exports'
+        run: |
+          echo "🧹 Checking for unused exports..."
+          npx ts-unused-exports tsconfig.json --showLineNumber || true
+
+      - name: 'Check for Unused Dependencies'
+        run: |
+          echo "📦 Checking for unused dependencies..."
+          npx depcheck --json > depcheck-results.json || true
+          cat depcheck-results.json
+
+      - name: 'Upload Dependency Check Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: depcheck-results
+          path: depcheck-results.json
+          retention-days: 30
+
+  # Unit and integration testing
+  test-suite:
+    name: 'Test Suite'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type != 'lint-only' && github.event.inputs.check_type != 'format-only'
+    
+    strategy:
+      matrix:
+        test-type: ['unit', 'integration', 'e2e']
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Generate Prisma Client'
+        run: npm run db:generate
+        env:
+          DATABASE_URL: "postgresql://test:test@localhost:5432/testdb"
+
+      - name: 'Setup Test Database'
+        if: matrix.test-type != 'unit'
+        run: |
+          npm run db:push
+        env:
+          DATABASE_URL: "postgresql://test:test@localhost:5432/testdb"
+
+      - name: 'Run Unit Tests'
+        if: matrix.test-type == 'unit'
+        run: |
+          echo "🧪 Running unit tests..."
+          npm run test:ci -- --testPathIgnorePatterns=".*\.(integration|e2e)\.test\.(ts|tsx|js|jsx)$"
+        env:
+          DATABASE_URL: "postgresql://test:test@localhost:5432/testdb"
+          NEXTAUTH_SECRET: "test-secret-for-ci"
+          NEXTAUTH_URL: "http://localhost:3000"
+
+      - name: 'Run Integration Tests'
+        if: matrix.test-type == 'integration'
+        run: |
+          echo "🔗 Running integration tests..."
+          npm run test:ci -- --testPathPattern=".*\.integration\.test\.(ts|tsx|js|jsx)$"
+        env:
+          DATABASE_URL: "postgresql://test:test@localhost:5432/testdb"
+          NEXTAUTH_SECRET: "test-secret-for-ci"
+          NEXTAUTH_URL: "http://localhost:3000"
+
+      - name: 'Setup E2E Test Environment'
+        if: matrix.test-type == 'e2e'
+        run: |
+          # Install Playwright
+          npx playwright install --with-deps chromium
+          
+          # Build the application
+          npm run build
+          
+          # Start the application in background
+          npm start &
+          
+          # Wait for application to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/health; do sleep 2; done'
+        env:
+          DATABASE_URL: "postgresql://test:test@localhost:5432/testdb"
+          NEXTAUTH_SECRET: "test-secret-for-ci"
+          NEXTAUTH_URL: "http://localhost:3000"
+
+      - name: 'Run E2E Tests'
+        if: matrix.test-type == 'e2e'
+        run: |
+          echo "🎭 Running E2E tests..."
+          npx playwright test
+        env:
+          BASE_URL: "http://localhost:3000"
+
+      - name: 'Upload Test Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: |
+            coverage/
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+      - name: 'Upload Coverage to Codecov'
+        if: matrix.test-type == 'unit'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage
+          flags: ${{ matrix.test-type }}
+          name: codecov-${{ matrix.test-type }}
+
+  # Code complexity analysis
+  complexity-analysis:
+    name: 'Code Complexity Analysis'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type != 'test-only' && github.event.inputs.check_type != 'format-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Install Complexity Analysis Tools'
+        run: |
+          npm install --no-save \
+            complexity-report \
+            jscpd \
+            ts-complexity
+
+      - name: 'Run Complexity Analysis'
+        run: |
+          echo "📊 Running complexity analysis..."
+          
+          # Complexity report
+          npx complexity-report \
+            --output complexity-report.json \
+            --format json \
+            src/
+          
+          # Check for code duplication
+          npx jscpd \
+            --format json \
+            --output jscpd-report.json \
+            --threshold 10 \
+            src/
+
+      - name: 'Generate Complexity Summary'
+        run: |
+          echo "# 📊 Code Complexity Report" > complexity-summary.md
+          echo "" >> complexity-summary.md
+          echo "**Analysis Date:** $(date -u)" >> complexity-summary.md
+          echo "" >> complexity-summary.md
+          
+          if [ -f "complexity-report.json" ]; then
+            echo "## 🔍 Complexity Metrics" >> complexity-summary.md
+            echo "Analysis completed successfully." >> complexity-summary.md
+          fi
+          
+          if [ -f "jscpd-report.json" ]; then
+            echo "## 🔄 Code Duplication" >> complexity-summary.md
+            echo "Duplication analysis completed." >> complexity-summary.md
+          fi
+          
+          echo "" >> complexity-summary.md
+          echo "## 💡 Recommendations" >> complexity-summary.md
+          echo "- Keep cyclomatic complexity below 10" >> complexity-summary.md
+          echo "- Refactor functions with high complexity" >> complexity-summary.md
+          echo "- Reduce code duplication where possible" >> complexity-summary.md
+          echo "- Break down large functions into smaller ones" >> complexity-summary.md
+
+      - name: 'Upload Complexity Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complexity-analysis
+          path: |
+            complexity-report.json
+            jscpd-report.json
+            complexity-summary.md
+          retention-days: 30
+
+  # Documentation checks
+  docs-check:
+    name: 'Documentation Check'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type != 'test-only' && github.event.inputs.check_type != 'format-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Check TSDoc Comments'
+        run: |
+          echo "📚 Checking TSDoc comments..."
+          npx typedoc --dry-run --treatWarningsAsErrors src/ || true
+
+      - name: 'Check README Links'
+        run: |
+          echo "🔗 Checking README links..."
+          if [ -f "README.md" ]; then
+            # Check for broken links in README
+            npx markdown-link-check README.md || true
+          fi
+
+      - name: 'Generate API Documentation'
+        run: |
+          echo "📖 Generating API documentation..."
+          npx typedoc --out docs/api src/ || true
+
+      - name: 'Upload Documentation'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: generated-docs
+          path: |
+            docs/
+          retention-days: 30
+
+  # SonarCloud analysis
+  sonarcloud:
+    name: 'SonarCloud Analysis'
+    runs-on: ubuntu-latest
+    needs: [test-suite]
+    if: github.event.inputs.check_type != 'format-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Download Test Coverage'
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-unit
+          path: ./coverage
+        continue-on-error: true
+
+      - name: 'Run SonarCloud Analysis'
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=astral-core-v7
+            -Dsonar.organization=${{ github.repository_owner }}
+            -Dsonar.sources=src/
+            -Dsonar.tests=tests/,src/**/*.test.ts,src/**/*.test.tsx
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx,**/*.d.ts
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx
+            -Dsonar.typescript.node=16
+            -Dsonar.sourceEncoding=UTF-8
+
+  # Quality gate summary
+  quality-summary:
+    name: 'Quality Gate Summary'
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, typescript-check, test-suite, complexity-analysis, docs-check, sonarcloud]
+    if: always()
+    
+    steps:
+      - name: 'Generate Quality Report'
+        run: |
+          echo "# 🏆 Code Quality Summary" > quality-report.md
+          echo "" >> quality-report.md
+          echo "**Quality Check Date:** $(date -u)" >> quality-report.md
+          echo "**Repository:** ${{ github.repository }}" >> quality-report.md
+          echo "**Branch:** ${{ github.ref }}" >> quality-report.md
+          echo "**Commit:** ${{ github.sha }}" >> quality-report.md
+          echo "" >> quality-report.md
+          
+          echo "## 📊 Quality Checks Results" >> quality-report.md
+          echo "" >> quality-report.md
+          echo "| Check | Status | Details |" >> quality-report.md
+          echo "|-------|--------|---------|" >> quality-report.md
+          echo "| Lint & Format | ${{ needs.lint-and-format.result == 'success' && '✅ Passed' || needs.lint-and-format.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | ESLint and Prettier checks |" >> quality-report.md
+          echo "| TypeScript | ${{ needs.typescript-check.result == 'success' && '✅ Passed' || needs.typescript-check.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | Type checking and compilation |" >> quality-report.md
+          echo "| Test Suite | ${{ needs.test-suite.result == 'success' && '✅ Passed' || needs.test-suite.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | Unit, integration, and E2E tests |" >> quality-report.md
+          echo "| Complexity | ${{ needs.complexity-analysis.result == 'success' && '✅ Passed' || needs.complexity-analysis.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | Code complexity analysis |" >> quality-report.md
+          echo "| Documentation | ${{ needs.docs-check.result == 'success' && '✅ Passed' || needs.docs-check.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | Documentation completeness |" >> quality-report.md
+          echo "| SonarCloud | ${{ needs.sonarcloud.result == 'success' && '✅ Passed' || needs.sonarcloud.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | Static analysis and quality gate |" >> quality-report.md
+          
+          # Calculate overall quality score
+          passed_checks=0
+          total_checks=0
+          
+          for result in "${{ needs.lint-and-format.result }}" "${{ needs.typescript-check.result }}" "${{ needs.test-suite.result }}" "${{ needs.complexity-analysis.result }}" "${{ needs.docs-check.result }}" "${{ needs.sonarcloud.result }}"; do
+            if [ "$result" != "skipped" ]; then
+              total_checks=$((total_checks + 1))
+              if [ "$result" = "success" ]; then
+                passed_checks=$((passed_checks + 1))
+              fi
+            fi
+          done
+          
+          if [ $total_checks -gt 0 ]; then
+            quality_percentage=$((passed_checks * 100 / total_checks))
+            echo "" >> quality-report.md
+            echo "## 🎯 Overall Quality Score" >> quality-report.md
+            echo "" >> quality-report.md
+            echo "**Quality Score:** ${quality_percentage}% (${passed_checks}/${total_checks} checks passed)" >> quality-report.md
+            
+            if [ $quality_percentage -ge 90 ]; then
+              echo "**Grade:** 🏆 Excellent" >> quality-report.md
+            elif [ $quality_percentage -ge 80 ]; then
+              echo "**Grade:** 🥇 Good" >> quality-report.md
+            elif [ $quality_percentage -ge 70 ]; then
+              echo "**Grade:** 🥈 Fair" >> quality-report.md
+            else
+              echo "**Grade:** 🥉 Needs Improvement" >> quality-report.md
+            fi
+          fi
+          
+          echo "" >> quality-report.md
+          echo "## 💡 Next Steps" >> quality-report.md
+          echo "" >> quality-report.md
+          echo "- Review and address any failed checks" >> quality-report.md
+          echo "- Check detailed reports in workflow artifacts" >> quality-report.md
+          echo "- Consider refactoring code with high complexity" >> quality-report.md
+          echo "- Maintain or improve test coverage" >> quality-report.md
+          
+          cat quality-report.md
+
+      - name: 'Upload Quality Report'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-summary-report
+          path: quality-report.md
+          retention-days: 90
+
+      - name: 'Add Quality Comment (PR only)'
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('quality-report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+      - name: 'Quality Gate Check'
+        run: |
+          # Fail the workflow if critical checks failed
+          if [[ "${{ needs.lint-and-format.result }}" == "failure" || \
+                "${{ needs.typescript-check.result }}" == "failure" || \
+                "${{ needs.test-suite.result }}" == "failure" ]]; then
+            echo "❌ Critical quality checks failed!"
+            exit 1
+          else
+            echo "✅ Quality gate passed!"
+          fi

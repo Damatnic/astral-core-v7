@@ -6,6 +6,9 @@
 import { prisma } from '@/lib/db';
 import { StripeService, CreateSubscriptionData } from './stripe-service';
 import { auditLog } from '@/lib/security/audit';
+import type { TherapyPlan, Subscription, SubscriptionStatus } from '@prisma/client';
+import type { Subscription as PrismaSubscriptionWithRelations } from '@/lib/types/billing';
+import Stripe from 'stripe';
 
 export interface TherapyPlanData {
   name: string;
@@ -30,11 +33,53 @@ export interface SubscriptionAnalytics {
   planDistribution: Record<string, number>;
 }
 
+export interface TherapyPlanWithStripeData extends TherapyPlan {
+  product: Stripe.Product;
+  price: Stripe.Price;
+}
+
+export interface SubscriptionWithSetupIntent {
+  subscription: Subscription;
+  setupIntent?: Stripe.SetupIntent;
+}
+
+export interface UserSubscriptionDetails extends Subscription {
+  stripeData: Stripe.Subscription;
+  customer?: any;
+  subscriptionItems?: any[];
+}
+
+/**
+ * High-level subscription management service for therapy plans and billing
+ * Integrates with Stripe for payment processing and maintains local subscription state
+ * Provides comprehensive subscription lifecycle management with audit logging
+ */
 export class SubscriptionService {
   /**
-   * Create a new therapy plan (product and price in Stripe)
+   * Create a new therapy plan with Stripe product and pricing integration
+   * Creates both Stripe product/price and local database record for therapy plans
+   * @param {TherapyPlanData} data - Therapy plan configuration data
+   * @param {string} data.name - Plan display name
+   * @param {string} data.description - Plan description
+   * @param {number} data.amount - Plan price in dollars
+   * @param {'month'|'year'} data.interval - Billing interval
+   * @param {number} data.sessionsIncluded - Number of therapy sessions included
+   * @param {string[]} data.features - List of plan features
+   * @returns {Promise<TherapyPlanWithStripeData>} Created plan with Stripe product and price data
+   * @throws {Error} If Stripe operations fail or database save fails
+   * @example
+   * ```typescript
+   * const plan = await SubscriptionService.createTherapyPlan({
+   *   name: 'Basic Therapy Plan',
+   *   description: 'Monthly therapy sessions',
+   *   amount: 99.99,
+   *   interval: 'month',
+   *   sessionsIncluded: 4,
+   *   features: ['Video sessions', '24/7 chat support']
+   * });
+   * ```
    */
-  static async createTherapyPlan(data: TherapyPlanData): Promise<any> {
+  static async createTherapyPlan(data: TherapyPlanData): Promise<TherapyPlanWithStripeData> {
     try {
       const stripe = StripeService.getStripeInstance();
 
@@ -45,8 +90,8 @@ export class SubscriptionService {
         metadata: {
           sessionsIncluded: data.sessionsIncluded.toString(),
           duration: data.duration,
-          features: JSON.stringify(data.features),
-        },
+          features: JSON.stringify(data.features)
+        }
       });
 
       // Create price in Stripe
@@ -57,11 +102,11 @@ export class SubscriptionService {
         recurring: {
           interval: data.interval,
           interval_count: data.intervalCount || 1,
-          trial_period_days: data.trialPeriodDays,
+          trial_period_days: data.trialPeriodDays
         },
         metadata: {
-          planType: 'therapy_plan',
-        },
+          planType: 'therapy_plan'
+        }
       });
 
       // Store in database
@@ -79,20 +124,20 @@ export class SubscriptionService {
           duration: data.duration,
           features: data.features,
           trialPeriodDays: data.trialPeriodDays,
-          setupFee: data.setupFee,
-        },
+          setupFee: data.setupFee
+        }
       });
 
       await auditLog({
         action: 'THERAPY_PLAN_CREATED',
         entity: 'TherapyPlan',
         entityId: therapyPlan.id,
-        details: { 
+        details: {
           stripePriceId: price.id,
           stripeProductId: product.id,
-          amount: data.amount 
+          amount: data.amount
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
 
       return { therapyPlan, product, price };
@@ -100,30 +145,49 @@ export class SubscriptionService {
       await auditLog({
         action: 'THERAPY_PLAN_CREATE_FAILED',
         entity: 'TherapyPlan',
-        details: { 
+        details: {
           planName: data.name,
           error: error instanceof Error ? error.message : 'Unknown error'
         },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
       throw error;
     }
   }
 
   /**
-   * Subscribe user to therapy plan
+   * Subscribe user to a therapy plan with optional payment method
+   * Creates Stripe subscription and handles payment setup if needed
+   * @param {string} userId - User ID to create subscription for
+   * @param {string} therapyPlanId - Database ID of therapy plan to subscribe to
+   * @param {string} [paymentMethodId] - Stripe payment method ID for immediate billing
+   * @param {string} [couponCode] - Optional coupon code for discounts
+   * @returns {Promise<SubscriptionWithSetupIntent>} Created subscription with optional setup intent
+   * @throws {Error} If user/plan not found, plan inactive, or Stripe operations fail
+   * @example
+   * ```typescript
+   * const result = await SubscriptionService.subscribeToTherapyPlan(
+   *   'user_123',
+   *   'plan_456',
+   *   'pm_card_visa',
+   *   'WELCOME10'
+   * );
+   * if (result.setupIntent) {
+   *   // Payment method setup required
+   * }
+   * ```
    */
   static async subscribeToTherapyPlan(
     userId: string,
     therapyPlanId: string,
     paymentMethodId?: string,
     couponCode?: string
-  ): Promise<{ subscription: any; setupIntent?: any }> {
+  ): Promise<SubscriptionWithSetupIntent> {
     try {
       // Get user and therapy plan
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { customer: true },
+        include: { customer: true }
       });
 
       if (!user) {
@@ -131,7 +195,7 @@ export class SubscriptionService {
       }
 
       const therapyPlan = await prisma.therapyPlan.findUnique({
-        where: { id: therapyPlanId },
+        where: { id: therapyPlanId }
       });
 
       if (!therapyPlan || !therapyPlan.isActive) {
@@ -144,7 +208,7 @@ export class SubscriptionService {
         const customerResult = await StripeService.createCustomer({
           userId: user.id,
           email: user.email,
-          name: user.name || undefined,
+          name: user.name || undefined
         });
         customer = customerResult.customer;
       }
@@ -158,12 +222,13 @@ export class SubscriptionService {
         metadata: {
           therapyPlanId,
           userId,
-          ...(couponCode && { couponCode }),
-        },
+          ...(couponCode && { couponCode })
+        }
       };
 
       // Create subscription
-      const { subscription, stripeSubscription } = await StripeService.createSubscription(subscriptionData);
+      const { subscription, stripeSubscription } =
+        await StripeService.createSubscription(subscriptionData);
 
       // If no payment method provided, create setup intent
       let setupIntent;
@@ -176,12 +241,12 @@ export class SubscriptionService {
         action: 'USER_SUBSCRIBED_TO_THERAPY_PLAN',
         entity: 'Subscription',
         entityId: subscription.id,
-        details: { 
+        details: {
           therapyPlanId,
           subscriptionId: subscription.stripeSubscriptionId,
           amount: therapyPlan.amount
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
 
       return { subscription, setupIntent };
@@ -190,32 +255,46 @@ export class SubscriptionService {
         userId,
         action: 'THERAPY_PLAN_SUBSCRIPTION_FAILED',
         entity: 'Subscription',
-        details: { 
+        details: {
           therapyPlanId,
           error: error instanceof Error ? error.message : 'Unknown error'
         },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
       throw error;
     }
   }
 
   /**
-   * Change user's subscription plan
+   * Change user's active subscription to a different therapy plan
+   * Handles prorations and billing adjustments through Stripe
+   * @param {string} userId - User ID whose subscription to modify
+   * @param {string} newTherapyPlanId - Database ID of new therapy plan
+   * @param {'create_prorations'|'none'|'always_invoice'} [prorationBehavior='create_prorations'] - How to handle billing changes
+   * @returns {Promise<Subscription>} Updated subscription record
+   * @throws {Error} If no active subscription found or new plan is inactive
+   * @example
+   * ```typescript
+   * const updated = await SubscriptionService.changeSubscriptionPlan(
+   *   'user_123',
+   *   'premium_plan_789',
+   *   'create_prorations'
+   * );
+   * ```
    */
   static async changeSubscriptionPlan(
     userId: string,
     newTherapyPlanId: string,
     prorationBehavior: 'create_prorations' | 'none' | 'always_invoice' = 'create_prorations'
-  ): Promise<any> {
+  ): Promise<Subscription> {
     try {
       // Get current active subscription
       const currentSubscription = await prisma.subscription.findFirst({
         where: {
           customer: { userId },
-          status: { in: ['ACTIVE', 'TRIALING'] },
+          status: { in: ['ACTIVE', 'TRIALING'] }
         },
-        include: { customer: true },
+        include: { customer: true }
       });
 
       if (!currentSubscription) {
@@ -224,7 +303,7 @@ export class SubscriptionService {
 
       // Get new therapy plan
       const newTherapyPlan = await prisma.therapyPlan.findUnique({
-        where: { id: newTherapyPlanId },
+        where: { id: newTherapyPlanId }
       });
 
       if (!newTherapyPlan || !newTherapyPlan.isActive) {
@@ -235,7 +314,7 @@ export class SubscriptionService {
       const { subscription } = await StripeService.updateSubscription({
         subscriptionId: currentSubscription.stripeSubscriptionId,
         priceId: newTherapyPlan.stripePriceId,
-        prorationBehavior,
+        prorationBehavior
       });
 
       // Update local database
@@ -246,8 +325,8 @@ export class SubscriptionService {
           stripeProductId: newTherapyPlan.stripeProductId,
           planName: newTherapyPlan.name,
           amount: newTherapyPlan.amount,
-          metadata: JSON.stringify({ therapyPlanId: newTherapyPlanId }),
-        },
+          metadata: JSON.stringify({ therapyPlanId: newTherapyPlanId })
+        }
       });
 
       await auditLog({
@@ -255,12 +334,12 @@ export class SubscriptionService {
         action: 'SUBSCRIPTION_PLAN_CHANGED',
         entity: 'Subscription',
         entityId: currentSubscription.id,
-        details: { 
+        details: {
           oldPlanId: currentSubscription.metadata,
           newTherapyPlanId,
           prorationBehavior
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
 
       return subscription;
@@ -269,33 +348,50 @@ export class SubscriptionService {
         userId,
         action: 'SUBSCRIPTION_PLAN_CHANGE_FAILED',
         entity: 'Subscription',
-        details: { 
+        details: {
           newTherapyPlanId,
           error: error instanceof Error ? error.message : 'Unknown error'
         },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
       throw error;
     }
   }
 
   /**
-   * Cancel user's subscription
+   * Cancel user's subscription with optional immediate or end-of-period cancellation
+   * Provides flexibility in cancellation timing for better user experience
+   * @param {string} userId - User ID requesting cancellation
+   * @param {string} subscriptionId - Stripe subscription ID to cancel
+   * @param {boolean} [cancelAtPeriodEnd=true] - Whether to cancel immediately or at period end
+   * @param {string} [cancellationReason] - Optional reason for cancellation tracking
+   * @returns {Promise<Subscription>} Updated subscription with cancellation details
+   * @throws {Error} If subscription not found or not owned by user
+   * @example
+   * ```typescript
+   * // Cancel at end of billing period
+   * const cancelled = await SubscriptionService.cancelSubscription(
+   *   'user_123',
+   *   'sub_stripe_id',
+   *   true,
+   *   'User requested cancellation'
+   * );
+   * ```
    */
   static async cancelSubscription(
     userId: string,
     subscriptionId: string,
     cancelAtPeriodEnd: boolean = true,
     cancellationReason?: string
-  ): Promise<any> {
+  ): Promise<Subscription> {
     try {
       // Verify subscription belongs to user
       const subscription = await prisma.subscription.findFirst({
         where: {
           stripeSubscriptionId: subscriptionId,
-          customer: { userId },
+          customer: { userId }
         },
-        include: { customer: true },
+        include: { customer: true }
       });
 
       if (!subscription) {
@@ -313,12 +409,12 @@ export class SubscriptionService {
         action: 'SUBSCRIPTION_CANCELED',
         entity: 'Subscription',
         entityId: subscription.id,
-        details: { 
+        details: {
           subscriptionId,
           cancelAtPeriodEnd,
           cancellationReason
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
 
       return updatedSubscription;
@@ -327,27 +423,42 @@ export class SubscriptionService {
         userId,
         action: 'SUBSCRIPTION_CANCELLATION_FAILED',
         entity: 'Subscription',
-        details: { 
+        details: {
           subscriptionId,
           error: error instanceof Error ? error.message : 'Unknown error'
         },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
       throw error;
     }
   }
 
   /**
-   * Resume canceled subscription
+   * Resume a subscription that was set to cancel at period end
+   * Allows users to reactivate their subscription before cancellation takes effect
+   * @param {string} userId - User ID requesting resumption
+   * @param {string} subscriptionId - Stripe subscription ID to resume
+   * @returns {Promise<Stripe.Subscription>} Updated Stripe subscription object
+   * @throws {Error} If subscription not found or not owned by user
+   * @example
+   * ```typescript
+   * const resumed = await SubscriptionService.resumeSubscription(
+   *   'user_123',
+   *   'sub_stripe_id'
+   * );
+   * ```
    */
-  static async resumeSubscription(userId: string, subscriptionId: string): Promise<any> {
+  static async resumeSubscription(
+    userId: string,
+    subscriptionId: string
+  ): Promise<Stripe.Subscription> {
     try {
       const subscription = await prisma.subscription.findFirst({
         where: {
           stripeSubscriptionId: subscriptionId,
-          customer: { userId },
+          customer: { userId }
         },
-        include: { customer: true },
+        include: { customer: true }
       });
 
       if (!subscription) {
@@ -356,16 +467,16 @@ export class SubscriptionService {
 
       const stripe = StripeService.getStripeInstance();
       const stripeSubscription = await stripe.subscriptions.update(subscriptionId, {
-        cancel_at_period_end: false,
+        cancel_at_period_end: false
       });
 
       // Update local database
       await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: stripeSubscription.status as any,
-          cancelAt: null,
-        },
+          status: stripeSubscription.status,
+          cancelAt: null
+        }
       });
 
       await auditLog({
@@ -374,7 +485,7 @@ export class SubscriptionService {
         entity: 'Subscription',
         entityId: subscription.id,
         details: { subscriptionId },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
 
       return stripeSubscription;
@@ -383,29 +494,41 @@ export class SubscriptionService {
         userId,
         action: 'SUBSCRIPTION_RESUME_FAILED',
         entity: 'Subscription',
-        details: { 
+        details: {
           subscriptionId,
           error: error instanceof Error ? error.message : 'Unknown error'
         },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
       throw error;
     }
   }
 
   /**
-   * Get user's subscription details
+   * Get comprehensive subscription details for a user
+   * Combines local database data with real-time Stripe subscription information
+   * @param {string} userId - User ID to get subscription for
+   * @returns {Promise<UserSubscriptionDetails | null>} Complete subscription details or null if no active subscription
+   * @example
+   * ```typescript
+   * const subscription = await SubscriptionService.getUserSubscription('user_123');
+   * if (subscription) {
+   *   console.log(`Plan: ${subscription.planName}`);
+   *   console.log(`Status: ${subscription.status}`);
+   *   console.log(`Next billing: ${subscription.stripeData.current_period_end}`);
+   * }
+   * ```
    */
-  static async getUserSubscription(userId: string): Promise<any> {
+  static async getUserSubscription(userId: string): Promise<UserSubscriptionDetails | null> {
     const subscription = await prisma.subscription.findFirst({
       where: {
         customer: { userId },
-        status: { in: ['ACTIVE', 'TRIALING', 'PAST_DUE'] },
+        status: { in: ['ACTIVE', 'TRIALING', 'PAST_DUE'] }
       },
       include: {
         customer: true,
-        subscriptionItems: true,
-      },
+        subscriptionItems: true
+      }
     });
 
     if (!subscription) {
@@ -413,52 +536,77 @@ export class SubscriptionService {
     }
 
     // Get Stripe subscription details for real-time data
-    const { stripeSubscription } = await StripeService.getSubscription(subscription.stripeSubscriptionId);
+    const { stripeSubscription } = await StripeService.getSubscription(
+      subscription.stripeSubscriptionId
+    );
 
     return {
       ...subscription,
-      stripeData: stripeSubscription,
+      stripeData: stripeSubscription
     };
   }
 
   /**
-   * Get available therapy plans
+   * Get all active therapy plans available for subscription
+   * Returns plans sorted by price for consistent ordering
+   * @returns {Promise<TherapyPlan[]>} Array of active therapy plans sorted by price
+   * @example
+   * ```typescript
+   * const plans = await SubscriptionService.getAvailableTherapyPlans();
+   * plans.forEach(plan => {
+   *   console.log(`${plan.name}: $${plan.amount}/${plan.interval}`);
+   * });
+   * ```
    */
-  static async getAvailableTherapyPlans(): Promise<any[]> {
+  static async getAvailableTherapyPlans(): Promise<TherapyPlan[]> {
     return prisma.therapyPlan.findMany({
       where: { isActive: true },
-      orderBy: { amount: 'asc' },
+      orderBy: { amount: 'asc' }
     });
   }
 
   /**
-   * Get subscription analytics (admin only)
+   * Generate comprehensive subscription analytics for business intelligence
+   * Provides key metrics including revenue, churn, and plan distribution
+   * @param {Date} [startDate] - Optional start date for analytics period
+   * @param {Date} [endDate] - Optional end date for analytics period
+   * @returns {Promise<SubscriptionAnalytics>} Complete analytics dashboard data
+   * @example
+   * ```typescript
+   * const analytics = await SubscriptionService.getSubscriptionAnalytics(
+   *   new Date('2024-01-01'),
+   *   new Date('2024-12-31')
+   * );
+   * console.log(`Monthly Revenue: $${analytics.monthlyRevenue}`);
+   * console.log(`Churn Rate: ${analytics.churnRate}%`);
+   * ```
    */
-  static async getSubscriptionAnalytics(startDate?: Date, endDate?: Date): Promise<SubscriptionAnalytics> {
-    const dateFilter = startDate && endDate 
-      ? { createdAt: { gte: startDate, lte: endDate } }
-      : {};
+  static async getSubscriptionAnalytics(
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<SubscriptionAnalytics> {
+    const dateFilter = startDate && endDate ? { createdAt: { gte: startDate, lte: endDate } } : {};
 
     // Total subscriptions
     const totalSubscriptions = await prisma.subscription.count({
-      where: dateFilter,
+      where: dateFilter
     });
 
     // Active subscriptions
     const activeSubscriptions = await prisma.subscription.count({
       where: {
         status: { in: ['ACTIVE', 'TRIALING'] },
-        ...dateFilter,
-      },
+        ...dateFilter
+      }
     });
 
     // Monthly revenue from active subscriptions
     const activeSubscriptionsData = await prisma.subscription.findMany({
       where: {
         status: { in: ['ACTIVE', 'TRIALING'] },
-        ...dateFilter,
+        ...dateFilter
       },
-      select: { amount: true, interval: true, intervalCount: true },
+      select: { amount: true, interval: true, intervalCount: true }
     });
 
     const monthlyRevenue = activeSubscriptionsData.reduce((total, sub) => {
@@ -476,9 +624,9 @@ export class SubscriptionService {
       by: ['planType'],
       where: {
         status: { in: ['ACTIVE', 'TRIALING'] },
-        ...dateFilter,
+        ...dateFilter
       },
-      _count: { id: true },
+      _count: { id: true }
     });
 
     const planDistributionObj: Record<string, number> = {};
@@ -491,29 +639,40 @@ export class SubscriptionService {
       where: {
         trialEnd: { not: null },
         status: 'ACTIVE',
-        ...dateFilter,
-      },
+        ...dateFilter
+      }
     });
 
     return {
       totalSubscriptions,
       activeSubscriptions,
       monthlyRevenue: Math.round(monthlyRevenue * 100) / 100,
-      churnRate: totalSubscriptions > 0 ? 
-        ((totalSubscriptions - activeSubscriptions) / totalSubscriptions) * 100 : 0,
+      churnRate:
+        totalSubscriptions > 0
+          ? ((totalSubscriptions - activeSubscriptions) / totalSubscriptions) * 100
+          : 0,
       trialConversions: trialSubscriptions,
-      planDistribution: planDistributionObj,
+      planDistribution: planDistributionObj
     };
   }
 
   /**
-   * Process subscription renewal
+   * Process subscription renewal and update local records
+   * Synchronizes local subscription data with Stripe after renewal
+   * @param {string} subscriptionId - Stripe subscription ID that renewed
+   * @returns {Promise<void>}
+   * @throws {Error} If subscription not found or update fails
+   * @example
+   * ```typescript
+   * // Called from Stripe webhook handler
+   * await SubscriptionService.processSubscriptionRenewal('sub_stripe_id');
+   * ```
    */
   static async processSubscriptionRenewal(subscriptionId: string): Promise<void> {
     try {
       const subscription = await prisma.subscription.findUnique({
         where: { stripeSubscriptionId: subscriptionId },
-        include: { customer: true },
+        include: { customer: true }
       });
 
       if (!subscription) {
@@ -527,10 +686,10 @@ export class SubscriptionService {
       await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: stripeSubscription.status as any,
+          status: stripeSubscription.status,
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-        },
+          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000)
+        }
       });
 
       await auditLog({
@@ -538,34 +697,53 @@ export class SubscriptionService {
         action: 'SUBSCRIPTION_RENEWED',
         entity: 'Subscription',
         entityId: subscription.id,
-        details: { 
+        details: {
           subscriptionId,
           newPeriodEnd: stripeSubscription.current_period_end
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
     } catch (error) {
       await auditLog({
         action: 'SUBSCRIPTION_RENEWAL_FAILED',
         entity: 'Subscription',
-        details: { 
+        details: {
           subscriptionId,
           error: error instanceof Error ? error.message : 'Unknown error'
         },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
       throw error;
     }
   }
 
   /**
-   * Handle subscription status updates from webhooks
+   * Handle subscription status updates from Stripe webhooks
+   * Synchronizes subscription status changes from Stripe to local database
+   * @param {string} subscriptionId - Stripe subscription ID to update
+   * @param {string} status - New subscription status from Stripe
+   * @param {Stripe.Event.Data.Object} [eventData] - Additional event data from Stripe webhook
+   * @returns {Promise<void>}
+   * @throws {Error} If subscription update fails
+   * @example
+   * ```typescript
+   * // Called from Stripe webhook handler
+   * await SubscriptionService.updateSubscriptionStatus(
+   *   'sub_stripe_id',
+   *   'active',
+   *   stripeEvent.data.object
+   * );
+   * ```
    */
-  static async updateSubscriptionStatus(subscriptionId: string, status: string, eventData?: any): Promise<void> {
+  static async updateSubscriptionStatus(
+    subscriptionId: string,
+    status: string,
+    eventData?: Stripe.Event.Data.Object
+  ): Promise<void> {
     try {
       const subscription = await prisma.subscription.findUnique({
         where: { stripeSubscriptionId: subscriptionId },
-        include: { customer: true },
+        include: { customer: true }
       });
 
       if (!subscription) {
@@ -573,11 +751,15 @@ export class SubscriptionService {
         return;
       }
 
-      const updateData: any = { status: status.toUpperCase() };
+      const updateData: Partial<Subscription> = {
+        status: status.toUpperCase() as SubscriptionStatus
+      };
 
       // Handle specific status updates
       if (status === 'canceled' && eventData) {
-        updateData.canceledAt = eventData.canceled_at ? new Date(eventData.canceled_at * 1000) : new Date();
+        updateData.canceledAt = eventData.canceled_at
+          ? new Date(eventData.canceled_at * 1000)
+          : new Date();
       }
 
       if (eventData?.current_period_start && eventData?.current_period_end) {
@@ -587,7 +769,7 @@ export class SubscriptionService {
 
       await prisma.subscription.update({
         where: { id: subscription.id },
-        data: updateData,
+        data: updateData
       });
 
       await auditLog({
@@ -595,23 +777,23 @@ export class SubscriptionService {
         action: 'SUBSCRIPTION_STATUS_UPDATED',
         entity: 'Subscription',
         entityId: subscription.id,
-        details: { 
+        details: {
           subscriptionId,
           newStatus: status,
           eventType: eventData?.type
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
     } catch (error) {
       await auditLog({
         action: 'SUBSCRIPTION_STATUS_UPDATE_FAILED',
         entity: 'Subscription',
-        details: { 
+        details: {
           subscriptionId,
           newStatus: status,
           error: error instanceof Error ? error.message : 'Unknown error'
         },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
       throw error;
     }

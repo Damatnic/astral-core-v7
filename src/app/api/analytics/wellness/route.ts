@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30');
     const report = searchParams.get('report') === 'true';
-    
+
     const dateRange = {
       startDate: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
-      endDate: new Date(),
+      endDate: new Date()
     };
 
     let data;
@@ -41,13 +41,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data,
-      dateRange,
+      dateRange
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting wellness analytics:', error);
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.SERVER_ERROR },
+      { error: error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }

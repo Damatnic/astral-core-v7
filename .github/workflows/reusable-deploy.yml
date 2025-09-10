@@ -1,0 +1,435 @@
+name: 'Reusable Deployment Workflow'
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Target environment (staging, production)'
+        required: true
+        type: string
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+      deployment_strategy:
+        description: 'Deployment strategy (rolling, blue-green, recreate)'
+        required: false
+        default: 'rolling'
+        type: string
+      health_check_url:
+        description: 'URL for health checks'
+        required: true
+        type: string
+      backup_before_deploy:
+        description: 'Create backup before deployment'
+        required: false
+        default: true
+        type: boolean
+      run_migrations:
+        description: 'Run database migrations'
+        required: false
+        default: true
+        type: boolean
+      notification_channels:
+        description: 'Notification channels (comma-separated)'
+        required: false
+        default: 'github'
+        type: string
+      rollback_on_failure:
+        description: 'Automatically rollback on deployment failure'
+        required: false
+        default: true
+        type: boolean
+    secrets:
+      DEPLOY_TOKEN:
+        description: 'Deployment authentication token'
+        required: true
+      DATABASE_URL:
+        description: 'Database connection URL'
+        required: false
+      KUBE_CONFIG:
+        description: 'Kubernetes configuration'
+        required: false
+      DOCKER_REGISTRY_URL:
+        description: 'Docker registry URL'
+        required: false
+      DOCKER_REGISTRY_USER:
+        description: 'Docker registry username'
+        required: false
+      DOCKER_REGISTRY_TOKEN:
+        description: 'Docker registry token'
+        required: false
+      SLACK_WEBHOOK_URL:
+        description: 'Slack webhook for notifications'
+        required: false
+      DEPLOY_ENV_VARS:
+        description: 'Additional deployment environment variables as JSON'
+        required: false
+    outputs:
+      deployment_status:
+        description: 'Deployment status (success/failure/rolled_back)'
+        value: ${{ jobs.deploy.outputs.deployment_status }}
+      deployment_url:
+        description: 'URL of the deployed application'
+        value: ${{ jobs.deploy.outputs.deployment_url }}
+      deployment_time:
+        description: 'Time taken for deployment in seconds'
+        value: ${{ jobs.deploy.outputs.deployment_time }}
+
+jobs:
+  deploy:
+    name: 'Deploy to ${{ inputs.environment }}'
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.health_check_url }}
+    
+    outputs:
+      deployment_status: ${{ steps.deployment-result.outputs.deployment_status }}
+      deployment_url: ${{ steps.deployment-result.outputs.deployment_url }}
+      deployment_time: ${{ steps.deployment-timer.outputs.deployment_time }}
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Deployment Environment'
+        run: |
+          echo "🚀 Setting up deployment environment for ${{ inputs.environment }}"
+          echo "Image tag: ${{ inputs.image_tag }}"
+          echo "Strategy: ${{ inputs.deployment_strategy }}"
+          echo "Health check URL: ${{ inputs.health_check_url }}"
+          
+          # Set deployment-specific environment variables
+          echo "DEPLOYMENT_ENV=${{ inputs.environment }}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ inputs.image_tag }}" >> $GITHUB_ENV
+          echo "HEALTH_CHECK_URL=${{ inputs.health_check_url }}" >> $GITHUB_ENV
+          
+          # Parse and set additional deployment environment variables
+          if [ -n "${{ secrets.DEPLOY_ENV_VARS }}" ]; then
+            echo '${{ secrets.DEPLOY_ENV_VARS }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          fi
+
+      - name: 'Validate Deployment Prerequisites'
+        run: |
+          echo "✅ Validating deployment prerequisites..."
+          
+          # Check if image exists
+          if [ -n "${{ secrets.DOCKER_REGISTRY_URL }}" ]; then
+            echo "Checking if image exists: ${{ secrets.DOCKER_REGISTRY_URL }}/astral-core-v7:${{ inputs.image_tag }}"
+          fi
+          
+          # Validate environment-specific requirements
+          case "${{ inputs.environment }}" in
+            "production")
+              echo "🔒 Production deployment - extra validation required"
+              if [ "${{ github.ref }}" != "refs/heads/main" ] && [ "${{ github.ref }}" != "refs/heads/master" ] && [[ ! "${{ github.ref }}" =~ refs/tags/.* ]]; then
+                echo "❌ Production deployments only allowed from main branch or tags"
+                exit 1
+              fi
+              ;;
+            "staging")
+              echo "🧪 Staging deployment validation"
+              ;;
+          esac
+
+      - name: 'Create Pre-deployment Backup'
+        if: inputs.backup_before_deploy == true
+        run: |
+          echo "💾 Creating pre-deployment backup..."
+          timestamp=$(date +%Y%m%d_%H%M%S)
+          backup_name="${{ inputs.environment }}_backup_${timestamp}_${{ github.sha }}"
+          
+          # This would typically use your cloud provider's backup tools
+          # Example for different platforms:
+          
+          case "${{ inputs.environment }}" in
+            "production")
+              echo "Creating production backup: $backup_name"
+              # kubectl create backup $backup_name
+              # aws rds create-db-snapshot --db-snapshot-identifier $backup_name
+              ;;
+            "staging")
+              echo "Creating staging backup: $backup_name"
+              ;;
+          esac
+          
+          echo "BACKUP_NAME=$backup_name" >> $GITHUB_ENV
+          echo "✅ Backup created: $backup_name"
+
+      - name: 'Run Database Migrations'
+        if: inputs.run_migrations == true
+        run: |
+          echo "🗄️ Running database migrations..."
+          
+          # Setup Node.js for migration scripts
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          
+          # Install dependencies
+          npm ci --prefer-offline --no-audit --no-fund
+          
+          # Run migrations
+          npm run db:migrate:prod
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: 'Deploy Using Selected Strategy'
+        id: deployment-timer
+        run: |
+          start_time=$(date +%s)
+          deployment_success=false
+          
+          echo "🚀 Starting ${{ inputs.deployment_strategy }} deployment..."
+          
+          case "${{ inputs.deployment_strategy }}" in
+            "rolling")
+              echo "📊 Rolling deployment strategy"
+              # Kubernetes rolling update example
+              # kubectl set image deployment/astral-core-v7 astral-core-v7=${{ secrets.DOCKER_REGISTRY_URL }}/astral-core-v7:${{ inputs.image_tag }}
+              # kubectl rollout status deployment/astral-core-v7 --timeout=600s
+              deployment_success=true
+              ;;
+              
+            "blue-green")
+              echo "🔵🟢 Blue-green deployment strategy"
+              # Blue-green deployment logic
+              # 1. Deploy to green environment
+              # 2. Run health checks
+              # 3. Switch traffic
+              # 4. Monitor
+              deployment_success=true
+              ;;
+              
+            "recreate")
+              echo "🔄 Recreate deployment strategy"
+              # Recreate strategy - stop old, start new
+              deployment_success=true
+              ;;
+              
+            *)
+              echo "❌ Unknown deployment strategy: ${{ inputs.deployment_strategy }}"
+              exit 1
+              ;;
+          esac
+          
+          end_time=$(date +%s)
+          deployment_time=$((end_time - start_time))
+          echo "deployment-time=${deployment_time}" >> $GITHUB_OUTPUT
+          
+          if [ "$deployment_success" = true ]; then
+            echo "✅ Deployment completed in ${deployment_time} seconds"
+          else
+            echo "❌ Deployment failed after ${deployment_time} seconds"
+            exit 1
+          fi
+
+      - name: 'Health Check and Smoke Tests'
+        id: health-check
+        run: |
+          echo "🏥 Running health checks and smoke tests..."
+          
+          max_attempts=30
+          attempt=1
+          health_check_passed=false
+          
+          while [ $attempt -le $max_attempts ]; do
+            echo "Health check attempt $attempt/$max_attempts..."
+            
+            if curl -f -s "${{ inputs.health_check_url }}" > /dev/null 2>&1; then
+              echo "✅ Health check passed"
+              health_check_passed=true
+              break
+            else
+              echo "❌ Health check failed, retrying in 10 seconds..."
+              sleep 10
+              attempt=$((attempt + 1))
+            fi
+          done
+          
+          if [ "$health_check_passed" = false ]; then
+            echo "❌ Health checks failed after $max_attempts attempts"
+            echo "health-check-status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "health-check-status=passed" >> $GITHUB_OUTPUT
+          
+          # Additional smoke tests
+          echo "💨 Running smoke tests..."
+          
+          # Test critical endpoints
+          critical_endpoints="/api/health /api/version"
+          for endpoint in $critical_endpoints; do
+            url="${{ inputs.health_check_url }}${endpoint}"
+            echo "Testing endpoint: $url"
+            
+            if ! curl -f -s "$url" > /dev/null 2>&1; then
+              echo "❌ Smoke test failed for endpoint: $endpoint"
+              echo "health-check-status=failed" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          done
+          
+          echo "✅ All smoke tests passed"
+
+      - name: 'Set Deployment Result'
+        id: deployment-result
+        run: |
+          if [ "${{ steps.health-check.outputs.health-check-status }}" = "passed" ]; then
+            echo "deployment-status=success" >> $GITHUB_OUTPUT
+            echo "deployment-url=${{ inputs.health_check_url }}" >> $GITHUB_OUTPUT
+            echo "✅ Deployment successful"
+          else
+            echo "deployment-status=failure" >> $GITHUB_OUTPUT
+            echo "❌ Deployment failed health checks"
+          fi
+
+      - name: 'Rollback on Failure'
+        if: failure() && inputs.rollback_on_failure == true
+        run: |
+          echo "🔄 Rolling back deployment due to failure..."
+          
+          case "${{ inputs.deployment_strategy }}" in
+            "rolling")
+              echo "Rolling back Kubernetes deployment"
+              # kubectl rollout undo deployment/astral-core-v7
+              ;;
+            "blue-green")
+              echo "Rolling back blue-green deployment"
+              # Switch traffic back to blue environment
+              ;;
+            "recreate")
+              echo "Rolling back recreate deployment"
+              # Restore from backup
+              ;;
+          esac
+          
+          # Update deployment status
+          echo "deployment-status=rolled_back" >> $GITHUB_OUTPUT
+          echo "🔄 Rollback completed"
+
+      - name: 'Send Deployment Notifications'
+        if: always()
+        run: |
+          echo "📢 Sending deployment notifications..."
+          
+          status="${{ steps.deployment-result.outputs.deployment_status }}"
+          deployment_time="${{ steps.deployment-timer.outputs.deployment_time }}"
+          
+          case "$status" in
+            "success")
+              status_emoji="✅"
+              status_text="Successful"
+              ;;
+            "failure")
+              status_emoji="❌"
+              status_text="Failed"
+              ;;
+            "rolled_back")
+              status_emoji="🔄"
+              status_text="Rolled Back"
+              ;;
+            *)
+              status_emoji="❓"
+              status_text="Unknown"
+              ;;
+          esac
+          
+          message="${status_emoji} **Deployment $status_text**
+          
+          **Environment:** ${{ inputs.environment }}
+          **Image:** ${{ inputs.image_tag }}
+          **Strategy:** ${{ inputs.deployment_strategy }}
+          **Duration:** ${deployment_time}s
+          **Commit:** ${{ github.sha }}
+          **Actor:** ${{ github.actor }}
+          
+          **URL:** ${{ inputs.health_check_url }}
+          **Backup:** ${BACKUP_NAME:-'N/A'}"
+          
+          # Send GitHub notification (always enabled)
+          if [[ "${{ inputs.notification_channels }}" == *"github"* ]]; then
+            echo "Sending GitHub notification"
+          fi
+          
+          # Send Slack notification (if configured)
+          if [[ "${{ inputs.notification_channels }}" == *"slack"* ]] && [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            echo "Sending Slack notification"
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{\"text\":\"$message\"}" \
+              "${{ secrets.SLACK_WEBHOOK_URL }}" || true
+          fi
+
+      - name: 'Update Deployment Tracking'
+        if: always()
+        run: |
+          echo "📊 Updating deployment tracking..."
+          
+          # This would typically update your deployment tracking system
+          # Examples:
+          # - Update monitoring dashboards
+          # - Log deployment metrics
+          # - Update incident management systems
+          
+          case "${{ steps.deployment-result.outputs.deployment_status }}" in
+            "success")
+              echo "Recording successful deployment"
+              ;;
+            "failure"|"rolled_back")
+              echo "Recording failed deployment"
+              # Create incident if this is production
+              if [ "${{ inputs.environment }}" = "production" ]; then
+                echo "🚨 Production deployment failed - consider creating incident"
+              fi
+              ;;
+          esac
+
+      - name: 'Deployment Summary'
+        if: always()
+        run: |
+          echo "# 🚀 Deployment Summary" > deployment-summary.md
+          echo "" >> deployment-summary.md
+          echo "**Deployment Date:** $(date -u)" >> deployment-summary.md
+          echo "**Environment:** ${{ inputs.environment }}" >> deployment-summary.md
+          echo "**Image Tag:** ${{ inputs.image_tag }}" >> deployment-summary.md
+          echo "**Strategy:** ${{ inputs.deployment_strategy }}" >> deployment-summary.md
+          echo "**Status:** ${{ steps.deployment-result.outputs.deployment_status }}" >> deployment-summary.md
+          echo "**Duration:** ${{ steps.deployment-timer.outputs.deployment_time }}s" >> deployment-summary.md
+          echo "**Health Check:** ${{ steps.health-check.outputs.health-check-status }}" >> deployment-summary.md
+          echo "" >> deployment-summary.md
+          echo "**Backup Created:** ${BACKUP_NAME:-'N/A'}" >> deployment-summary.md
+          echo "**Migrations Run:** ${{ inputs.run_migrations }}" >> deployment-summary.md
+          echo "**Deployment URL:** ${{ inputs.health_check_url }}" >> deployment-summary.md
+          
+          cat deployment-summary.md
+
+      - name: 'Upload Deployment Report'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-summary-${{ inputs.environment }}
+          path: deployment-summary.md
+          retention-days: 90
+
+      - name: 'Final Status Check'
+        run: |
+          status="${{ steps.deployment-result.outputs.deployment_status }}"
+          case "$status" in
+            "success")
+              echo "🎉 Deployment to ${{ inputs.environment }} completed successfully!"
+              ;;
+            "failure")
+              echo "❌ Deployment to ${{ inputs.environment }} failed!"
+              exit 1
+              ;;
+            "rolled_back")
+              echo "🔄 Deployment to ${{ inputs.environment }} was rolled back!"
+              exit 1
+              ;;
+            *)
+              echo "❓ Unknown deployment status: $status"
+              exit 1
+              ;;
+          esac

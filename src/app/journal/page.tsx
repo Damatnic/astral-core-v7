@@ -24,7 +24,7 @@ const MOOD_EMOJIS: Record<string, string> = {
   neutral: '😐',
   excited: '🤩',
   tired: '😴',
-  grateful: '🙏',
+  grateful: '🙏'
 };
 
 export default function JournalPage() {
@@ -36,7 +36,7 @@ export default function JournalPage() {
     title: '',
     content: '',
     mood: '',
-    tags: [] as string[],
+    tags: [] as string[]
   });
   const [tagInput, setTagInput] = useState('');
 
@@ -60,18 +60,18 @@ export default function JournalPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const url = editingEntry 
+      const url = editingEntry
         ? `/api/journal/entries?id=${editingEntry.id}`
         : '/api/journal/entries';
-      
+
       const method = editingEntry ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
 
       if (response.ok) {
@@ -85,10 +85,10 @@ export default function JournalPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this entry?')) return;
-    
+
     try {
       const response = await fetch(`/api/journal/entries?id=${id}`, {
-        method: 'DELETE',
+        method: 'DELETE'
       });
 
       if (response.ok) {
@@ -105,7 +105,7 @@ export default function JournalPage() {
       title: entry.title || '',
       content: entry.content,
       mood: entry.mood || '',
-      tags: entry.tags,
+      tags: entry.tags
     });
     setShowForm(true);
   };
@@ -115,7 +115,7 @@ export default function JournalPage() {
       title: '',
       content: '',
       mood: '',
-      tags: [],
+      tags: []
     });
     setEditingEntry(null);
     setShowForm(false);
@@ -126,7 +126,7 @@ export default function JournalPage() {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, tagInput.trim()],
+        tags: [...prev.tags, tagInput.trim()]
       }));
       setTagInput('');
     }
@@ -135,17 +135,15 @@ export default function JournalPage() {
   const removeTag = (tag: string) => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(t => t !== tag),
+      tags: prev.tags.filter(t => t !== tag)
     }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            My Journal
-          </h1>
+    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8'>
+      <div className='max-w-6xl mx-auto px-4'>
+        <div className='flex justify-between items-center mb-8'>
+          <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>My Journal</h1>
           <Button
             onClick={() => setShowForm(!showForm)}
             variant={showForm ? 'secondary' : 'primary'}
@@ -155,30 +153,28 @@ export default function JournalPage() {
         </div>
 
         {showForm && (
-          <Card className="mb-8">
+          <Card className='mb-8'>
             <CardHeader>
-              <CardTitle>
-                {editingEntry ? 'Edit Entry' : 'New Journal Entry'}
-              </CardTitle>
+              <CardTitle>{editingEntry ? 'Edit Entry' : 'New Journal Entry'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className='space-y-4'>
                 <Input
-                  label="Title (Optional)"
+                  label='Title (Optional)'
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Give your entry a title..."
+                  onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder='Give your entry a title...'
                 />
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <label className='block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2'>
                     How are you feeling?
                   </label>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className='flex gap-2 flex-wrap'>
                     {Object.entries(MOOD_EMOJIS).map(([mood, emoji]) => (
                       <button
                         key={mood}
-                        type="button"
+                        type='button'
                         onClick={() => setFormData(prev => ({ ...prev, mood }))}
                         className={`px-3 py-2 rounded-lg border-2 transition-colors ${
                           formData.mood === mood
@@ -186,70 +182,68 @@ export default function JournalPage() {
                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                         }`}
                       >
-                        <span className="text-2xl mr-2">{emoji}</span>
-                        <span className="capitalize">{mood}</span>
+                        <span className='text-2xl mr-2'>{emoji}</span>
+                        <span className='capitalize'>{mood}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <label className='block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2'>
                     Content
                   </label>
                   <textarea
                     required
                     value={formData.content}
-                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                    onChange={e => setFormData(prev => ({ ...prev, content: e.target.value }))}
                     rows={8}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Write your thoughts..."
+                    className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+                    placeholder='Write your thoughts...'
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <label className='block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2'>
                     Tags
                   </label>
-                  <div className="flex gap-2 mb-2 flex-wrap">
+                  <div className='flex gap-2 mb-2 flex-wrap'>
                     {formData.tags.map(tag => (
                       <span
                         key={tag}
-                        className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm flex items-center gap-1"
+                        className='px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm flex items-center gap-1'
                       >
                         {tag}
                         <button
-                          type="button"
+                          type='button'
                           onClick={() => removeTag(tag)}
-                          className="text-blue-500 hover:text-blue-700"
+                          className='text-blue-500 hover:text-blue-700'
                         >
                           ×
                         </button>
                       </span>
                     ))}
                   </div>
-                  <div className="flex gap-2">
+                  <div className='flex gap-2'>
                     <input
-                      type="text"
+                      type='text'
                       value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                      placeholder="Add a tag..."
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                      onChange={e => setTagInput(e.target.value)}
+                      onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                      placeholder='Add a tag...'
+                      className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700'
                     />
-                    <Button type="button" onClick={addTag} variant="secondary">
+                    <Button type='button' onClick={addTag} variant='secondary'>
                       Add Tag
                     </Button>
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="ghost" onClick={resetForm}>
+                <div className='flex justify-end gap-2'>
+                  <Button type='button' variant='ghost' onClick={resetForm}>
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    {editingEntry ? 'Update' : 'Save'} Entry
-                  </Button>
+                  <Button type='submit'>{editingEntry ? 'Update' : 'Save'} Entry</Button>
                 </div>
               </form>
             </CardContent>
@@ -257,71 +251,63 @@ export default function JournalPage() {
         )}
 
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">Loading entries...</p>
+          <div className='text-center py-12'>
+            <p className='text-gray-500'>Loading entries...</p>
           </div>
         ) : entries.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                No journal entries yet
-              </p>
-              <Button onClick={() => setShowForm(true)}>
-                Write Your First Entry
-              </Button>
+            <CardContent className='text-center py-12'>
+              <p className='text-gray-500 dark:text-gray-400 mb-4'>No journal entries yet</p>
+              <Button onClick={() => setShowForm(true)}>Write Your First Entry</Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {entries.map((entry) => (
+          <div className='space-y-4'>
+            {entries.map(entry => (
               <Card key={entry.id}>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
+                <CardContent className='p-6'>
+                  <div className='flex justify-between items-start mb-4'>
                     <div>
                       {entry.title && (
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                        <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-1'>
                           {entry.title}
                         </h3>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      <div className='flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400'>
                         <span>{format(new Date(entry.createdAt), 'PPP')}</span>
                         {entry.mood && (
-                          <span className="flex items-center gap-1">
-                            <span className="text-lg">{MOOD_EMOJIS[entry.mood]}</span>
-                            <span className="capitalize">{entry.mood}</span>
+                          <span className='flex items-center gap-1'>
+                            <span className='text-lg'>{MOOD_EMOJIS[entry.mood]}</span>
+                            <span className='capitalize'>{entry.mood}</span>
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEdit(entry)}
-                      >
+                    <div className='flex gap-2'>
+                      <Button size='sm' variant='ghost' onClick={() => handleEdit(entry)}>
                         Edit
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
+                        size='sm'
+                        variant='ghost'
                         onClick={() => handleDelete(entry.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className='text-red-600 hover:text-red-700'
                       >
                         Delete
                       </Button>
                     </div>
                   </div>
-                  
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-4">
+
+                  <p className='text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-4'>
                     {entry.content}
                   </p>
-                  
+
                   {entry.tags.length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
+                    <div className='flex gap-2 flex-wrap'>
                       {entry.tags.map(tag => (
                         <span
                           key={tag}
-                          className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-sm"
+                          className='px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-sm'
                         >
                           #{tag}
                         </span>

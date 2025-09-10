@@ -7,12 +7,13 @@ import { profileSchema } from '@/lib/types/user';
 import { audit } from '@/lib/security/audit';
 import { phiService } from '@/lib/security/phi-service';
 import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
+import { logError } from '@/lib/logger';
 
 // GET /api/user/profile - Get current user's profile
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -27,20 +28,17 @@ export async function GET() {
     );
 
     if (!profile) {
-      return NextResponse.json(
-        { message: 'Profile not found' },
-        { status: HTTP_STATUS.NOT_FOUND }
-      );
+      return NextResponse.json({ message: 'Profile not found' }, { status: HTTP_STATUS.NOT_FOUND });
     }
 
     return NextResponse.json({
       success: true,
-      data: profile,
+      data: profile
     });
   } catch (error) {
-    console.error('Error fetching profile:', error);
+    logError('Error fetching profile', error, 'user-profile-get');
     await audit.logError('GET_PROFILE', 'Profile', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -52,7 +50,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Check if profile already exists
     const existingProfile = await prisma.profile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id }
     });
 
     if (existingProfile) {
@@ -80,20 +78,22 @@ export async function POST(request: NextRequest) {
       ...validatedData,
       userId: session.user.id,
       dateOfBirth: new Date(validatedData.dateOfBirth),
-      emergencyContact: validatedData.emergencyContact || undefined,
+      emergencyContact: validatedData.emergencyContact || undefined
     };
 
-    const profile = await phiService.create(
-      'Profile',
-      profileData,
-      { userId: session.user.id, userRole: session.user.role }
-    );
+    const profile = await phiService.create('Profile', profileData, {
+      userId: session.user.id,
+      userRole: session.user.role
+    });
 
-    return NextResponse.json({
-      success: true,
-      message: SUCCESS_MESSAGES.PROFILE_UPDATED,
-      data: profile,
-    }, { status: HTTP_STATUS.CREATED });
+    return NextResponse.json(
+      {
+        success: true,
+        message: SUCCESS_MESSAGES.PROFILE_UPDATED,
+        data: profile
+      },
+      { status: HTTP_STATUS.CREATED }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -102,9 +102,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error creating profile:', error);
+    logError('Error creating profile', error, 'user-profile-post');
     await audit.logError('CREATE_PROFILE', 'Profile', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -128,22 +128,22 @@ export async function PUT(request: NextRequest) {
     const validatedData = profileSchema.partial().parse(body);
 
     // Convert date string to Date object if provided
-    const updateData: any = { ...validatedData };
+    const updateData: Partial<z.infer<typeof profileSchema> & { dateOfBirth?: Date }> = {
+      ...validatedData
+    };
     if (validatedData.dateOfBirth) {
       updateData.dateOfBirth = new Date(validatedData.dateOfBirth);
     }
 
-    const profile = await phiService.update(
-      'Profile',
-      { userId: session.user.id },
-      updateData,
-      { userId: session.user.id, userRole: session.user.role }
-    );
+    const profile = await phiService.update('Profile', { userId: session.user.id }, updateData, {
+      userId: session.user.id,
+      userRole: session.user.role
+    });
 
     return NextResponse.json({
       success: true,
       message: SUCCESS_MESSAGES.PROFILE_UPDATED,
-      data: profile,
+      data: profile
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -153,9 +153,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    console.error('Error updating profile:', error);
+    logError('Error updating profile', error, 'user-profile-put');
     await audit.logError('UPDATE_PROFILE', 'Profile', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -167,7 +167,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -180,12 +180,12 @@ export async function DELETE() {
 
     return NextResponse.json({
       success: true,
-      message: 'All user data has been deleted',
+      message: 'All user data has been deleted'
     });
   } catch (error) {
-    console.error('Error deleting user data:', error);
+    logError('Error deleting user data', error, 'user-profile-delete');
     await audit.logError('DELETE_USER_DATA', 'User', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

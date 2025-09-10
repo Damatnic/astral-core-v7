@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth/config';
 import { notificationService } from '@/lib/services/notification-service';
 import { rateLimiter } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
-import { z } from 'zod';
 
 // GET /api/notifications - Get user notifications
 export async function GET(request: NextRequest) {
@@ -18,11 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Rate limiting
-    const allowed = await rateLimiter.checkLimit(
-      `notifications:${session.user.id}`,
-      30,
-      60000
-    );
+    const allowed = await rateLimiter.checkLimit(`notifications:${session.user.id}`, 30, 60000);
     if (!allowed) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.RATE_LIMIT },
@@ -34,16 +29,18 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
-    const type = searchParams.get('type') as any;
+    const type = searchParams.get('type') as string | null;
 
-    const notifications = await notificationService.getUserNotifications(
-      session.user.id,
-      { limit, offset, unreadOnly, type }
-    );
+    const notifications = await notificationService.getUserNotifications(session.user.id, {
+      limit,
+      offset,
+      unreadOnly,
+      type
+    });
 
     return NextResponse.json({
       success: true,
-      data: notifications,
+      data: notifications
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -72,7 +69,7 @@ export async function POST(request: NextRequest) {
       await notificationService.markAllAsRead(session.user.id);
       return NextResponse.json({
         success: true,
-        message: 'All notifications marked as read',
+        message: 'All notifications marked as read'
       });
     }
 
@@ -87,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Notification marked as read',
+      message: 'Notification marked as read'
     });
   } catch (error) {
     console.error('Error marking notification as read:', error);
@@ -123,7 +120,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Notification deleted',
+      message: 'Notification deleted'
     });
   } catch (error) {
     console.error('Error deleting notification:', error);

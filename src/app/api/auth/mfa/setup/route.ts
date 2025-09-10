@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { mfaService } from '@/lib/services/mfa-service';
-import { rateLimiter } from '@/lib/security/rate-limit';
+import { logError } from '@/lib/logger';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 import { z } from 'zod';
 
 const setupSchema = z.object({
   method: z.enum(['TOTP', 'SMS', 'EMAIL']),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().optional()
 });
 
 // POST /api/auth/mfa/setup - Initialize MFA setup
@@ -19,19 +19,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
         { status: HTTP_STATUS.UNAUTHORIZED }
-      );
-    }
-
-    // Rate limiting
-    const allowed = await rateLimiter.checkLimit(
-      `mfa-setup:${session.user.id}`,
-      5,
-      3600000 // 1 hour
-    );
-    if (!allowed) {
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.RATE_LIMIT },
-        { status: HTTP_STATUS.TOO_MANY_REQUESTS }
       );
     }
 
@@ -49,8 +36,8 @@ export async function POST(request: NextRequest) {
             method: 'TOTP',
             secret: result.secret,
             qrCode: result.qrCode,
-            backupCodes: result.backupCodes,
-          },
+            backupCodes: result.backupCodes
+          }
         });
 
       case 'SMS':
@@ -66,8 +53,8 @@ export async function POST(request: NextRequest) {
           message: 'SMS code sent',
           data: {
             method: 'SMS',
-            phoneNumber: validated.phoneNumber.slice(-4), // Last 4 digits
-          },
+            phoneNumber: validated.phoneNumber.slice(-4) // Last 4 digits
+          }
         });
 
       case 'EMAIL':
@@ -76,8 +63,8 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'Email code sent',
           data: {
-            method: 'EMAIL',
-          },
+            method: 'EMAIL'
+          }
         });
 
       default:
@@ -94,7 +81,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error setting up MFA:', error);
+    logError('Error setting up MFA', error, 'mfa-setup');
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

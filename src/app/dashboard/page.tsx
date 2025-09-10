@@ -1,25 +1,23 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/utils';
 import { ROUTES } from '@/lib/constants';
-import ClientDashboard from '@/components/dashboards/ClientDashboard';
-import TherapistDashboard from '@/components/dashboards/TherapistDashboard';
-import AdminDashboard from '@/components/dashboards/AdminDashboard';
+import { getDashboardComponent, preloadDashboardComponent } from '@/components/dashboards/lazy';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     redirect(ROUTES.auth.login);
   }
 
-  // Render dashboard based on user role
+  // Preload the dashboard component for better UX
+  preloadDashboardComponent(user.role);
+
+  // Get the appropriate lazy-loaded dashboard component
+  const DashboardComponent = getDashboardComponent(user.role);
+
+  // Handle special redirects
   switch (user.role) {
-    case 'ADMIN':
-      return <AdminDashboard user={user} />;
-    case 'THERAPIST':
-      return <TherapistDashboard user={user} />;
-    case 'CLIENT':
-      return <ClientDashboard user={user} />;
     case 'CRISIS_RESPONDER':
       redirect('/crisis/dashboard');
       break;
@@ -27,6 +25,6 @@ export default async function DashboardPage() {
       redirect('/supervisor/dashboard');
       break;
     default:
-      return <ClientDashboard user={user} />;
+      return <DashboardComponent user={user} />;
   }
 }

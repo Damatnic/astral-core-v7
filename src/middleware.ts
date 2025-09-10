@@ -11,19 +11,19 @@ const PUBLIC_PATHS = [
   '/auth/reset-password',
   '/auth/verify-email',
   '/auth/error',
-  '/api/auth',
+  '/api/auth'
 ];
 
 const ROLE_BASED_PATHS = {
   ADMIN: ['/admin', '/api/admin'],
   THERAPIST: ['/therapist', '/api/therapist'],
   CRISIS_RESPONDER: ['/crisis/responder', '/api/crisis/responder'],
-  SUPERVISOR: ['/supervisor', '/api/supervisor'],
+  SUPERVISOR: ['/supervisor', '/api/supervisor']
 };
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Skip middleware for static files and images
   if (
     pathname.startsWith('/_next') ||
@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
 
   // Security headers
   const response = NextResponse.next();
-  
+
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -43,14 +43,14 @@ export async function middleware(request: NextRequest) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: https:; " +
-    "font-src 'self' data:; " +
-    "connect-src 'self' https://api.posthog.com; " +
-    "frame-ancestors 'none';"
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' https://api.posthog.com; " +
+      "frame-ancestors 'none';"
   );
-  
+
   if (process.env.NODE_ENV === 'production') {
     response.headers.set(
       'Strict-Transport-Security',
@@ -62,27 +62,27 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api')) {
     const identifier = rateLimiters.api.getIdentifier(request);
     const { allowed, remaining, resetTime } = await rateLimiters.api.check(identifier);
-    
+
     response.headers.set('X-RateLimit-Limit', '100');
     response.headers.set('X-RateLimit-Remaining', remaining.toString());
     response.headers.set('X-RateLimit-Reset', resetTime.toISOString());
-    
+
     if (!allowed) {
       return NextResponse.json(
         { error: 'Too many requests' },
-        { 
+        {
           status: 429,
-          headers: response.headers,
+          headers: response.headers
         }
       );
     }
   }
 
   // Check if path is public
-  const isPublicPath = PUBLIC_PATHS.some(path => 
-    pathname === path || pathname.startsWith(`${path}/`)
+  const isPublicPath = PUBLIC_PATHS.some(
+    path => pathname === path || pathname.startsWith(`${path}/`)
   );
-  
+
   if (isPublicPath) {
     return response;
   }
@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
   // Authentication check
   const token = await getToken({
     req: request,
-    secret: process.env['NEXTAUTH_SECRET']!,
+    secret: process.env['NEXTAUTH_SECRET']!
   });
 
   if (!token) {
@@ -102,13 +102,11 @@ export async function middleware(request: NextRequest) {
 
   // Role-based access control
   const userRole = token.role as string;
-  
+
   // Check if user has access to role-specific paths
   for (const [role, paths] of Object.entries(ROLE_BASED_PATHS)) {
-    const hasRestrictedPath = paths.some(path => 
-      pathname.startsWith(path)
-    );
-    
+    const hasRestrictedPath = paths.some(path => pathname.startsWith(path));
+
     if (hasRestrictedPath && userRole !== role && userRole !== 'ADMIN') {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
@@ -130,6 +128,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
-  ],
+    '/((?!_next/static|_next/image|favicon.ico|public).*)'
+  ]
 };

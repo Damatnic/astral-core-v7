@@ -1,0 +1,350 @@
+name: 'Reusable Test Workflow'
+
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        default: '18.17'
+        type: string
+      test_type:
+        description: 'Type of tests to run'
+        required: false
+        default: 'all'
+        type: string
+      # Options: unit, integration, e2e, all
+      coverage_threshold:
+        description: 'Coverage threshold percentage'
+        required: false
+        default: 80
+        type: number
+      postgres_version:
+        description: 'PostgreSQL version for testing'
+        required: false
+        default: '15'
+        type: string
+      working_directory:
+        description: 'Working directory for tests'
+        required: false
+        default: '.'
+        type: string
+      timeout_minutes:
+        description: 'Test timeout in minutes'
+        required: false
+        default: 30
+        type: number
+    secrets:
+      DATABASE_URL:
+        description: 'Test database connection URL'
+        required: false
+      NEXTAUTH_SECRET:
+        description: 'NextAuth secret for testing'
+        required: false
+      CODECOV_TOKEN:
+        description: 'Codecov token for coverage upload'
+        required: false
+      TEST_ENV_VARS:
+        description: 'Additional test environment variables as JSON'
+        required: false
+    outputs:
+      test_result:
+        description: 'Overall test result (success/failure)'
+        value: ${{ jobs.test.outputs.test_result }}
+      coverage_percentage:
+        description: 'Test coverage percentage'
+        value: ${{ jobs.test.outputs.coverage_percentage }}
+      tests_run:
+        description: 'Number of tests run'
+        value: ${{ jobs.test.outputs.tests_run }}
+
+jobs:
+  test:
+    name: 'Run Tests'
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    
+    outputs:
+      test_result: ${{ steps.test-results.outputs.test_result }}
+      coverage_percentage: ${{ steps.coverage-check.outputs.coverage_percentage }}
+      tests_run: ${{ steps.test-results.outputs.tests_run }}
+    
+    services:
+      postgres:
+        image: postgres:${{ inputs.postgres_version }}-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: '${{ inputs.working_directory }}/package-lock.json'
+
+      - name: 'Install Dependencies'
+        run: |
+          echo "📦 Installing dependencies..."
+          npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Set Test Environment Variables'
+        run: |
+          # Set default test environment variables
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://test:test@localhost:5432/testdb' }}" >> $GITHUB_ENV
+          echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET || 'test-secret-for-ci' }}" >> $GITHUB_ENV
+          echo "NEXTAUTH_URL=http://localhost:3000" >> $GITHUB_ENV
+          
+          # Parse and set additional test environment variables
+          if [ -n "${{ secrets.TEST_ENV_VARS }}" ]; then
+            echo '${{ secrets.TEST_ENV_VARS }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          fi
+
+      - name: 'Generate Prisma Client'
+        run: |
+          echo "⚙️ Generating Prisma client..."
+          npm run db:generate
+
+      - name: 'Setup Test Database'
+        if: inputs.test_type != 'unit'
+        run: |
+          echo "🗄️ Setting up test database..."
+          npm run db:push || true
+          npm run db:seed || true
+
+      - name: 'Install E2E Dependencies'
+        if: inputs.test_type == 'e2e' || inputs.test_type == 'all'
+        run: |
+          echo "🎭 Installing E2E test dependencies..."
+          npx playwright install --with-deps chromium
+
+      - name: 'Run Unit Tests'
+        if: inputs.test_type == 'unit' || inputs.test_type == 'all'
+        run: |
+          echo "🧪 Running unit tests..."
+          npm run test:ci -- \
+            --testPathIgnorePatterns=".*\.(integration|e2e)\.test\.(ts|tsx|js|jsx)$" \
+            --coverage \
+            --coverageDirectory=coverage/unit \
+            --json --outputFile=unit-test-results.json
+
+      - name: 'Run Integration Tests'
+        if: inputs.test_type == 'integration' || inputs.test_type == 'all'
+        run: |
+          echo "🔗 Running integration tests..."
+          npm run test:ci -- \
+            --testPathPattern=".*\.integration\.test\.(ts|tsx|js|jsx)$" \
+            --coverage \
+            --coverageDirectory=coverage/integration \
+            --json --outputFile=integration-test-results.json
+
+      - name: 'Build Application for E2E'
+        if: inputs.test_type == 'e2e' || inputs.test_type == 'all'
+        run: |
+          echo "🔨 Building application for E2E tests..."
+          npm run build
+
+      - name: 'Start Application for E2E'
+        if: inputs.test_type == 'e2e' || inputs.test_type == 'all'
+        run: |
+          echo "🚀 Starting application for E2E tests..."
+          npm start &
+          
+          # Wait for application to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/health 2>/dev/null; do sleep 2; done'
+          echo "✅ Application is ready for E2E testing"
+
+      - name: 'Run E2E Tests'
+        if: inputs.test_type == 'e2e' || inputs.test_type == 'all'
+        run: |
+          echo "🎭 Running E2E tests..."
+          npx playwright test --reporter=json > e2e-test-results.json || true
+        env:
+          BASE_URL: "http://localhost:3000"
+
+      - name: 'Merge Coverage Reports'
+        if: inputs.test_type == 'all'
+        run: |
+          echo "📊 Merging coverage reports..."
+          
+          # Install coverage merging tool
+          npm install --no-save nyc
+          
+          # Merge coverage reports
+          npx nyc merge coverage coverage/merged.json
+          npx nyc report --temp-dir coverage --reporter=lcov --reporter=text-summary --reporter=json-summary
+
+      - name: 'Analyze Test Results'
+        id: test-results
+        run: |
+          echo "📈 Analyzing test results..."
+          
+          test_result="success"
+          total_tests=0
+          
+          # Analyze unit tests
+          if [ -f "unit-test-results.json" ]; then
+            unit_tests=$(jq '.numTotalTests // 0' unit-test-results.json)
+            unit_failures=$(jq '.numFailedTests // 0' unit-test-results.json)
+            total_tests=$((total_tests + unit_tests))
+            
+            echo "Unit tests: $unit_tests total, $unit_failures failed"
+            if [ "$unit_failures" -gt 0 ]; then
+              test_result="failure"
+            fi
+          fi
+          
+          # Analyze integration tests
+          if [ -f "integration-test-results.json" ]; then
+            integration_tests=$(jq '.numTotalTests // 0' integration-test-results.json)
+            integration_failures=$(jq '.numFailedTests // 0' integration-test-results.json)
+            total_tests=$((total_tests + integration_tests))
+            
+            echo "Integration tests: $integration_tests total, $integration_failures failed"
+            if [ "$integration_failures" -gt 0 ]; then
+              test_result="failure"
+            fi
+          fi
+          
+          # Analyze E2E tests
+          if [ -f "e2e-test-results.json" ]; then
+            e2e_passed=$(jq '.suites[].specs[] | select(.ok == true) | length' e2e-test-results.json 2>/dev/null | wc -l || echo "0")
+            e2e_failed=$(jq '.suites[].specs[] | select(.ok == false) | length' e2e-test-results.json 2>/dev/null | wc -l || echo "0")
+            e2e_total=$((e2e_passed + e2e_failed))
+            total_tests=$((total_tests + e2e_total))
+            
+            echo "E2E tests: $e2e_total total, $e2e_failed failed"
+            if [ "$e2e_failed" -gt 0 ]; then
+              test_result="failure"
+            fi
+          fi
+          
+          echo "test-result=${test_result}" >> $GITHUB_OUTPUT
+          echo "tests-run=${total_tests}" >> $GITHUB_OUTPUT
+          
+          if [ "$test_result" = "success" ]; then
+            echo "✅ All tests passed ($total_tests total)"
+          else
+            echo "❌ Some tests failed ($total_tests total)"
+          fi
+
+      - name: 'Check Coverage Threshold'
+        id: coverage-check
+        run: |
+          echo "📊 Checking coverage threshold..."
+          
+          coverage_percentage=0
+          
+          # Check coverage from merged report or individual reports
+          if [ -f "coverage/coverage-summary.json" ]; then
+            coverage_percentage=$(jq '.total.lines.pct // 0' coverage/coverage-summary.json)
+          elif [ -f "coverage/unit/coverage-summary.json" ]; then
+            coverage_percentage=$(jq '.total.lines.pct // 0' coverage/unit/coverage-summary.json)
+          fi
+          
+          echo "coverage-percentage=${coverage_percentage}" >> $GITHUB_OUTPUT
+          
+          # Check if coverage meets threshold
+          threshold=${{ inputs.coverage_threshold }}
+          if [ "$(echo "$coverage_percentage >= $threshold" | bc -l)" -eq 1 ]; then
+            echo "✅ Coverage ${coverage_percentage}% meets threshold of ${threshold}%"
+          else
+            echo "❌ Coverage ${coverage_percentage}% below threshold of ${threshold}%"
+            if [ "${{ steps.test-results.outputs.test_result }}" = "success" ]; then
+              echo "Setting test result to failure due to low coverage"
+              echo "test-result=failure" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: 'Upload Test Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ inputs.test_type }}
+          path: |
+            ${{ inputs.working_directory }}/coverage/
+            ${{ inputs.working_directory }}/*-test-results.json
+            ${{ inputs.working_directory }}/test-results/
+            ${{ inputs.working_directory }}/playwright-report/
+          retention-days: 30
+
+      - name: 'Upload Coverage to Codecov'
+        if: secrets.CODECOV_TOKEN != ''
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ${{ inputs.working_directory }}/coverage
+          flags: ${{ inputs.test_type }}
+          name: codecov-${{ inputs.test_type }}
+
+      - name: 'Generate Test Report'
+        run: |
+          echo "# 🧪 Test Report" > test-report.md
+          echo "" >> test-report.md
+          echo "**Test Date:** $(date -u)" >> test-report.md
+          echo "**Test Type:** ${{ inputs.test_type }}" >> test-report.md
+          echo "**Node Version:** ${{ inputs.node_version }}" >> test-report.md
+          echo "**PostgreSQL Version:** ${{ inputs.postgres_version }}" >> test-report.md
+          echo "" >> test-report.md
+          
+          echo "## 📊 Test Results Summary" >> test-report.md
+          echo "" >> test-report.md
+          echo "| Metric | Value |" >> test-report.md
+          echo "|--------|-------|" >> test-report.md
+          echo "| Overall Result | ${{ steps.test-results.outputs.test_result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> test-report.md
+          echo "| Tests Run | ${{ steps.test-results.outputs.tests_run }} |" >> test-report.md
+          echo "| Coverage | ${{ steps.coverage-check.outputs.coverage_percentage }}% |" >> test-report.md
+          echo "| Coverage Threshold | ${{ inputs.coverage_threshold }}% |" >> test-report.md
+          
+          echo "" >> test-report.md
+          echo "## 🎯 Coverage Analysis" >> test-report.md
+          echo "" >> test-report.md
+          
+          coverage=${{ steps.coverage-check.outputs.coverage_percentage }}
+          threshold=${{ inputs.coverage_threshold }}
+          
+          if [ "$(echo "$coverage >= $threshold" | bc -l)" -eq 1 ]; then
+            echo "✅ **Coverage meets requirements**" >> test-report.md
+          else
+            echo "❌ **Coverage below threshold**" >> test-report.md
+            echo "" >> test-report.md
+            echo "**Action needed:** Increase test coverage to meet the ${threshold}% threshold." >> test-report.md
+          fi
+          
+          echo "" >> test-report.md
+          echo "## 💡 Recommendations" >> test-report.md
+          echo "" >> test-report.md
+          echo "- Review failed tests and fix issues" >> test-report.md
+          echo "- Add tests for uncovered code paths" >> test-report.md
+          echo "- Consider increasing test coverage threshold" >> test-report.md
+          echo "- Regularly run tests in CI/CD pipeline" >> test-report.md
+
+      - name: 'Upload Test Report'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ inputs.test_type }}
+          path: test-report.md
+          retention-days: 30
+
+      - name: 'Fail Job if Tests Failed'
+        if: steps.test-results.outputs.test_result == 'failure'
+        run: |
+          echo "❌ Tests failed or coverage below threshold"
+          exit 1

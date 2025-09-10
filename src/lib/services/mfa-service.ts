@@ -6,6 +6,7 @@ import { MfaMethod } from '@prisma/client';
 import { audit } from '@/lib/security/audit';
 import { notificationService } from './notification-service';
 import { phiService } from '@/lib/security/phi-service';
+import { logError, logInfo } from '@/lib/logger';
 
 interface MfaSetupResult {
   secret: string;
@@ -19,6 +20,11 @@ interface VerificationResult {
   remainingAttempts?: number;
 }
 
+/**
+ * Multi-Factor Authentication (MFA) Service - HIPAA-compliant MFA implementation
+ * Provides secure two-factor authentication using TOTP, SMS, and email methods
+ * with backup codes and security auditing for healthcare data protection
+ */
 export class MfaService {
   private readonly APP_NAME = 'Astral Core';
   private readonly MAX_VERIFICATION_ATTEMPTS = 3;
@@ -27,12 +33,25 @@ export class MfaService {
   private verificationAttempts: Map<string, number> = new Map();
   private sentCodes: Map<string, { code: string; expires: Date }> = new Map();
 
-  // Setup TOTP (Time-based One-Time Password)
+  /**
+   * Initialize TOTP (Time-based One-Time Password) setup for a user
+   * Generates secret key, QR code for authenticator apps, and backup codes
+   * @param {string} userId - User ID to setup TOTP for
+   * @returns {Promise<MfaSetupResult>} Object containing secret, QR code data URL, and backup codes
+   * @throws {Error} If user not found or setup fails
+   * @example
+   * ```typescript
+   * const setup = await mfaService.setupTotp('user_123');
+   * // Display setup.qrCode in frontend for user to scan
+   * // Store setup.backupCodes securely for user
+   * // Use setup.secret for verification
+   * ```
+   */
   async setupTotp(userId: string): Promise<MfaSetupResult> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { email: true, name: true },
+        select: { email: true, name: true }
       });
 
       if (!user) {
@@ -43,7 +62,7 @@ export class MfaService {
       const secret = speakeasy.generateSecret({
         name: `${this.APP_NAME} (${user.email})`,
         issuer: this.APP_NAME,
-        length: 32,
+        length: 32
       });
 
       // Generate QR code
@@ -60,27 +79,41 @@ export class MfaService {
 
       // Store in temporary table or cache
       // For now, we'll return it to be stored after verification
-      
-      await audit.logSuccess(
-        'MFA_SETUP_INITIATED',
-        'User',
-        userId,
-        { method: 'TOTP' },
-        userId
-      );
+
+      await audit.logSuccess('MFA_SETUP_INITIATED', 'User', userId, { method: 'TOTP' }, userId);
 
       return {
         secret: secret.base32,
         qrCode: qrCodeUrl,
-        backupCodes,
+        backupCodes
       };
     } catch (error) {
-      console.error('Error setting up TOTP:', error);
+      logError('Error setting up TOTP', error, 'mfa-service');
       throw error;
     }
   }
 
-  // Enable MFA after verification
+  /**
+   * Enable MFA for a user after successful verification of setup
+   * Encrypts and stores MFA secret and backup codes in database
+   * @param {string} userId - User ID to enable MFA for
+   * @param {MfaMethod} method - MFA method type (TOTP, SMS, EMAIL)
+   * @param {string} secret - MFA secret key (for TOTP)
+   * @param {string} verificationCode - Code to verify before enabling
+   * @param {string[]} [backupCodes] - Optional backup codes to store
+   * @returns {Promise<boolean>} True if MFA was successfully enabled
+   * @throws {Error} If verification fails or database update fails
+   * @example
+   * ```typescript
+   * const enabled = await mfaService.enableMfa(
+   *   'user_123',
+   *   'TOTP',
+   *   'base32secret',
+   *   '123456',
+   *   ['ABCD-EFGH', 'IJKL-MNOP']
+   * );
+   * ```
+   */
   async enableMfa(
     userId: string,
     method: MfaMethod,
@@ -91,14 +124,14 @@ export class MfaService {
     try {
       // Verify the code first
       const isValid = await this.verifyTotp(secret, verificationCode);
-      
+
       if (!isValid) {
         throw new Error('Invalid verification code');
       }
 
       // Encrypt secret for storage
       const encryptedSecret = await phiService.encryptField(secret);
-      
+
       // Hash backup codes
       const hashedBackupCodes = backupCodes
         ? await Promise.all(backupCodes.map(code => this.hashBackupCode(code)))
@@ -112,17 +145,11 @@ export class MfaService {
           mfaMethod: method,
           mfaSecret: encryptedSecret,
           mfaBackupCodes: hashedBackupCodes,
-          mfaVerified: true,
-        },
+          mfaVerified: true
+        }
       });
 
-      await audit.logSuccess(
-        'MFA_ENABLED',
-        'User',
-        userId,
-        { method },
-        userId
-      );
+      await audit.logSuccess('MFA_ENABLED', 'User', userId, { method }, userId);
 
       // Send confirmation notification
       await notificationService.createNotification({
@@ -130,32 +157,58 @@ export class MfaService {
         title: 'Two-Factor Authentication Enabled',
         message: 'Your account is now protected with two-factor authentication',
         type: 'SYSTEM',
-        priority: 'HIGH',
+        priority: 'HIGH'
       });
 
       return true;
     } catch (error) {
-      console.error('Error enabling MFA:', error);
+      logError('Error enabling MFA', error, 'mfa-service');
       throw error;
     }
   }
 
-  // Verify TOTP code
+  /**
+   * Verify a TOTP code against a secret key
+   * Allows for time window drift to accommodate clock differences
+   * @param {string} secret - Base32 encoded secret key
+   * @param {string} token - 6-digit TOTP code to verify
+   * @returns {Promise<boolean>} True if code is valid
+   * @example
+   * ```typescript
+   * const isValid = await mfaService.verifyTotp('base32secret', '123456');
+   * ```
+   */
   async verifyTotp(secret: string, token: string): Promise<boolean> {
     try {
       return speakeasy.totp.verify({
         secret,
         encoding: 'base32',
         token,
-        window: 2, // Allow 2 time steps before/after
+        window: 2 // Allow 2 time steps before/after
       });
     } catch (error) {
-      console.error('Error verifying TOTP:', error);
+      logError('Error verifying TOTP', error, 'mfa-service');
       return false;
     }
   }
 
-  // Verify MFA during login
+  /**
+   * Verify MFA code during user authentication
+   * Supports TOTP, SMS, email codes, and backup codes with rate limiting
+   * @param {string} userId - User ID attempting authentication
+   * @param {string} code - MFA code to verify
+   * @param {boolean} [isBackupCode=false] - Whether the code is a backup code
+   * @returns {Promise<VerificationResult>} Verification result with success status and message
+   * @throws {Error} If verification process fails
+   * @example
+   * ```typescript
+   * // Regular TOTP code
+   * const result = await mfaService.verifyMfa('user_123', '123456');
+   * 
+   * // Backup code
+   * const backupResult = await mfaService.verifyMfa('user_123', 'ABCD-EFGH', true);
+   * ```
+   */
   async verifyMfa(
     userId: string,
     code: string,
@@ -168,14 +221,14 @@ export class MfaService {
           mfaSecret: true,
           mfaMethod: true,
           mfaBackupCodes: true,
-          mfaEnabled: true,
-        },
+          mfaEnabled: true
+        }
       });
 
       if (!user || !user.mfaEnabled) {
         return {
           success: false,
-          message: 'MFA not enabled for this user',
+          message: 'MFA not enabled for this user'
         };
       }
 
@@ -185,7 +238,7 @@ export class MfaService {
         await this.handleExcessiveAttempts(userId);
         return {
           success: false,
-          message: 'Too many failed attempts. Account temporarily locked.',
+          message: 'Too many failed attempts. Account temporarily locked.'
         };
       }
 
@@ -212,7 +265,7 @@ export class MfaService {
 
       if (verified) {
         this.verificationAttempts.delete(userId);
-        
+
         await audit.logSuccess(
           'MFA_VERIFICATION_SUCCESS',
           'User',
@@ -223,11 +276,11 @@ export class MfaService {
 
         return {
           success: true,
-          message: 'MFA verification successful',
+          message: 'MFA verification successful'
         };
       } else {
         this.verificationAttempts.set(userId, attempts + 1);
-        
+
         await audit.logFailure(
           'MFA_VERIFICATION_FAILED',
           'User',
@@ -240,19 +293,30 @@ export class MfaService {
         return {
           success: false,
           message: 'Invalid code',
-          remainingAttempts: this.MAX_VERIFICATION_ATTEMPTS - attempts - 1,
+          remainingAttempts: this.MAX_VERIFICATION_ATTEMPTS - attempts - 1
         };
       }
     } catch (error) {
-      console.error('Error verifying MFA:', error);
+      logError('Error verifying MFA', error, 'mfa-service');
       return {
         success: false,
-        message: 'Verification failed',
+        message: 'Verification failed'
       };
     }
   }
 
-  // Send SMS code
+  /**
+   * Send SMS verification code to user's phone number
+   * Code expires after configured time period for security
+   * @param {string} userId - User ID to send code to
+   * @param {string} phoneNumber - Phone number to send SMS to
+   * @returns {Promise<void>}
+   * @throws {Error} If SMS sending fails
+   * @example
+   * ```typescript
+   * await mfaService.sendSmsCode('user_123', '+1234567890');
+   * ```
+   */
   async sendSmsCode(userId: string, phoneNumber: string): Promise<void> {
     try {
       const code = this.generateNumericCode();
@@ -262,7 +326,9 @@ export class MfaService {
       this.sentCodes.set(`sms:${userId}`, { code, expires });
 
       // In production, integrate with SMS service (Twilio, AWS SNS, etc.)
-      console.log(`Would send SMS to ${phoneNumber}: Your verification code is ${code}`);
+      logInfo('SMS verification code would be sent in production', 'mfa-service', {
+        phoneNumber: phoneNumber.replace(/\d(?=\d{4})/g, '*')
+      });
 
       // For development, also create a notification
       await notificationService.createNotification({
@@ -270,7 +336,7 @@ export class MfaService {
         title: 'SMS Verification Code',
         message: `Your verification code is: ${code}`,
         type: 'SYSTEM',
-        priority: 'HIGH',
+        priority: 'HIGH'
       });
 
       await audit.logSuccess(
@@ -281,17 +347,27 @@ export class MfaService {
         userId
       );
     } catch (error) {
-      console.error('Error sending SMS code:', error);
+      logError('Error sending SMS code', error, 'mfa-service');
       throw error;
     }
   }
 
-  // Send email code
+  /**
+   * Send email verification code to user's registered email address
+   * Code expires after configured time period for security
+   * @param {string} userId - User ID to send code to
+   * @returns {Promise<void>}
+   * @throws {Error} If user not found or email sending fails
+   * @example
+   * ```typescript
+   * await mfaService.sendEmailCode('user_123');
+   * ```
+   */
   async sendEmailCode(userId: string): Promise<void> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { email: true },
+        select: { email: true }
       });
 
       if (!user) {
@@ -305,7 +381,9 @@ export class MfaService {
       this.sentCodes.set(`email:${userId}`, { code, expires });
 
       // In production, send actual email
-      console.log(`Would send email to ${user.email}: Your verification code is ${code}`);
+      logInfo('Email verification code would be sent in production', 'mfa-service', {
+        email: user.email
+      });
 
       // For development, create notification
       await notificationService.createNotification({
@@ -313,26 +391,27 @@ export class MfaService {
         title: 'Email Verification Code',
         message: `Your verification code is: ${code}`,
         type: 'SYSTEM',
-        priority: 'HIGH',
+        priority: 'HIGH'
       });
 
-      await audit.logSuccess(
-        'MFA_EMAIL_SENT',
-        'User',
-        userId,
-        { email: user.email },
-        userId
-      );
+      await audit.logSuccess('MFA_EMAIL_SENT', 'User', userId, { email: user.email }, userId);
     } catch (error) {
-      console.error('Error sending email code:', error);
+      logError('Error sending email code', error, 'mfa-service');
       throw error;
     }
   }
 
-  // Verify SMS code
+  /**
+   * Verify SMS code sent to user's phone
+   * Checks code validity and expiration, removes code after successful verification
+   * @private
+   * @param {string} userId - User ID to verify code for
+   * @param {string} code - SMS code to verify
+   * @returns {Promise<boolean>} True if code is valid and not expired
+   */
   private async verifySmsCode(userId: string, code: string): Promise<boolean> {
     const storedData = this.sentCodes.get(`sms:${userId}`);
-    
+
     if (!storedData) {
       return false;
     }
@@ -350,10 +429,17 @@ export class MfaService {
     return isValid;
   }
 
-  // Verify email code
+  /**
+   * Verify email code sent to user's email address
+   * Checks code validity and expiration, removes code after successful verification
+   * @private
+   * @param {string} userId - User ID to verify code for
+   * @param {string} code - Email code to verify
+   * @returns {Promise<boolean>} True if code is valid and not expired
+   */
   private async verifyEmailCode(userId: string, code: string): Promise<boolean> {
     const storedData = this.sentCodes.get(`email:${userId}`);
-    
+
     if (!storedData) {
       return false;
     }
@@ -371,12 +457,20 @@ export class MfaService {
     return isValid;
   }
 
-  // Verify backup code
+  /**
+   * Verify and consume a backup code
+   * Removes used backup code from database and notifies user
+   * @private
+   * @param {string} userId - User ID to verify backup code for
+   * @param {string} code - Backup code to verify (format: XXXX-XXXX)
+   * @returns {Promise<boolean>} True if backup code is valid
+   * @throws {Error} If database operations fail
+   */
   private async verifyBackupCode(userId: string, code: string): Promise<boolean> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { mfaBackupCodes: true },
+        select: { mfaBackupCodes: true }
       });
 
       if (!user || !user.mfaBackupCodes) {
@@ -390,10 +484,10 @@ export class MfaService {
           // Remove used backup code
           const newBackupCodes = [...user.mfaBackupCodes];
           newBackupCodes.splice(i, 1);
-          
+
           await prisma.user.update({
             where: { id: userId },
-            data: { mfaBackupCodes: newBackupCodes },
+            data: { mfaBackupCodes: newBackupCodes }
           });
 
           // Notify user that backup code was used
@@ -402,7 +496,7 @@ export class MfaService {
             title: 'Backup Code Used',
             message: `A backup code was used to access your account. ${newBackupCodes.length} codes remaining.`,
             type: 'SYSTEM',
-            priority: 'HIGH',
+            priority: 'HIGH'
           });
 
           return true;
@@ -411,12 +505,23 @@ export class MfaService {
 
       return false;
     } catch (error) {
-      console.error('Error verifying backup code:', error);
+      logError('Error verifying backup code', error, 'mfa-service');
       return false;
     }
   }
 
-  // Disable MFA
+  /**
+   * Disable MFA for a user after password verification
+   * Removes all MFA data and sends security notification
+   * @param {string} userId - User ID to disable MFA for
+   * @param {string} password - User's current password for verification
+   * @returns {Promise<boolean>} True if MFA was successfully disabled
+   * @throws {Error} If password verification fails or database update fails
+   * @example
+   * ```typescript
+   * const disabled = await mfaService.disableMfa('user_123', 'userpassword');
+   * ```
+   */
   async disableMfa(userId: string, password: string): Promise<boolean> {
     try {
       // Verify password first (implement password verification)
@@ -429,34 +534,39 @@ export class MfaService {
           mfaMethod: null,
           mfaSecret: null,
           mfaBackupCodes: [],
-          mfaVerified: false,
-        },
+          mfaVerified: false
+        }
       });
 
-      await audit.logSuccess(
-        'MFA_DISABLED',
-        'User',
-        userId,
-        {},
-        userId
-      );
+      await audit.logSuccess('MFA_DISABLED', 'User', userId, {}, userId);
 
       await notificationService.createNotification({
         userId,
         title: 'Two-Factor Authentication Disabled',
         message: 'Two-factor authentication has been removed from your account',
         type: 'SYSTEM',
-        priority: 'HIGH',
+        priority: 'HIGH'
       });
 
       return true;
     } catch (error) {
-      console.error('Error disabling MFA:', error);
+      logError('Error disabling MFA', error, 'mfa-service');
       throw error;
     }
   }
 
-  // Generate new backup codes
+  /**
+   * Generate new set of backup codes for user
+   * Replaces all existing backup codes with new ones
+   * @param {string} userId - User ID to regenerate backup codes for
+   * @returns {Promise<string[]>} Array of new backup codes
+   * @throws {Error} If backup code generation or storage fails
+   * @example
+   * ```typescript
+   * const newCodes = await mfaService.regenerateBackupCodes('user_123');
+   * // Display newCodes to user to save securely
+   * ```
+   */
   async regenerateBackupCodes(userId: string): Promise<string[]> {
     try {
       const backupCodes = this.generateBackupCodes();
@@ -466,7 +576,7 @@ export class MfaService {
 
       await prisma.user.update({
         where: { id: userId },
-        data: { mfaBackupCodes: hashedBackupCodes },
+        data: { mfaBackupCodes: hashedBackupCodes }
       });
 
       await audit.logSuccess(
@@ -479,22 +589,48 @@ export class MfaService {
 
       return backupCodes;
     } catch (error) {
-      console.error('Error regenerating backup codes:', error);
+      logError('Error regenerating backup codes', error, 'mfa-service');
       throw error;
     }
   }
 
-  // Check if user has MFA enabled
+  /**
+   * Check if MFA is enabled for a specific user
+   * @param {string} userId - User ID to check MFA status for
+   * @returns {Promise<boolean>} True if MFA is enabled for the user
+   * @example
+   * ```typescript
+   * const hasTotp = await mfaService.isMfaEnabled('user_123');
+   * if (hasTotp) {
+   *   // Require MFA verification
+   * }
+   * ```
+   */
   async isMfaEnabled(userId: string): Promise<boolean> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { mfaEnabled: true },
+      select: { mfaEnabled: true }
     });
 
     return user?.mfaEnabled || false;
   }
 
-  // Get MFA status
+  /**
+   * Get comprehensive MFA status information for a user
+   * @param {string} userId - User ID to get MFA status for
+   * @returns {Promise<Object|null>} Object containing MFA status details or null if user not found
+   * @returns {boolean} returns.enabled - Whether MFA is enabled
+   * @returns {MfaMethod|null} returns.method - MFA method type
+   * @returns {boolean} returns.verified - Whether MFA setup is verified
+   * @returns {number} returns.backupCodesRemaining - Number of backup codes remaining
+   * @example
+   * ```typescript
+   * const status = await mfaService.getMfaStatus('user_123');
+   * if (status?.enabled && status.backupCodesRemaining < 3) {
+   *   // Warn user about low backup codes
+   * }
+   * ```
+   */
   async getMfaStatus(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -502,8 +638,8 @@ export class MfaService {
         mfaEnabled: true,
         mfaMethod: true,
         mfaVerified: true,
-        mfaBackupCodes: true,
-      },
+        mfaBackupCodes: true
+      }
     });
 
     if (!user) {
@@ -514,11 +650,15 @@ export class MfaService {
       enabled: user.mfaEnabled,
       method: user.mfaMethod,
       verified: user.mfaVerified,
-      backupCodesRemaining: user.mfaBackupCodes?.length || 0,
+      backupCodesRemaining: user.mfaBackupCodes?.length || 0
     };
   }
 
-  // Helper methods
+  /**
+   * Generate a set of alphanumeric backup codes
+   * @private
+   * @returns {string[]} Array of backup codes in format XXXX-XXXX
+   */
   private generateBackupCodes(): string[] {
     const codes: string[] = [];
     for (let i = 0; i < this.BACKUP_CODE_COUNT; i++) {
@@ -527,10 +667,20 @@ export class MfaService {
     return codes;
   }
 
+  /**
+   * Generate a 6-digit numeric code for SMS/email verification
+   * @private
+   * @returns {string} 6-digit numeric code
+   */
   private generateNumericCode(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
+  /**
+   * Generate an 8-character alphanumeric backup code with dash separator
+   * @private
+   * @returns {string} Backup code in format XXXX-XXXX
+   */
   private generateAlphanumericCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let code = '';
@@ -541,25 +691,42 @@ export class MfaService {
     return code;
   }
 
+  /**
+   * Hash a backup code for secure storage using SHA-256
+   * @private
+   * @param {string} code - Backup code to hash
+   * @returns {Promise<string>} SHA-256 hash of the backup code
+   */
   private async hashBackupCode(code: string): Promise<string> {
-    return crypto
-      .createHash('sha256')
-      .update(code)
-      .digest('hex');
+    return crypto.createHash('sha256').update(code).digest('hex');
   }
 
+  /**
+   * Compare a backup code against its stored hash
+   * @private
+   * @param {string} code - Backup code to verify
+   * @param {string} hash - Stored hash to compare against
+   * @returns {Promise<boolean>} True if code matches the hash
+   */
   private async compareBackupCode(code: string, hash: string): Promise<boolean> {
     const codeHash = await this.hashBackupCode(code);
     return codeHash === hash;
   }
 
+  /**
+   * Handle excessive MFA verification attempts by temporarily locking the account
+   * Implements security measure to prevent brute force attacks
+   * @private
+   * @param {string} userId - User ID to lock
+   * @throws {Error} If account locking fails
+   */
   private async handleExcessiveAttempts(userId: string) {
     // Lock account temporarily
     const lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    
+
     await prisma.user.update({
       where: { id: userId },
-      data: { lockedUntil: lockUntil },
+      data: { lockedUntil: lockUntil }
     });
 
     await audit.logFailure(
@@ -577,11 +744,19 @@ export class MfaService {
       title: 'Security Alert',
       message: 'Multiple failed MFA attempts detected. Your account has been temporarily locked.',
       type: 'SYSTEM',
-      priority: 'URGENT',
+      priority: 'URGENT'
     });
   }
 
-  // Clean up expired codes periodically
+  /**
+   * Clean up expired SMS and email verification codes from memory
+   * Should be called periodically to prevent memory leaks
+   * @example
+   * ```typescript
+   * // Called automatically every 5 minutes via setInterval
+   * mfaService.cleanupExpiredCodes();
+   * ```
+   */
   cleanupExpiredCodes() {
     const now = new Date();
     for (const [key, data] of this.sentCodes.entries()) {
@@ -595,6 +770,9 @@ export class MfaService {
 export const mfaService = new MfaService();
 
 // Cleanup expired codes every 5 minutes
-setInterval(() => {
-  mfaService.cleanupExpiredCodes();
-}, 5 * 60 * 1000);
+setInterval(
+  () => {
+    mfaService.cleanupExpiredCodes();
+  },
+  5 * 60 * 1000
+);

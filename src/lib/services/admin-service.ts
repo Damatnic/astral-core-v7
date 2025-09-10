@@ -56,7 +56,7 @@ export class AdminService {
   private async requireAdmin(adminId: string) {
     const admin = await prisma.user.findUnique({
       where: { id: adminId },
-      select: { role: true, status: true },
+      select: { role: true, status: true }
     });
 
     if (!admin || admin.role !== 'ADMIN') {
@@ -75,50 +75,50 @@ export class AdminService {
     await this.requireAdmin(adminId);
 
     try {
-      const [
-        totalUsers,
-        activeUsers,
-        usersByRole,
-        usersByStatus,
-        recentSignups,
-        recentLogins,
-      ] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { status: 'ACTIVE' } }),
-        prisma.user.groupBy({
-          by: ['role'],
-          _count: { role: true },
-        }),
-        prisma.user.groupBy({
-          by: ['status'],
-          _count: { status: true },
-        }),
-        prisma.user.count({
-          where: {
-            createdAt: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-            },
-          },
-        }),
-        prisma.user.count({
-          where: {
-            lastLogin: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-            },
-          },
-        }),
-      ]);
+      const [totalUsers, activeUsers, usersByRole, usersByStatus, recentSignups, recentLogins] =
+        await Promise.all([
+          prisma.user.count(),
+          prisma.user.count({ where: { status: 'ACTIVE' } }),
+          prisma.user.groupBy({
+            by: ['role'],
+            _count: { role: true }
+          }),
+          prisma.user.groupBy({
+            by: ['status'],
+            _count: { status: true }
+          }),
+          prisma.user.count({
+            where: {
+              createdAt: {
+                gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+              }
+            }
+          }),
+          prisma.user.count({
+            where: {
+              lastLogin: {
+                gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+              }
+            }
+          })
+        ]);
 
       // Transform grouped data
-      const roleStats = usersByRole.reduce((acc, { role, _count }) => {
-        acc[role] = _count.role;
-        return acc;
-      }, {} as Record<UserRole, number>);
+      const roleStats = usersByRole.reduce(
+        (acc, { role, _count }) => {
+          acc[role] = _count.role;
+          return acc;
+        },
+        {} as Record<UserRole, number>
+      );
 
-      const statusStats = usersByStatus.reduce((acc, { status, _count }) => {
-        acc[status] = _count.status;
-        return acc;
-      }, {} as Record<UserStatus, number>);
+      const statusStats = usersByStatus.reduce(
+        (acc, { status, _count }) => {
+          acc[status] = _count.status;
+          return acc;
+        },
+        {} as Record<UserStatus, number>
+      );
 
       return {
         totalUsers,
@@ -126,7 +126,7 @@ export class AdminService {
         usersByRole: roleStats,
         usersByStatus: statusStats,
         recentSignups,
-        activeThisWeek: recentLogins,
+        activeThisWeek: recentLogins
       };
     } catch (error) {
       console.error('Error getting system stats:', error);
@@ -152,7 +152,7 @@ export class AdminService {
       if (filters.search) {
         where.OR = [
           { name: { contains: filters.search, mode: 'insensitive' } },
-          { email: { contains: filters.search, mode: 'insensitive' } },
+          { email: { contains: filters.search, mode: 'insensitive' } }
         ];
       }
 
@@ -181,15 +181,15 @@ export class AdminService {
             profile: {
               select: {
                 id: true,
-                phoneNumber: true,
-              },
-            },
+                phoneNumber: true
+              }
+            }
           },
           orderBy: { createdAt: 'desc' },
           take: filters.limit || 50,
-          skip: filters.offset || 0,
+          skip: filters.offset || 0
         }),
-        prisma.user.count({ where }),
+        prisma.user.count({ where })
       ]);
 
       // Audit log
@@ -204,7 +204,7 @@ export class AdminService {
       return {
         users,
         total,
-        hasMore: (filters.offset || 0) + users.length < total,
+        hasMore: (filters.offset || 0) + users.length < total
       };
     } catch (error) {
       console.error('Error getting users:', error);
@@ -219,7 +219,7 @@ export class AdminService {
     try {
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
-        where: { email: userData.email },
+        where: { email: userData.email }
       });
 
       if (existingUser) {
@@ -246,7 +246,7 @@ export class AdminService {
           role: userData.role,
           password: hashedPassword,
           status: 'ACTIVE',
-          emailVerified: new Date(), // Auto-verify admin-created users
+          emailVerified: new Date() // Auto-verify admin-created users
         },
         select: {
           id: true,
@@ -254,8 +254,8 @@ export class AdminService {
           name: true,
           role: true,
           status: true,
-          createdAt: true,
-        },
+          createdAt: true
+        }
       });
 
       // Create role-specific profile
@@ -265,15 +265,15 @@ export class AdminService {
             userId: user.id,
             licenseNumber: '', // To be filled by therapist
             specializations: [],
-            availableHours: {},
-          },
+            availableHours: {}
+          }
         });
       } else if (userData.role === 'CLIENT') {
         await prisma.profile.create({
           data: {
             userId: user.id,
-            phoneNumber: userData.phoneNumber,
-          },
+            phoneNumber: userData.phoneNumber
+          }
         });
       }
 
@@ -287,7 +287,7 @@ export class AdminService {
           }`,
           type: 'SYSTEM',
           priority: 'HIGH',
-          actionUrl: '/profile/settings',
+          actionUrl: '/profile/settings'
         });
       }
 
@@ -296,7 +296,7 @@ export class AdminService {
         userId: user.id,
         name: user.name,
         role: user.role,
-        createdBy: adminId,
+        createdBy: adminId
       });
 
       // Audit log
@@ -310,7 +310,7 @@ export class AdminService {
 
       return {
         user,
-        temporaryPassword: tempPassword,
+        temporaryPassword: tempPassword
       };
     } catch (error) {
       console.error('Error creating user:', error);
@@ -339,7 +339,7 @@ export class AdminService {
       }
 
       const existingUser = await prisma.user.findUnique({
-        where: { id: userId },
+        where: { id: userId }
       });
 
       if (!existingUser) {
@@ -349,7 +349,7 @@ export class AdminService {
       // Check email uniqueness if changing email
       if (updates.email && updates.email !== existingUser.email) {
         const emailExists = await prisma.user.findUnique({
-          where: { email: updates.email },
+          where: { email: updates.email }
         });
         if (emailExists) {
           throw new Error('Email already in use');
@@ -364,7 +364,7 @@ export class AdminService {
           email: updates.email,
           role: updates.role,
           status: updates.status,
-          updatedAt: new Date(),
+          updatedAt: new Date()
         },
         select: {
           id: true,
@@ -374,8 +374,8 @@ export class AdminService {
           status: true,
           lastLogin: true,
           createdAt: true,
-          updatedAt: true,
-        },
+          updatedAt: true
+        }
       });
 
       // Update profile if phone number changed
@@ -384,11 +384,11 @@ export class AdminService {
           where: { userId },
           create: {
             userId,
-            phoneNumber: updates.phoneNumber,
+            phoneNumber: updates.phoneNumber
           },
           update: {
-            phoneNumber: updates.phoneNumber,
-          },
+            phoneNumber: updates.phoneNumber
+          }
         });
       }
 
@@ -398,22 +398,16 @@ export class AdminService {
         title: 'Account Updated',
         message: 'Your account details have been updated by an administrator.',
         type: 'SYSTEM',
-        priority: 'HIGH',
+        priority: 'HIGH'
       });
 
       // Real-time notification
       websocketServer.sendToUser(userId, 'profile:updated', {
-        changes: Object.keys(updates),
+        changes: Object.keys(updates)
       });
 
       // Audit log
-      await audit.logSuccess(
-        'ADMIN_USER_UPDATED',
-        'User',
-        userId,
-        { changes: updates },
-        adminId
-      );
+      await audit.logSuccess('ADMIN_USER_UPDATED', 'User', userId, { changes: updates }, adminId);
 
       return updatedUser;
     } catch (error) {
@@ -433,7 +427,7 @@ export class AdminService {
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { status: true, name: true, email: true },
+        select: { status: true, name: true, email: true }
       });
 
       if (!user) {
@@ -444,7 +438,7 @@ export class AdminService {
 
       const updatedUser = await prisma.user.update({
         where: { id: userId },
-        data: { status: newStatus },
+        data: { status: newStatus }
       });
 
       // Notify user
@@ -455,13 +449,13 @@ export class AdminService {
           reason ? `. Reason: ${reason}` : ''
         }`,
         type: 'SYSTEM',
-        priority: 'URGENT',
+        priority: 'URGENT'
       });
 
       // Force logout if suspended
       if (newStatus === 'SUSPENDED') {
         websocketServer.sendToUser(userId, 'account:suspended', {
-          reason,
+          reason
         });
       }
 
@@ -488,7 +482,7 @@ export class AdminService {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true, email: true },
+        select: { name: true, email: true }
       });
 
       if (!user) {
@@ -506,8 +500,8 @@ export class AdminService {
           password: hashedPassword,
           // Force password change on next login
           passwordResetToken: crypto.randomBytes(32).toString('hex'),
-          passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        },
+          passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+        }
       });
 
       // Notify user
@@ -516,17 +510,11 @@ export class AdminService {
         title: 'Password Reset',
         message: `Your password has been reset by an administrator. New temporary password: ${tempPassword}`,
         type: 'SYSTEM',
-        priority: 'URGENT',
+        priority: 'URGENT'
       });
 
       // Audit log
-      await audit.logSuccess(
-        'ADMIN_PASSWORD_RESET',
-        'User',
-        userId,
-        {},
-        adminId
-      );
+      await audit.logSuccess('ADMIN_PASSWORD_RESET', 'User', userId, {}, adminId);
 
       return { temporaryPassword: tempPassword };
     } catch (error) {
@@ -554,27 +542,27 @@ export class AdminService {
         where: {
           status: 'ACTIVE',
           lastLogin: {
-            gte: cutoffDate,
-          },
+            gte: cutoffDate
+          }
         },
         include: {
           _count: {
             select: {
               appointments: true,
               messages: true,
-              files: true,
-            },
-          },
+              files: true
+            }
+          }
         },
         orderBy: { lastLogin: 'desc' },
-        take: filters.limit || 100,
+        take: filters.limit || 100
       });
 
       // Calculate risk scores and format data
       const activities: UserActivity[] = users.map(user => {
         // Simple risk scoring algorithm
         let riskScore = 0;
-        
+
         // No recent login
         if (!user.lastLogin || user.lastLogin < new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) {
           riskScore += 30;
@@ -600,14 +588,14 @@ export class AdminService {
           user: {
             name: user.name || 'Unknown',
             email: user.email,
-            role: user.role,
+            role: user.role
           },
           lastLogin: user.lastLogin,
           loginCount: user.loginCount || 0,
           appointmentsCount: user._count.appointments,
           messagesCount: user._count.messages,
           filesCount: user._count.files,
-          riskScore: Math.min(riskScore, 100),
+          riskScore: Math.min(riskScore, 100)
         };
       });
 
@@ -634,7 +622,7 @@ export class AdminService {
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true, email: true, role: true },
+        select: { name: true, email: true, role: true }
       });
 
       if (!user) {
@@ -677,21 +665,21 @@ export class AdminService {
         where: {
           timestamp: {
             gte: filters.startDate,
-            lte: filters.endDate,
+            lte: filters.endDate
           },
           ...(filters.action && { action: filters.action }),
-          ...(filters.userId && { userId: filters.userId }),
+          ...(filters.userId && { userId: filters.userId })
         },
         include: {
           user: {
             select: {
               name: true,
               email: true,
-              role: true,
-            },
-          },
+              role: true
+            }
+          }
         },
-        orderBy: { timestamp: 'desc' },
+        orderBy: { timestamp: 'desc' }
       });
 
       // Audit the audit report generation
@@ -699,9 +687,9 @@ export class AdminService {
         'AUDIT_REPORT_GENERATED',
         'AuditLog',
         'bulk',
-        { 
+        {
           dateRange: { start: filters.startDate, end: filters.endDate },
-          recordCount: auditLogs.length,
+          recordCount: auditLogs.length
         },
         adminId
       );
@@ -728,27 +716,22 @@ export class AdminService {
     await this.requireAdmin(adminId);
 
     try {
-      const [
-        dbStatus,
-        userCount,
-        recentErrors,
-        diskSpace,
-      ] = await Promise.all([
+      const [dbStatus, userCount, recentErrors, diskSpace] = await Promise.all([
         this.checkDatabaseHealth(),
         prisma.user.count(),
         this.getRecentErrors(),
-        this.checkDiskSpace(),
+        this.checkDiskSpace()
       ]);
 
       return {
         database: dbStatus,
         users: {
           total: userCount,
-          status: userCount > 0 ? 'healthy' : 'warning',
+          status: userCount > 0 ? 'healthy' : 'warning'
         },
         errors: recentErrors,
         storage: diskSpace,
-        timestamp: new Date(),
+        timestamp: new Date()
       };
     } catch (error) {
       console.error('Error checking system health:', error);
@@ -771,17 +754,17 @@ export class AdminService {
         where: {
           success: false,
           timestamp: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-          },
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+          }
         },
         take: 10,
-        orderBy: { timestamp: 'desc' },
+        orderBy: { timestamp: 'desc' }
       });
 
       return {
         count: errors.length,
         recent: errors,
-        status: errors.length < 10 ? 'healthy' : 'warning',
+        status: errors.length < 10 ? 'healthy' : 'warning'
       };
     } catch (error) {
       return { count: 0, recent: [], status: 'unknown' };
@@ -793,7 +776,7 @@ export class AdminService {
     return {
       used: '45%',
       available: '55%',
-      status: 'healthy',
+      status: 'healthy'
     };
   }
 }

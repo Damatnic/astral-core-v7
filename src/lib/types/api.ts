@@ -1,4 +1,4 @@
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -26,12 +26,12 @@ export interface FilterParams {
   startDate?: string;
   endDate?: string;
   status?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export type ApiError = {
   message: string;
   code?: string;
   statusCode?: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 };

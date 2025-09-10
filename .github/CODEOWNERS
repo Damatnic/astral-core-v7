@@ -1,0 +1,64 @@
+# CODEOWNERS file for Astral Core v7
+# This file defines who is responsible for code in this repository
+
+# Global owners - will be requested for review on all PRs unless overridden
+* @astral-core/maintainers
+
+# CI/CD and DevOps
+/.github/workflows/ @astral-core/devops
+/.github/actions/ @astral-core/devops
+/scripts/ @astral-core/devops
+/Dockerfile @astral-core/devops
+/docker-compose.yml @astral-core/devops
+/kubernetes/ @astral-core/devops
+
+# Database and migrations
+/prisma/ @astral-core/backend @astral-core/database
+
+# Authentication and security
+/src/auth/ @astral-core/security @astral-core/backend
+/src/middleware.ts @astral-core/security @astral-core/backend
+/src/lib/auth/ @astral-core/security @astral-core/backend
+/src/lib/security/ @astral-core/security
+
+# API routes and backend logic
+/src/app/api/ @astral-core/backend
+/src/lib/api/ @astral-core/backend
+/src/lib/services/ @astral-core/backend
+
+# Frontend components and pages
+/src/app/(dashboard)/ @astral-core/frontend
+/src/app/(auth)/ @astral-core/frontend @astral-core/security
+/src/components/ @astral-core/frontend
+/src/hooks/ @astral-core/frontend
+
+# Payment and billing
+/src/app/api/stripe/ @astral-core/payments @astral-core/backend
+/src/lib/stripe/ @astral-core/payments @astral-core/backend
+/src/components/billing/ @astral-core/payments @astral-core/frontend
+
+# Testing
+/tests/ @astral-core/qa
+/**/*.test.* @astral-core/qa
+/**/*.spec.* @astral-core/qa
+/jest.config.js @astral-core/qa
+/jest.setup.js @astral-core/qa
+/playwright.config.ts @astral-core/qa
+
+# Configuration files
+/package.json @astral-core/maintainers
+/package-lock.json @astral-core/maintainers
+/tsconfig.json @astral-core/maintainers
+/next.config.* @astral-core/maintainers
+/tailwind.config.* @astral-core/frontend
+/.eslintrc.* @astral-core/maintainers
+/.prettierrc* @astral-core/maintainers
+
+# Documentation
+/README.md @astral-core/maintainers @astral-core/docs
+/docs/ @astral-core/docs
+/**/*.md @astral-core/docs
+
+# Environment and deployment configuration
+/.env.example @astral-core/devops @astral-core/security
+/sonar-project.properties @astral-core/devops

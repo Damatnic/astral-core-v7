@@ -82,8 +82,8 @@ export class AnalyticsService {
       const where: any = {
         date: {
           gte: dateRange.startDate,
-          lte: dateRange.endDate,
-        },
+          lte: dateRange.endDate
+        }
       };
 
       // Apply user filtering based on access level
@@ -93,19 +93,19 @@ export class AnalyticsService {
         // Get clients for this therapist
         const therapistProfile = await prisma.therapistProfile.findUnique({
           where: { userId },
-          include: { clients: { select: { userId: true } } },
+          include: { clients: { select: { userId: true } } }
         });
-        
+
         if (therapistProfile) {
           where.userId = {
-            in: therapistProfile.clients.map(c => c.userId),
+            in: therapistProfile.clients.map(c => c.userId)
           };
         }
       }
 
       const wellnessData = await prisma.wellnessData.findMany({
         where,
-        orderBy: { date: 'asc' },
+        orderBy: { date: 'asc' }
       });
 
       if (wellnessData.length === 0) {
@@ -116,15 +116,18 @@ export class AnalyticsService {
           totalEntries: 0,
           moodTrend: 'stable',
           anxietyTrend: 'stable',
-          stressTrend: 'stable',
+          stressTrend: 'stable'
         };
       }
 
       // Calculate averages
       const totalEntries = wellnessData.length;
-      const averageMoodScore = wellnessData.reduce((sum, entry) => sum + entry.moodScore, 0) / totalEntries;
-      const averageAnxietyLevel = wellnessData.reduce((sum, entry) => sum + entry.anxietyLevel, 0) / totalEntries;
-      const averageStressLevel = wellnessData.reduce((sum, entry) => sum + entry.stressLevel, 0) / totalEntries;
+      const averageMoodScore =
+        wellnessData.reduce((sum, entry) => sum + entry.moodScore, 0) / totalEntries;
+      const averageAnxietyLevel =
+        wellnessData.reduce((sum, entry) => sum + entry.anxietyLevel, 0) / totalEntries;
+      const averageStressLevel =
+        wellnessData.reduce((sum, entry) => sum + entry.stressLevel, 0) / totalEntries;
 
       // Calculate trends (comparing first half to second half of period)
       const midPoint = Math.floor(wellnessData.length / 2);
@@ -155,7 +158,7 @@ export class AnalyticsService {
         totalEntries,
         moodTrend,
         anxietyTrend,
-        stressTrend,
+        stressTrend
       };
     } catch (error) {
       console.error('Error getting wellness analytics:', error);
@@ -173,8 +176,8 @@ export class AnalyticsService {
       const where: any = {
         scheduledAt: {
           gte: dateRange.startDate,
-          lte: dateRange.endDate,
-        },
+          lte: dateRange.endDate
+        }
       };
 
       if (role === 'CLIENT' && userId) {
@@ -189,8 +192,8 @@ export class AnalyticsService {
           select: {
             status: true,
             duration: true,
-            scheduledAt: true,
-          },
+            scheduledAt: true
+          }
         }),
         prisma.treatmentPlan.findMany({
           where: {
@@ -198,15 +201,15 @@ export class AnalyticsService {
             ...(userId && role === 'THERAPIST' ? { therapist: { userId } } : {}),
             createdAt: {
               gte: dateRange.startDate,
-              lte: dateRange.endDate,
-            },
+              lte: dateRange.endDate
+            }
           },
           select: {
             status: true,
             goals: true,
-            progress: true,
-          },
-        }),
+            progress: true
+          }
+        })
       ]);
 
       // Calculate appointment metrics
@@ -214,9 +217,10 @@ export class AnalyticsService {
       const completedSessions = appointments.filter(a => a.status === 'COMPLETED').length;
       const cancelledSessions = appointments.filter(a => a.status === 'CANCELLED').length;
       const noShowSessions = appointments.filter(a => a.status === 'NO_SHOW').length;
-      const averageSessionDuration = appointments.length > 0
-        ? appointments.reduce((sum, a) => sum + a.duration, 0) / appointments.length
-        : 0;
+      const averageSessionDuration =
+        appointments.length > 0
+          ? appointments.reduce((sum, a) => sum + a.duration, 0) / appointments.length
+          : 0;
 
       // Calculate treatment plan metrics
       const treatmentPlansActive = treatmentPlans.filter(tp => tp.status === 'ACTIVE').length;
@@ -248,7 +252,7 @@ export class AnalyticsService {
         averageSessionDuration: Math.round(averageSessionDuration),
         treatmentPlansActive,
         treatmentPlansCompleted,
-        averageGoalProgress: Math.round(averageGoalProgress * 10) / 10,
+        averageGoalProgress: Math.round(averageGoalProgress * 10) / 10
       };
     } catch (error) {
       console.error('Error getting therapy analytics:', error);
@@ -265,42 +269,48 @@ export class AnalyticsService {
         where: {
           createdAt: {
             gte: dateRange.startDate,
-            lte: dateRange.endDate,
-          },
+            lte: dateRange.endDate
+          }
         },
         select: {
           severity: true,
           status: true,
           createdAt: true,
           responderId: true,
-          updatedAt: true,
+          updatedAt: true
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'desc' }
       });
 
       const totalInterventions = interventions.length;
 
       // Group by severity
-      const interventionsBySeverity = interventions.reduce((acc, intervention) => {
-        acc[intervention.severity] = (acc[intervention.severity] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const interventionsBySeverity = interventions.reduce(
+        (acc, intervention) => {
+          acc[intervention.severity] = (acc[intervention.severity] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
       // Calculate response times (time from creation to first response)
       const responseTimes = interventions
         .filter(i => i.responderId && i.updatedAt)
         .map(i => i.updatedAt!.getTime() - i.createdAt.getTime());
 
-      const averageResponseTime = responseTimes.length > 0
-        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
-        : 0;
+      const averageResponseTime =
+        responseTimes.length > 0
+          ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+          : 0;
 
       // Calculate resolution and escalation rates
       const resolvedInterventions = interventions.filter(i => i.status === 'RESOLVED').length;
       const escalatedInterventions = interventions.filter(i => i.status === 'ESCALATED').length;
 
-      const resolutionRate = totalInterventions > 0 ? (resolvedInterventions / totalInterventions) * 100 : 0;
-      const escalationRate = totalInterventions > 0 ? (escalatedInterventions / totalInterventions) * 100 : 0;
+      const resolutionRate =
+        totalInterventions > 0 ? (resolvedInterventions / totalInterventions) * 100 : 0;
+      const escalationRate =
+        totalInterventions > 0 ? (escalatedInterventions / totalInterventions) * 100 : 0;
 
       // Get recent alerts (last 10)
       const recentAlerts = interventions.slice(0, 10);
@@ -311,7 +321,7 @@ export class AnalyticsService {
         averageResponseTime: Math.round(averageResponseTime / (1000 * 60)), // Convert to minutes
         resolutionRate: Math.round(resolutionRate * 10) / 10,
         escalationRate: Math.round(escalationRate * 10) / 10,
-        recentAlerts,
+        recentAlerts
       };
     } catch (error) {
       console.error('Error getting crisis analytics:', error);
@@ -331,101 +341,100 @@ export class AnalyticsService {
         sessions,
         messages,
         journalEntries,
-        wellnessEntries,
+        wellnessEntries
       ] = await Promise.all([
         // Daily active users (logged in today)
         prisma.user.count({
           where: {
             lastLogin: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            },
-          },
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+            }
+          }
         }),
         // Weekly active users
         prisma.user.count({
           where: {
             lastLogin: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            },
-          },
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            }
+          }
         }),
         // Monthly active users
         prisma.user.count({
           where: {
             lastLogin: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            },
-          },
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            }
+          }
         }),
         // Sessions in date range
         prisma.session.findMany({
           where: {
             expires: {
               gte: dateRange.startDate,
-              lte: dateRange.endDate,
-            },
-          },
+              lte: dateRange.endDate
+            }
+          }
         }),
         // Messages in date range
         prisma.message.count({
           where: {
             createdAt: {
               gte: dateRange.startDate,
-              lte: dateRange.endDate,
-            },
-          },
+              lte: dateRange.endDate
+            }
+          }
         }),
         // Journal entries
         prisma.journalEntry.count({
           where: {
             createdAt: {
               gte: dateRange.startDate,
-              lte: dateRange.endDate,
-            },
-          },
+              lte: dateRange.endDate
+            }
+          }
         }),
         // Wellness data points
         prisma.wellnessData.count({
           where: {
             date: {
               gte: dateRange.startDate,
-              lte: dateRange.endDate,
-            },
-          },
-        }),
+              lte: dateRange.endDate
+            }
+          }
+        })
       ]);
 
       // Calculate retention rate (users who logged in this period and last period)
       const lastPeriodStart = new Date(dateRange.startDate);
       lastPeriodStart.setDate(lastPeriodStart.getDate() - 30);
-      
+
       const [currentPeriodUsers, lastPeriodUsers] = await Promise.all([
         prisma.user.findMany({
           where: {
             lastLogin: {
               gte: dateRange.startDate,
-              lte: dateRange.endDate,
-            },
+              lte: dateRange.endDate
+            }
           },
-          select: { id: true },
+          select: { id: true }
         }),
         prisma.user.findMany({
           where: {
             lastLogin: {
               gte: lastPeriodStart,
-              lt: dateRange.startDate,
-            },
+              lt: dateRange.startDate
+            }
           },
-          select: { id: true },
-        }),
+          select: { id: true }
+        })
       ]);
 
       const currentUserIds = new Set(currentPeriodUsers.map(u => u.id));
       const lastUserIds = new Set(lastPeriodUsers.map(u => u.id));
       const retainedUsers = [...currentUserIds].filter(id => lastUserIds.has(id));
-      const retentionRate = lastPeriodUsers.length > 0
-        ? (retainedUsers.length / lastPeriodUsers.length) * 100
-        : 0;
+      const retentionRate =
+        lastPeriodUsers.length > 0 ? (retainedUsers.length / lastPeriodUsers.length) * 100 : 0;
 
       return {
         dailyActiveUsers: dailyActive,
@@ -435,7 +444,7 @@ export class AnalyticsService {
         messagesExchanged: messages,
         journalEntriesCreated: journalEntries,
         wellnessDataPoints: wellnessEntries,
-        retentionRate: Math.round(retentionRate * 10) / 10,
+        retentionRate: Math.round(retentionRate * 10) / 10
       };
     } catch (error) {
       console.error('Error getting engagement analytics:', error);
@@ -450,13 +459,13 @@ export class AnalyticsService {
       const auditLogs = await prisma.auditLog.findMany({
         where: {
           timestamp: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-          },
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+          }
         },
         select: {
           success: true,
-          metadata: true,
-        },
+          metadata: true
+        }
       });
 
       const totalRequests = auditLogs.length;
@@ -467,13 +476,13 @@ export class AnalyticsService {
         apiResponseTimes: {
           average: 85, // ms
           p95: 150,
-          p99: 300,
+          p99: 300
         },
         errorRate: Math.round(errorRate * 100) / 100,
         uptime: 99.9,
         databaseConnections: 12,
         memoryUsage: 68, // percentage
-        cpuUsage: 35, // percentage
+        cpuUsage: 35 // percentage
       };
     } catch (error) {
       console.error('Error getting performance metrics:', error);
@@ -491,30 +500,30 @@ export class AnalyticsService {
           where: {
             timestamp: {
               gte: dateRange.startDate,
-              lte: dateRange.endDate,
-            },
+              lte: dateRange.endDate
+            }
           },
           select: {
             action: true,
-            success: true,
-          },
+            success: true
+          }
         }),
         prisma.file.findMany({
           select: {
-            isEncrypted: true,
-          },
-        }),
+            isEncrypted: true
+          }
+        })
       ]);
 
       // Count HIPAA-related actions
       const hipaaActions = ['PHI_ACCESS', 'PHI_UPDATE', 'PHI_DELETE', 'UNAUTHORIZED_ACCESS'];
-      const hipaaViolationAlerts = auditLogs.filter(log => 
-        !log.success && hipaaActions.some(action => log.action.includes(action))
+      const hipaaViolationAlerts = auditLogs.filter(
+        log => !log.success && hipaaActions.some(action => log.action.includes(action))
       ).length;
 
       // GDPR requests would be tracked separately
-      const gdprRequests = auditLogs.filter(log => 
-        log.action === 'DELETE_USER_DATA' || log.action === 'DATA_EXPORT_REQUEST'
+      const gdprRequests = auditLogs.filter(
+        log => log.action === 'DELETE_USER_DATA' || log.action === 'DATA_EXPORT_REQUEST'
       ).length;
 
       // Encryption status
@@ -528,7 +537,7 @@ export class AnalyticsService {
         gdprRequests,
         dataEncryptionStatus: Math.round(dataEncryptionStatus),
         securityScans: 24, // Placeholder - would come from security scanning service
-        vulnerabilitiesFound: 0,
+        vulnerabilitiesFound: 0
       };
     } catch (error) {
       console.error('Error getting compliance metrics:', error);
@@ -537,30 +546,19 @@ export class AnalyticsService {
   }
 
   // Generate comprehensive dashboard data
-  async getDashboardAnalytics(
-    userId: string,
-    role: UserRole,
-    dateRange?: DateRange
-  ) {
+  async getDashboardAnalytics(userId: string, role: UserRole, dateRange?: DateRange) {
     try {
       const range = dateRange || this.getDefaultDateRange();
 
       // Different data based on role
       if (role === 'ADMIN') {
-        const [
-          wellness,
-          therapy,
-          crisis,
-          engagement,
-          performance,
-          compliance,
-        ] = await Promise.all([
+        const [wellness, therapy, crisis, engagement, performance, compliance] = await Promise.all([
           this.getWellnessAnalytics(undefined, range, 'system'),
           this.getTherapyAnalytics(undefined, range, 'ADMIN' as UserRole),
           this.getCrisisAnalytics(range),
           this.getUserEngagementAnalytics(range),
           this.getPerformanceMetrics(),
-          this.getComplianceMetrics(range),
+          this.getComplianceMetrics(range)
         ]);
 
         return {
@@ -570,32 +568,32 @@ export class AnalyticsService {
           engagement,
           performance,
           compliance,
-          role,
+          role
         };
       } else if (role === 'THERAPIST') {
         const [wellness, therapy, crisis] = await Promise.all([
           this.getWellnessAnalytics(userId, range, 'therapist'),
           this.getTherapyAnalytics(userId, range, role),
-          this.getCrisisAnalytics(range),
+          this.getCrisisAnalytics(range)
         ]);
 
         return {
           wellness,
           therapy,
           crisis,
-          role,
+          role
         };
       } else {
         // CLIENT
         const [wellness, therapy] = await Promise.all([
           this.getWellnessAnalytics(userId, range, 'user'),
-          this.getTherapyAnalytics(userId, range, role),
+          this.getTherapyAnalytics(userId, range, role)
         ]);
 
         return {
           wellness,
           therapy,
-          role,
+          role
         };
       }
     } catch (error) {
@@ -633,21 +631,18 @@ export class AnalyticsService {
   }
 
   // Generate reports
-  async generateWellnessReport(
-    userId: string,
-    dateRange: DateRange
-  ): Promise<any> {
+  async generateWellnessReport(userId: string, dateRange: DateRange): Promise<any> {
     try {
       const analytics = await this.getWellnessAnalytics(userId, dateRange, 'user');
-      
+
       // Get detailed data for charts
       const wellnessData = await prisma.wellnessData.findMany({
         where: {
           userId,
           date: {
             gte: dateRange.startDate,
-            lte: dateRange.endDate,
-          },
+            lte: dateRange.endDate
+          }
         },
         orderBy: { date: 'asc' },
         select: {
@@ -657,15 +652,15 @@ export class AnalyticsService {
           stressLevel: true,
           sleepHours: true,
           exercise: true,
-          meditation: true,
-        },
+          meditation: true
+        }
       });
 
       return {
         summary: analytics,
         chartData: wellnessData,
         insights: this.generateWellnessInsights(analytics, wellnessData),
-        recommendations: this.generateWellnessRecommendations(analytics),
+        recommendations: this.generateWellnessRecommendations(analytics)
       };
     } catch (error) {
       console.error('Error generating wellness report:', error);
@@ -679,11 +674,15 @@ export class AnalyticsService {
     if (analytics.moodTrend === 'improving') {
       insights.push('Your mood has been steadily improving over the tracked period.');
     } else if (analytics.moodTrend === 'declining') {
-      insights.push('Your mood scores have been declining. Consider discussing this with your therapist.');
+      insights.push(
+        'Your mood scores have been declining. Consider discussing this with your therapist.'
+      );
     }
 
     if (analytics.averageAnxietyLevel > 7) {
-      insights.push('Your anxiety levels are consistently high. Stress management techniques may help.');
+      insights.push(
+        'Your anxiety levels are consistently high. Stress management techniques may help.'
+      );
     }
 
     const exerciseRate = data.filter(d => d.exercise).length / data.length;

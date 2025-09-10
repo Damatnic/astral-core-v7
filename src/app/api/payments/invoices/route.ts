@@ -20,19 +20,13 @@ export async function GET(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'invoices-read', 20, 60000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -41,25 +35,25 @@ export async function GET(request: NextRequest) {
 
     // Get user's customer record
     const customer = await prisma.customer.findUnique({
-      where: { userId },
+      where: { userId }
     });
 
     if (!customer) {
       return NextResponse.json({
         invoices: [],
-        success: true,
+        success: true
       });
     }
 
     // Get invoices from database
     const dbInvoices = await prisma.invoice.findMany({
       where: {
-        customerId: customer.id,
+        customerId: customer.id
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'desc'
       },
-      take: limit,
+      take: limit
     });
 
     // Get fresh invoices from Stripe if needed
@@ -73,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     // Combine and deduplicate invoices
     const invoicesMap = new Map();
-    
+
     // Add database invoices
     dbInvoices.forEach(invoice => {
       invoicesMap.set(invoice.stripeInvoiceId, {
@@ -93,7 +87,7 @@ export async function GET(request: NextRequest) {
         dueDate: invoice.dueDate?.toISOString(),
         paidAt: invoice.paidAt?.toISOString(),
         createdAt: invoice.createdAt.toISOString(),
-        source: 'database',
+        source: 'database'
       });
     });
 
@@ -113,50 +107,50 @@ export async function GET(request: NextRequest) {
         description: stripeInvoice.description,
         pdfUrl: stripeInvoice.invoice_pdf,
         hostedInvoiceUrl: stripeInvoice.hosted_invoice_url,
-        dueDate: stripeInvoice.due_date ? new Date(stripeInvoice.due_date * 1000).toISOString() : null,
-        paidAt: stripeInvoice.status_transitions?.paid_at ? 
-          new Date(stripeInvoice.status_transitions.paid_at * 1000).toISOString() : null,
+        dueDate: stripeInvoice.due_date
+          ? new Date(stripeInvoice.due_date * 1000).toISOString()
+          : null,
+        paidAt: stripeInvoice.status_transitions?.paid_at
+          ? new Date(stripeInvoice.status_transitions.paid_at * 1000).toISOString()
+          : null,
         createdAt: new Date(stripeInvoice.created * 1000).toISOString(),
-        source: 'stripe',
+        source: 'stripe'
       });
     });
 
-    const invoices = Array.from(invoicesMap.values())
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const invoices = Array.from(invoicesMap.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     await auditLog({
       userId,
       action: 'INVOICES_RETRIEVED',
       entity: 'Invoice',
-      details: { 
+      details: {
         count: invoices.length,
         limit
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       invoices,
-      success: true,
+      success: true
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     if (session?.user?.id) {
       await auditLog({
         userId: session.user.id,
         action: 'INVOICES_RETRIEVAL_FAILED',
         entity: 'Invoice',
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
     }
 
     console.error('Error retrieving invoices:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve invoices' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to retrieve invoices' }, { status: 500 });
   }
 }

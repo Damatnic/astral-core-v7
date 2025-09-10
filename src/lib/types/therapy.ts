@@ -11,11 +11,11 @@ export const appointmentSchema = z.object({
     'FOLLOW_UP',
     'CRISIS_SESSION',
     'GROUP_SESSION',
-    'ASSESSMENT',
+    'ASSESSMENT'
   ]),
   location: z.string().optional(),
   meetingUrl: z.string().url().optional(),
-  notes: z.string().optional(),
+  notes: z.string().optional()
 });
 
 export const sessionNoteSchema = z.object({
@@ -26,42 +26,50 @@ export const sessionNoteSchema = z.object({
   interventions: z.array(z.string()),
   clientResponse: z.string().optional(),
   homework: z.string().optional(),
-  riskAssessment: z.object({
-    suicidalIdeation: z.boolean(),
-    homicidalIdeation: z.boolean(),
-    selfHarm: z.boolean(),
-    substanceUse: z.boolean(),
-    notes: z.string().optional(),
-  }).optional(),
+  riskAssessment: z
+    .object({
+      suicidalIdeation: z.boolean(),
+      homicidalIdeation: z.boolean(),
+      selfHarm: z.boolean(),
+      substanceUse: z.boolean(),
+      notes: z.string().optional()
+    })
+    .optional(),
   planForNext: z.string().optional(),
-  additionalNotes: z.string().optional(),
+  additionalNotes: z.string().optional()
 });
 
 export const treatmentPlanSchema = z.object({
   clientId: z.string(),
   title: z.string(),
   diagnosis: z.array(z.string()),
-  goals: z.array(z.object({
-    description: z.string(),
-    targetDate: z.string(),
-    status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'ACHIEVED', 'DISCONTINUED']),
-  })),
-  objectives: z.array(z.object({
-    goalId: z.string(),
-    description: z.string(),
-    measurable: z.string(),
-    targetDate: z.string(),
-  })),
-  interventions: z.array(z.object({
-    type: z.string(),
-    description: z.string(),
-    frequency: z.string(),
-  })),
+  goals: z.array(
+    z.object({
+      description: z.string(),
+      targetDate: z.string(),
+      status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'ACHIEVED', 'DISCONTINUED'])
+    })
+  ),
+  objectives: z.array(
+    z.object({
+      goalId: z.string(),
+      description: z.string(),
+      measurable: z.string(),
+      targetDate: z.string()
+    })
+  ),
+  interventions: z.array(
+    z.object({
+      type: z.string(),
+      description: z.string(),
+      frequency: z.string()
+    })
+  ),
   frequency: z.string(),
   duration: z.string(),
   startDate: z.string().or(z.date()),
   reviewDate: z.string().or(z.date()),
-  endDate: z.string().or(z.date()).optional(),
+  endDate: z.string().or(z.date()).optional()
 });
 
 export const progressReportSchema = z.object({
@@ -69,15 +77,17 @@ export const progressReportSchema = z.object({
   reportDate: z.string().or(z.date()),
   reportPeriod: z.string(),
   summary: z.string(),
-  goalsProgress: z.array(z.object({
-    goalId: z.string(),
-    progress: z.number().min(0).max(100),
-    notes: z.string(),
-  })),
+  goalsProgress: z.array(
+    z.object({
+      goalId: z.string(),
+      progress: z.number().min(0).max(100),
+      notes: z.string()
+    })
+  ),
   challenges: z.array(z.string()),
   achievements: z.array(z.string()),
   recommendations: z.array(z.string()),
-  nextSteps: z.array(z.string()),
+  nextSteps: z.array(z.string())
 });
 
 export type AppointmentInput = z.infer<typeof appointmentSchema>;

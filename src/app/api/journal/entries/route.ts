@@ -4,14 +4,14 @@ import { z } from 'zod';
 import { authOptions } from '@/lib/auth/config';
 import { journalEntrySchema } from '@/lib/types/wellness';
 import { phiService } from '@/lib/security/phi-service';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 import prisma from '@/lib/db/prisma';
 
 // GET /api/journal/entries - Get user's journal entries
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -25,15 +25,22 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const tag = searchParams.get('tag');
 
-    const where: any = { userId: session.user.id };
-    
+    const where: {
+      userId: string;
+      OR?: Array<{
+        title?: { contains: string; mode: string };
+        content?: { contains: string; mode: string };
+      }>;
+      tags?: { has: string };
+    } = { userId: session.user.id };
+
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } }
       ];
     }
-    
+
     if (tag) {
       where.tags = { has: tag };
     }
@@ -45,11 +52,11 @@ export async function GET(request: NextRequest) {
           where,
           orderBy: { createdAt: 'desc' },
           take: limit,
-          skip: offset,
+          skip: offset
         },
         { userId: session.user.id, userRole: session.user.role }
       ),
-      prisma.journalEntry.count({ where }),
+      prisma.journalEntry.count({ where })
     ]);
 
     return NextResponse.json({
@@ -59,12 +66,12 @@ export async function GET(request: NextRequest) {
         total,
         page: Math.floor(offset / limit) + 1,
         limit,
-        hasMore: offset + limit < total,
-      },
+        hasMore: offset + limit < total
+      }
     });
   } catch (error) {
     console.error('Error fetching journal entries:', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -76,7 +83,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -92,16 +99,19 @@ export async function POST(request: NextRequest) {
       {
         ...validated,
         userId: session.user.id,
-        attachments: [],
+        attachments: []
       },
       { userId: session.user.id, userRole: session.user.role }
     );
 
-    return NextResponse.json({
-      success: true,
-      message: 'Journal entry created successfully',
-      data: entry,
-    }, { status: HTTP_STATUS.CREATED });
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Journal entry created successfully',
+        data: entry
+      },
+      { status: HTTP_STATUS.CREATED }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -111,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Error creating journal entry:', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -123,7 +133,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -133,7 +143,7 @@ export async function PUT(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Entry ID is required' },
@@ -145,8 +155,8 @@ export async function PUT(request: NextRequest) {
     const existing = await prisma.journalEntry.findFirst({
       where: {
         id,
-        userId: session.user.id,
-      },
+        userId: session.user.id
+      }
     });
 
     if (!existing) {
@@ -159,17 +169,15 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const validated = journalEntrySchema.partial().parse(body);
 
-    const updated = await phiService.update(
-      'JournalEntry',
-      { id },
-      validated,
-      { userId: session.user.id, userRole: session.user.role }
-    );
+    const updated = await phiService.update('JournalEntry', { id }, validated, {
+      userId: session.user.id,
+      userRole: session.user.role
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Journal entry updated successfully',
-      data: updated,
+      data: updated
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -180,7 +188,7 @@ export async function PUT(request: NextRequest) {
     }
 
     console.error('Error updating journal entry:', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -192,7 +200,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -202,7 +210,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Entry ID is required' },
@@ -214,8 +222,8 @@ export async function DELETE(request: NextRequest) {
     const existing = await prisma.journalEntry.findFirst({
       where: {
         id,
-        userId: session.user.id,
-      },
+        userId: session.user.id
+      }
     });
 
     if (!existing) {
@@ -233,11 +241,11 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Journal entry deleted successfully',
+      message: 'Journal entry deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting journal entry:', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

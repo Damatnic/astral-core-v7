@@ -6,6 +6,22 @@ import { rateLimiter } from '@/lib/security/rate-limit';
 import { audit } from '@/lib/security/audit';
 import { phiService } from '@/lib/security/phi-service';
 import prisma from '@/lib/db/prisma';
+import type {
+  WebSocketMessage,
+  PresenceUpdateMessage,
+  ChatMessage,
+  MessageReadMessage,
+  JoinConversationMessage,
+  LeaveConversationMessage,
+  SessionStartMessage,
+  SessionEndMessage,
+  SessionUpdateMessage,
+  CrisisAlertMessage,
+  CrisisResponseMessage,
+  GroupJoinMessage,
+  GroupLeaveMessage,
+  GroupMessage
+} from '@/lib/types/websocket';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -38,11 +54,11 @@ export class WebSocketServer {
     this.io = new SocketIOServer(server, {
       cors: {
         origin: process.env['NEXT_PUBLIC_APP_URL'] || 'http://localhost:3000',
-        credentials: true,
+        credentials: true
       },
       transports: ['websocket', 'polling'],
       pingTimeout: 60000,
-      pingInterval: 25000,
+      pingInterval: 25000
     });
 
     this.setupMiddleware();
@@ -99,29 +115,29 @@ export class WebSocketServer {
 
       // Core events
       socket.on('disconnect', () => this.handleUserDisconnection(socket));
-      socket.on('presence:update', (data) => this.handlePresenceUpdate(socket, data));
-      socket.on('typing:start', (data) => this.handleTypingStart(socket, data));
-      socket.on('typing:stop', (data) => this.handleTypingStop(socket, data));
+      socket.on('presence:update', data => this.handlePresenceUpdate(socket, data));
+      socket.on('typing:start', data => this.handleTypingStart(socket, data));
+      socket.on('typing:stop', data => this.handleTypingStop(socket, data));
 
       // Chat events
-      socket.on('message:send', (data) => this.handleMessage(socket, data));
-      socket.on('message:read', (data) => this.handleMessageRead(socket, data));
-      socket.on('conversation:join', (data) => this.handleJoinConversation(socket, data));
-      socket.on('conversation:leave', (data) => this.handleLeaveConversation(socket, data));
+      socket.on('message:send', data => this.handleMessage(socket, data));
+      socket.on('message:read', data => this.handleMessageRead(socket, data));
+      socket.on('conversation:join', data => this.handleJoinConversation(socket, data));
+      socket.on('conversation:leave', data => this.handleLeaveConversation(socket, data));
 
       // Therapy session events
-      socket.on('session:start', (data) => this.handleSessionStart(socket, data));
-      socket.on('session:end', (data) => this.handleSessionEnd(socket, data));
-      socket.on('session:update', (data) => this.handleSessionUpdate(socket, data));
+      socket.on('session:start', data => this.handleSessionStart(socket, data));
+      socket.on('session:end', data => this.handleSessionEnd(socket, data));
+      socket.on('session:update', data => this.handleSessionUpdate(socket, data));
 
       // Crisis events
-      socket.on('crisis:alert', (data) => this.handleCrisisAlert(socket, data));
-      socket.on('crisis:response', (data) => this.handleCrisisResponse(socket, data));
+      socket.on('crisis:alert', data => this.handleCrisisAlert(socket, data));
+      socket.on('crisis:response', data => this.handleCrisisResponse(socket, data));
 
       // Group therapy events
-      socket.on('group:join', (data) => this.handleGroupJoin(socket, data));
-      socket.on('group:leave', (data) => this.handleGroupLeave(socket, data));
-      socket.on('group:message', (data) => this.handleGroupMessage(socket, data));
+      socket.on('group:join', data => this.handleGroupJoin(socket, data));
+      socket.on('group:leave', data => this.handleGroupLeave(socket, data));
+      socket.on('group:message', data => this.handleGroupMessage(socket, data));
     });
   }
 
@@ -138,7 +154,7 @@ export class WebSocketServer {
     this.presence.set(socket.userId, {
       userId: socket.userId,
       status: 'online',
-      lastActivity: new Date(),
+      lastActivity: new Date()
     });
 
     // Join user's rooms
@@ -150,7 +166,7 @@ export class WebSocketServer {
     // Notify others of user coming online
     socket.broadcast.emit('presence:online', {
       userId: socket.userId,
-      timestamp: new Date(),
+      timestamp: new Date()
     });
 
     // Send pending notifications
@@ -166,18 +182,18 @@ export class WebSocketServer {
       userSocketSet.delete(socket.id);
       if (userSocketSet.size === 0) {
         this.userSockets.delete(socket.userId);
-        
+
         // Update presence to offline
         this.presence.set(socket.userId, {
           userId: socket.userId,
           status: 'offline',
-          lastActivity: new Date(),
+          lastActivity: new Date()
         });
 
         // Notify others
         socket.broadcast.emit('presence:offline', {
           userId: socket.userId,
-          timestamp: new Date(),
+          timestamp: new Date()
         });
       }
     }
@@ -188,7 +204,7 @@ export class WebSocketServer {
         users.delete(socket.userId!);
         socket.to(`conversation:${conversationId}`).emit('typing:update', {
           conversationId,
-          typingUsers: Array.from(users),
+          typingUsers: Array.from(users)
         });
       }
     });
@@ -196,7 +212,7 @@ export class WebSocketServer {
     console.log(`User ${socket.userId} disconnected`);
   }
 
-  private handlePresenceUpdate(socket: AuthenticatedSocket, data: any) {
+  private handlePresenceUpdate(socket: AuthenticatedSocket, data: PresenceUpdateMessage) {
     if (!socket.userId) return;
 
     const status = data.status as 'online' | 'away' | 'busy';
@@ -204,14 +220,14 @@ export class WebSocketServer {
       userId: socket.userId,
       status,
       lastActivity: new Date(),
-      location: data.location,
+      location: data.location
     });
 
     // Broadcast to relevant users
     socket.broadcast.emit('presence:update', {
       userId: socket.userId,
       status,
-      timestamp: new Date(),
+      timestamp: new Date()
     });
   }
 
@@ -226,7 +242,7 @@ export class WebSocketServer {
 
     socket.to(`conversation:${conversationId}`).emit('typing:update', {
       conversationId,
-      typingUsers: Array.from(this.typingUsers.get(conversationId) || []),
+      typingUsers: Array.from(this.typingUsers.get(conversationId) || [])
     });
   }
 
@@ -238,11 +254,11 @@ export class WebSocketServer {
 
     socket.to(`conversation:${conversationId}`).emit('typing:update', {
       conversationId,
-      typingUsers: Array.from(this.typingUsers.get(conversationId) || []),
+      typingUsers: Array.from(this.typingUsers.get(conversationId) || [])
     });
   }
 
-  private async handleMessage(socket: AuthenticatedSocket, data: any) {
+  private async handleMessage(socket: AuthenticatedSocket, data: ChatMessage) {
     if (!socket.userId) return;
 
     try {
@@ -266,23 +282,23 @@ export class WebSocketServer {
           senderId: socket.userId,
           content: encryptedContent,
           type,
-          metadata,
+          metadata
         },
         include: {
           sender: {
             select: {
               id: true,
               name: true,
-              image: true,
-            },
-          },
-        },
+              image: true
+            }
+          }
+        }
       });
 
       // Emit to conversation participants
       this.io?.to(`conversation:${conversationId}`).emit('message:new', {
         ...message,
-        content, // Send unencrypted to authorized recipients
+        content // Send unencrypted to authorized recipients
       });
 
       // Send push notifications to offline users
@@ -302,7 +318,7 @@ export class WebSocketServer {
     }
   }
 
-  private async handleMessageRead(socket: AuthenticatedSocket, data: any) {
+  private async handleMessageRead(socket: AuthenticatedSocket, data: MessageReadMessage) {
     if (!socket.userId) return;
 
     const { messageId, conversationId } = data;
@@ -312,23 +328,23 @@ export class WebSocketServer {
       data: {
         messageId,
         userId: socket.userId,
-        readAt: new Date(),
-      },
+        readAt: new Date()
+      }
     });
 
     // Notify sender
     socket.to(`conversation:${conversationId}`).emit('message:read', {
       messageId,
       userId: socket.userId,
-      timestamp: new Date(),
+      timestamp: new Date()
     });
   }
 
-  private async handleJoinConversation(socket: AuthenticatedSocket, data: any) {
+  private async handleJoinConversation(socket: AuthenticatedSocket, data: JoinConversationMessage) {
     if (!socket.userId) return;
 
     const { conversationId } = data;
-    
+
     // Verify access
     const hasAccess = await this.checkConversationAccess(socket.userId, conversationId);
     if (!hasAccess) {
@@ -337,7 +353,7 @@ export class WebSocketServer {
     }
 
     socket.join(`conversation:${conversationId}`);
-    
+
     // Send recent messages
     const messages = await this.getRecentMessages(conversationId);
     socket.emit('conversation:history', { conversationId, messages });
@@ -345,11 +361,14 @@ export class WebSocketServer {
     // Notify others
     socket.to(`conversation:${conversationId}`).emit('user:joined', {
       userId: socket.userId,
-      conversationId,
+      conversationId
     });
   }
 
-  private async handleLeaveConversation(socket: AuthenticatedSocket, data: any) {
+  private async handleLeaveConversation(
+    socket: AuthenticatedSocket,
+    data: LeaveConversationMessage
+  ) {
     if (!socket.userId) return;
 
     const { conversationId } = data;
@@ -357,11 +376,11 @@ export class WebSocketServer {
 
     socket.to(`conversation:${conversationId}`).emit('user:left', {
       userId: socket.userId,
-      conversationId,
+      conversationId
     });
   }
 
-  private async handleSessionStart(socket: AuthenticatedSocket, data: any) {
+  private async handleSessionStart(socket: AuthenticatedSocket, data: SessionStartMessage) {
     if (!socket.userId) return;
 
     const { appointmentId, therapistId } = data;
@@ -374,17 +393,17 @@ export class WebSocketServer {
     this.io?.to(`user:${therapistId}`).emit('session:request', {
       appointmentId,
       clientId: socket.userId,
-      timestamp: new Date(),
+      timestamp: new Date()
     });
 
     // Update appointment status
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: 'IN_PROGRESS' },
+      data: { status: 'IN_PROGRESS' }
     });
   }
 
-  private async handleSessionEnd(socket: AuthenticatedSocket, data: any) {
+  private async handleSessionEnd(socket: AuthenticatedSocket, data: SessionEndMessage) {
     if (!socket.userId) return;
 
     const { appointmentId } = data;
@@ -393,7 +412,7 @@ export class WebSocketServer {
     // Notify all participants
     this.io?.to(sessionRoom).emit('session:ended', {
       appointmentId,
-      timestamp: new Date(),
+      timestamp: new Date()
     });
 
     // Leave room
@@ -402,11 +421,11 @@ export class WebSocketServer {
     // Update appointment
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: 'COMPLETED' },
+      data: { status: 'COMPLETED' }
     });
   }
 
-  private async handleSessionUpdate(socket: AuthenticatedSocket, data: any) {
+  private async handleSessionUpdate(socket: AuthenticatedSocket, data: SessionUpdateMessage) {
     if (!socket.userId) return;
 
     const { appointmentId, update } = data;
@@ -416,11 +435,11 @@ export class WebSocketServer {
     socket.to(sessionRoom).emit('session:update', {
       appointmentId,
       update,
-      timestamp: new Date(),
+      timestamp: new Date()
     });
   }
 
-  private async handleCrisisAlert(socket: AuthenticatedSocket, data: any) {
+  private async handleCrisisAlert(socket: AuthenticatedSocket, data: CrisisAlertMessage) {
     if (!socket.userId) return;
 
     try {
@@ -432,8 +451,8 @@ export class WebSocketServer {
           userId: socket.userId,
           severity,
           initialAssessment: message,
-          status: 'ACTIVE',
-        },
+          status: 'ACTIVE'
+        }
       });
 
       // Alert crisis team
@@ -443,14 +462,14 @@ export class WebSocketServer {
         severity,
         message,
         location,
-        timestamp: new Date(),
+        timestamp: new Date()
       });
 
       // Send immediate response
       socket.emit('crisis:acknowledged', {
         interventionId: intervention.id,
         message: 'Help is on the way. A crisis counselor will connect with you shortly.',
-        resources: await this.getCrisisResources(severity),
+        resources: await this.getCrisisResources(severity)
       });
 
       // Audit critical event
@@ -467,7 +486,7 @@ export class WebSocketServer {
     }
   }
 
-  private async handleCrisisResponse(socket: AuthenticatedSocket, data: any) {
+  private async handleCrisisResponse(socket: AuthenticatedSocket, data: CrisisResponseMessage) {
     if (!socket.userId) return;
 
     const { interventionId, response } = data;
@@ -484,29 +503,29 @@ export class WebSocketServer {
       data: {
         responderId: socket.userId,
         interventionNotes: response,
-        status: 'IN_PROGRESS',
-      },
+        status: 'IN_PROGRESS'
+      }
     });
 
     // Notify user in crisis
     const intervention = await prisma.crisisIntervention.findUnique({
-      where: { id: interventionId },
+      where: { id: interventionId }
     });
 
     if (intervention) {
       this.io?.to(`user:${intervention.userId}`).emit('crisis:responder', {
         interventionId,
         therapistId: socket.userId,
-        message: 'A crisis counselor has connected with you.',
+        message: 'A crisis counselor has connected with you.'
       });
     }
   }
 
-  private async handleGroupJoin(socket: AuthenticatedSocket, data: any) {
+  private async handleGroupJoin(socket: AuthenticatedSocket, data: GroupJoinMessage) {
     if (!socket.userId) return;
 
     const { groupId } = data;
-    
+
     // Verify membership
     const isMember = await this.checkGroupMembership(socket.userId, groupId);
     if (!isMember) {
@@ -515,15 +534,15 @@ export class WebSocketServer {
     }
 
     socket.join(`group:${groupId}`);
-    
+
     // Notify group
     socket.to(`group:${groupId}`).emit('group:member_joined', {
       userId: socket.userId,
-      groupId,
+      groupId
     });
   }
 
-  private async handleGroupLeave(socket: AuthenticatedSocket, data: any) {
+  private async handleGroupLeave(socket: AuthenticatedSocket, data: GroupLeaveMessage) {
     if (!socket.userId) return;
 
     const { groupId } = data;
@@ -531,11 +550,11 @@ export class WebSocketServer {
 
     socket.to(`group:${groupId}`).emit('group:member_left', {
       userId: socket.userId,
-      groupId,
+      groupId
     });
   }
 
-  private async handleGroupMessage(socket: AuthenticatedSocket, data: any) {
+  private async handleGroupMessage(socket: AuthenticatedSocket, data: GroupMessage) {
     if (!socket.userId) return;
 
     const { groupId, message } = data;
@@ -552,7 +571,7 @@ export class WebSocketServer {
       groupId,
       userId: socket.userId,
       message,
-      timestamp: new Date(),
+      timestamp: new Date()
     });
   }
 
@@ -565,7 +584,7 @@ export class WebSocketServer {
           this.io?.emit('presence:update', {
             userId,
             status: 'away',
-            timestamp: new Date(),
+            timestamp: new Date()
           });
         }
       });
@@ -581,14 +600,14 @@ export class WebSocketServer {
 
   private async checkConversationAccess(userId: string, conversationId: string): Promise<boolean> {
     const participant = await prisma.conversationParticipant.findFirst({
-      where: { userId, conversationId },
+      where: { userId, conversationId }
     });
     return !!participant;
   }
 
   private async checkGroupMembership(userId: string, groupId: string): Promise<boolean> {
     const member = await prisma.groupMember.findFirst({
-      where: { userId, groupId, status: 'ACTIVE' },
+      where: { userId, groupId, status: 'ACTIVE' }
     });
     return !!member;
   }
@@ -598,11 +617,11 @@ export class WebSocketServer {
       where: { conversationId },
       include: {
         sender: {
-          select: { id: true, name: true, image: true },
-        },
+          select: { id: true, name: true, image: true }
+        }
       },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 50
     });
     return messages.reverse();
   }
@@ -614,22 +633,22 @@ export class WebSocketServer {
       where: {
         conversation: {
           participants: {
-            some: { userId: socket.userId },
-          },
+            some: { userId: socket.userId }
+          }
         },
         NOT: {
           readReceipts: {
-            some: { userId: socket.userId },
-          },
-        },
+            some: { userId: socket.userId }
+          }
+        }
       },
-      take: 20,
+      take: 20
     });
 
     if (unreadMessages.length > 0) {
       socket.emit('notifications:unread', {
         messages: unreadMessages,
-        count: unreadMessages.length,
+        count: unreadMessages.length
       });
     }
   }
@@ -643,20 +662,24 @@ export class WebSocketServer {
     return [
       { type: 'hotline', number: '988', description: 'Suicide & Crisis Lifeline' },
       { type: 'text', number: '741741', description: 'Crisis Text Line' },
-      { type: 'chat', url: 'https://suicidepreventionlifeline.org/chat', description: 'Online Chat' },
+      {
+        type: 'chat',
+        url: 'https://suicidepreventionlifeline.org/chat',
+        description: 'Online Chat'
+      }
     ];
   }
 
   // Public methods for external use
-  public sendToUser(userId: string, event: string, data: any) {
+  public sendToUser(userId: string, event: string, data: WebSocketMessage) {
     this.io?.to(`user:${userId}`).emit(event, data);
   }
 
-  public sendToRole(role: string, event: string, data: any) {
+  public sendToRole(role: string, event: string, data: WebSocketMessage) {
     this.io?.to(`role:${role}`).emit(event, data);
   }
 
-  public broadcastToAll(event: string, data: any) {
+  public broadcastToAll(event: string, data: WebSocketMessage) {
     this.io?.emit(event, data);
   }
 

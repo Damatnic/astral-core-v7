@@ -9,29 +9,24 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', children, ...props }, ref) => {
     const baseStyles = 'rounded-lg';
-    
+
     const variants = {
       default: 'bg-white dark:bg-gray-800',
       elevated: 'bg-white dark:bg-gray-800 shadow-lg',
-      outlined: 'bg-transparent border border-gray-200 dark:border-gray-700',
+      outlined: 'bg-transparent border border-gray-200 dark:border-gray-700'
     };
-    
+
     const paddings = {
       none: '',
       sm: 'p-4',
       md: 'p-6',
-      lg: 'p-8',
+      lg: 'p-8'
     };
-    
+
     return (
       <div
         ref={ref}
-        className={clsx(
-          baseStyles,
-          variants[variant],
-          paddings[padding],
-          className
-        )}
+        className={clsx(baseStyles, variants[variant], paddings[padding], className)}
         {...props}
       >
         {children}
@@ -72,11 +67,7 @@ CardTitle.displayName = 'CardTitle';
 
 export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={clsx('pt-4', className)}
-      {...props}
-    >
+    <div ref={ref} className={clsx('pt-4', className)} {...props}>
       {children}
     </div>
   )

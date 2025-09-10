@@ -1,0 +1,37 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 5,
+      "settings": {
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage",
+        "preset": "desktop",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "cpuSlowdownMultiplier": 1,
+          "requestLatencyMs": 0,
+          "downloadThroughputKbps": 0,
+          "uploadThroughputKbps": 0
+        }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", {"minScore": 0.85}],
+        "categories:accessibility": ["warn", {"minScore": 0.95}],
+        "categories:best-practices": ["warn", {"minScore": 0.90}],
+        "categories:seo": ["warn", {"minScore": 0.90}],
+        "first-contentful-paint": ["error", {"maxNumericValue": 2000}],
+        "largest-contentful-paint": ["error", {"maxNumericValue": 3000}],
+        "first-meaningful-paint": ["warn", {"maxNumericValue": 2500}],
+        "speed-index": ["warn", {"maxNumericValue": 3500}],
+        "interactive": ["error", {"maxNumericValue": 4000}],
+        "total-blocking-time": ["error", {"maxNumericValue": 300}],
+        "cumulative-layout-shift": ["error", {"maxNumericValue": 0.1}]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

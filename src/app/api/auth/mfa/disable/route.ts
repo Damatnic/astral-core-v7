@@ -3,10 +3,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { mfaService } from '@/lib/services/mfa-service';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { logError } from '@/lib/logger';
 import { z } from 'zod';
 
 const disableSchema = z.object({
-  password: z.string(),
+  password: z.string()
 });
 
 // POST /api/auth/mfa/disable - Disable MFA
@@ -24,15 +25,12 @@ export async function POST(request: NextRequest) {
     const validated = disableSchema.parse(body);
 
     // Disable MFA
-    const success = await mfaService.disableMfa(
-      session.user.id,
-      validated.password
-    );
+    const success = await mfaService.disableMfa(session.user.id, validated.password);
 
     if (success) {
       return NextResponse.json({
         success: true,
-        message: 'MFA has been disabled',
+        message: 'MFA has been disabled'
       });
     } else {
       return NextResponse.json(
@@ -48,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error disabling MFA:', error);
+    logError('Error disabling MFA', error, 'mfa-disable');
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

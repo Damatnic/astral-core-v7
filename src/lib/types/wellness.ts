@@ -16,7 +16,7 @@ export const wellnessDataSchema = z.object({
   symptoms: z.array(z.string()),
   triggers: z.array(z.string()),
   copingStrategies: z.array(z.string()),
-  notes: z.string().optional(),
+  notes: z.string().optional()
 });
 
 export const journalEntrySchema = z.object({
@@ -24,13 +24,13 @@ export const journalEntrySchema = z.object({
   content: z.string().min(1, 'Content is required'),
   mood: z.string().optional(),
   tags: z.array(z.string()),
-  isPrivate: z.boolean().default(true),
+  isPrivate: z.boolean().default(true)
 });
 
 export const moodPatternSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
-  metric: z.enum(['mood', 'anxiety', 'stress', 'sleep']),
+  metric: z.enum(['mood', 'anxiety', 'stress', 'sleep'])
 });
 
 export type WellnessDataInput = z.infer<typeof wellnessDataSchema>;

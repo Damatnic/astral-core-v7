@@ -18,11 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting - 10 uploads per hour per user
-    const allowed = await rateLimiter.checkLimit(
-      `file-upload:${session.user.id}`,
-      10,
-      3600000
-    );
+    const allowed = await rateLimiter.checkLimit(`file-upload:${session.user.id}`, 10, 3600000);
     if (!allowed) {
       return NextResponse.json(
         { error: 'Upload limit exceeded. Please try again later.' },
@@ -37,10 +33,7 @@ export async function POST(request: NextRequest) {
     const isPrivate = formData.get('isPrivate') === 'true';
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: HTTP_STATUS.BAD_REQUEST }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 
     if (!category || !Object.values(FileCategory).includes(category)) {
@@ -61,25 +54,27 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       category,
       description: description || undefined,
-      isPrivate,
+      isPrivate
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'File uploaded successfully',
-      data: uploadedFile,
-    }, { status: HTTP_STATUS.CREATED });
-
-  } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'File uploaded successfully',
+        data: uploadedFile
+      },
+      { status: HTTP_STATUS.CREATED }
+    );
+  } catch (error: unknown) {
     console.error('Error uploading file:', error);
-    
-    if (error.message.includes('File size exceeds') || 
+
+    if (
+      error instanceof Error &&
+      (error.message.includes('File size exceeds') ||
         error.message.includes('File type') ||
-        error.message.includes('security scan')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: HTTP_STATUS.BAD_REQUEST }
-      );
+        error.message.includes('security scan'))
+    ) {
+      return NextResponse.json({ error: error.message }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 
     return NextResponse.json(
@@ -99,7 +94,7 @@ export async function GET() {
       SESSION_NOTE: { maxSize: '5MB', types: ['PDF', 'TXT', 'DOC'] },
       ASSESSMENT: { maxSize: '15MB', types: ['PDF', 'JPEG', 'PNG'] },
       REPORT: { maxSize: '10MB', types: ['PDF', 'DOC', 'DOCX'] },
-      OTHER: { maxSize: '10MB', types: ['PDF', 'JPEG', 'PNG', 'TXT'] },
+      OTHER: { maxSize: '10MB', types: ['PDF', 'JPEG', 'PNG', 'TXT'] }
     };
 
     return NextResponse.json({
@@ -110,9 +105,9 @@ export async function GET() {
         maxFilesPerUpload: 5,
         rateLimits: {
           uploadsPerHour: 10,
-          totalStoragePerUser: '1GB',
-        },
-      },
+          totalStoragePerUser: '1GB'
+        }
+      }
     });
   } catch (error) {
     console.error('Error getting upload info:', error);

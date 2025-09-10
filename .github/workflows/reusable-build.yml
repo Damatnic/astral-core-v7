@@ -1,0 +1,220 @@
+name: 'Reusable Build Workflow'
+
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        default: '18.17'
+        type: string
+      build_for_production:
+        description: 'Build for production environment'
+        required: false
+        default: true
+        type: boolean
+      skip_tests:
+        description: 'Skip running tests during build'
+        required: false
+        default: false
+        type: boolean
+      cache_key_suffix:
+        description: 'Suffix for cache key'
+        required: false
+        default: ''
+        type: string
+      working_directory:
+        description: 'Working directory for the build'
+        required: false
+        default: '.'
+        type: string
+    secrets:
+      DATABASE_URL:
+        description: 'Database connection URL'
+        required: false
+      NEXTAUTH_SECRET:
+        description: 'NextAuth secret'
+        required: false
+      NEXTAUTH_URL:
+        description: 'NextAuth URL'
+        required: false
+      BUILD_ENV_VARS:
+        description: 'Additional environment variables as JSON'
+        required: false
+    outputs:
+      build_time:
+        description: 'Time taken to build in seconds'
+        value: ${{ jobs.build.outputs.build_time }}
+      build_size:
+        description: 'Build output size in MB'
+        value: ${{ jobs.build.outputs.build_size }}
+      cache_hit:
+        description: 'Whether cache was hit'
+        value: ${{ jobs.build.outputs.cache_hit }}
+
+jobs:
+  build:
+    name: 'Build Application'
+    runs-on: ubuntu-latest
+    
+    outputs:
+      build_time: ${{ steps.build-timer.outputs.build_time }}
+      build_size: ${{ steps.build-info.outputs.build_size }}
+      cache_hit: ${{ steps.cache-deps.outputs.cache-hit }}
+    
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: '${{ inputs.working_directory }}/package-lock.json'
+
+      - name: 'Cache Dependencies'
+        id: cache-deps
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ inputs.working_directory }}/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ inputs.node_version }}-${{ hashFiles(format('{0}/package-lock.json', inputs.working_directory)) }}${{ inputs.cache_key_suffix }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ inputs.node_version }}-
+
+      - name: 'Install Dependencies'
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          echo "📦 Installing dependencies..."
+          npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Set Environment Variables'
+        run: |
+          # Set default environment variables
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL || 'postgresql://test:test@localhost:5432/testdb' }}" >> $GITHUB_ENV
+          echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET || 'test-secret-for-ci' }}" >> $GITHUB_ENV
+          echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}" >> $GITHUB_ENV
+          
+          # Set production environment if specified
+          if [ "${{ inputs.build_for_production }}" = "true" ]; then
+            echo "NODE_ENV=production" >> $GITHUB_ENV
+            echo "NEXT_TELEMETRY_DISABLED=1" >> $GITHUB_ENV
+          else
+            echo "NODE_ENV=development" >> $GITHUB_ENV
+          fi
+          
+          # Parse and set additional environment variables
+          if [ -n "${{ secrets.BUILD_ENV_VARS }}" ]; then
+            echo '${{ secrets.BUILD_ENV_VARS }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          fi
+
+      - name: 'Generate Prisma Client'
+        run: |
+          echo "⚙️ Generating Prisma client..."
+          npm run db:generate
+
+      - name: 'Run Pre-build Tests'
+        if: inputs.skip_tests == false
+        run: |
+          echo "🧪 Running pre-build tests..."
+          npm run test:ci
+
+      - name: 'Build Application with Timing'
+        id: build-timer
+        run: |
+          echo "🔨 Building application..."
+          start_time=$(date +%s)
+          
+          if [ "${{ inputs.build_for_production }}" = "true" ]; then
+            npm run build
+          else
+            npm run build:dev || npm run build
+          fi
+          
+          end_time=$(date +%s)
+          build_time=$((end_time - start_time))
+          echo "build-time=${build_time}" >> $GITHUB_OUTPUT
+          echo "✅ Build completed in ${build_time} seconds"
+
+      - name: 'Analyze Build Output'
+        id: build-info
+        run: |
+          echo "📊 Analyzing build output..."
+          
+          # Calculate build size
+          if [ -d ".next" ]; then
+            build_size=$(du -sm .next 2>/dev/null | cut -f1 || echo "0")
+            echo "build-size=${build_size}" >> $GITHUB_OUTPUT
+            echo "Build size: ${build_size}MB"
+            
+            # Check if build size is reasonable (warn if > 100MB)
+            if [ "$build_size" -gt 100 ]; then
+              echo "⚠️ Build size is large (${build_size}MB). Consider optimization."
+            fi
+            
+            # Generate build stats if available
+            if [ -f ".next/build-manifest.json" ]; then
+              echo "📈 Build manifest found - generating stats..."
+            fi
+          else
+            echo "build-size=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 'Cache Build Output'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ inputs.working_directory }}/.next
+            ${{ inputs.working_directory }}/out
+          key: build-cache-${{ runner.os }}-${{ github.sha }}-${{ inputs.cache_key_suffix }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-
+
+      - name: 'Upload Build Artifacts'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output${{ inputs.cache_key_suffix && format('-{0}', inputs.cache_key_suffix) || '' }}
+          path: |
+            ${{ inputs.working_directory }}/.next
+            ${{ inputs.working_directory }}/out
+            ${{ inputs.working_directory }}/package.json
+            ${{ inputs.working_directory }}/next.config.*
+          retention-days: 7
+
+      - name: 'Generate Build Report'
+        run: |
+          echo "# 🔨 Build Report" > build-report.md
+          echo "" >> build-report.md
+          echo "**Build Date:** $(date -u)" >> build-report.md
+          echo "**Node Version:** ${{ inputs.node_version }}" >> build-report.md
+          echo "**Build Time:** ${{ steps.build-timer.outputs.build_time }} seconds" >> build-report.md
+          echo "**Build Size:** ${{ steps.build-info.outputs.build_size }}MB" >> build-report.md
+          echo "**Cache Hit:** ${{ steps.cache-deps.outputs.cache-hit == 'true' && 'Yes' || 'No' }}" >> build-report.md
+          echo "**Environment:** ${{ inputs.build_for_production && 'Production' || 'Development' }}" >> build-report.md
+          echo "" >> build-report.md
+          echo "## 📊 Build Details" >> build-report.md
+          echo "" >> build-report.md
+          if [ "${{ steps.build-timer.outputs.build_time }}" -gt 300 ]; then
+            echo "⚠️ **Build time is longer than expected (>5 minutes)**" >> build-report.md
+          else
+            echo "✅ Build time is within acceptable range" >> build-report.md
+          fi
+          echo "" >> build-report.md
+          if [ "${{ steps.build-info.outputs.build_size }}" -gt 100 ]; then
+            echo "⚠️ **Build size is large (>100MB) - consider optimization**" >> build-report.md
+          else
+            echo "✅ Build size is reasonable" >> build-report.md
+          fi
+
+      - name: 'Upload Build Report'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report${{ inputs.cache_key_suffix && format('-{0}', inputs.cache_key_suffix) || '' }}
+          path: build-report.md
+          retention-days: 30

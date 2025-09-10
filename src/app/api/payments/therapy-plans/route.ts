@@ -24,7 +24,7 @@ const createTherapyPlanSchema = z.object({
   duration: z.string().min(1).max(50),
   features: z.array(z.string()).min(1),
   trialPeriodDays: z.number().min(1).max(90).optional(),
-  setupFee: z.number().min(0).max(1000).optional(),
+  setupFee: z.number().min(0).max(1000).optional()
 });
 
 const updateTherapyPlanSchema = z.object({
@@ -32,7 +32,7 @@ const updateTherapyPlanSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().min(1).max(1000).optional(),
   features: z.array(z.string()).min(1).optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.boolean().optional()
 });
 
 /**
@@ -44,10 +44,7 @@ export async function GET(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'therapy-plans-read', 20, 60000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -58,15 +55,12 @@ export async function GET(request: NextRequest) {
     const isAdmin = session?.user?.role === 'ADMIN';
 
     // Determine filter based on user role
-    const whereClause = (includeInactive && isAdmin) ? {} : { isActive: true };
+    const whereClause = includeInactive && isAdmin ? {} : { isActive: true };
 
     // Get therapy plans
     const therapyPlans = await prisma.therapyPlan.findMany({
       where: whereClause,
-      orderBy: [
-        { isActive: 'desc' },
-        { amount: 'asc' }
-      ],
+      orderBy: [{ isActive: 'desc' }, { amount: 'asc' }]
     });
 
     // Add analytics for admin users
@@ -84,39 +78,35 @@ export async function GET(request: NextRequest) {
         userId: session.user.id,
         action: 'THERAPY_PLANS_RETRIEVED',
         entity: 'TherapyPlan',
-        details: { 
+        details: {
           count: therapyPlans.length,
           includeInactive,
           isAdmin
         },
-        outcome: 'SUCCESS',
+        outcome: 'SUCCESS'
       });
     }
 
     return NextResponse.json({
       therapyPlans,
       analytics,
-      success: true,
+      success: true
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     if (session?.user?.id) {
       await auditLog({
         userId: session.user.id,
         action: 'THERAPY_PLANS_RETRIEVAL_FAILED',
         entity: 'TherapyPlan',
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
     }
 
     console.error('Error retrieving therapy plans:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve therapy plans' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to retrieve therapy plans' }, { status: 500 });
   }
 }
 
@@ -129,26 +119,17 @@ export async function POST(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'therapy-plan-create', 5, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many creation attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many creation attempts' }, { status: 429 });
     }
 
     // Authentication and authorization
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const userId = session.user.id;
@@ -158,9 +139,9 @@ export async function POST(request: NextRequest) {
     const validationResult = createTherapyPlanSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request data',
-          details: validationResult.error.errors 
+          details: validationResult.error.errors
         },
         { status: 400 }
       );
@@ -176,39 +157,35 @@ export async function POST(request: NextRequest) {
       action: 'THERAPY_PLAN_CREATED_VIA_API',
       entity: 'TherapyPlan',
       entityId: therapyPlan.id,
-      details: { 
+      details: {
         planName: planData.name,
         amount: planData.amount,
         stripePriceId: price.id,
         stripeProductId: product.id
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       therapyPlan,
       success: true,
-      message: 'Therapy plan created successfully',
+      message: 'Therapy plan created successfully'
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     if (session?.user?.id) {
       await auditLog({
         userId: session.user.id,
         action: 'THERAPY_PLAN_CREATION_FAILED_API',
         entity: 'TherapyPlan',
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
     }
 
     console.error('Error creating therapy plan:', error);
-    return NextResponse.json(
-      { error: 'Failed to create therapy plan' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create therapy plan' }, { status: 500 });
   }
 }
 
@@ -221,26 +198,17 @@ export async function PUT(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'therapy-plan-update', 10, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many update attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many update attempts' }, { status: 429 });
     }
 
     // Authentication and authorization
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const userId = session.user.id;
@@ -250,9 +218,9 @@ export async function PUT(request: NextRequest) {
     const validationResult = updateTherapyPlanSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request data',
-          details: validationResult.error.errors 
+          details: validationResult.error.errors
         },
         { status: 400 }
       );
@@ -262,37 +230,37 @@ export async function PUT(request: NextRequest) {
 
     // Check if therapy plan exists
     const existingPlan = await prisma.therapyPlan.findUnique({
-      where: { id },
+      where: { id }
     });
 
     if (!existingPlan) {
-      return NextResponse.json(
-        { error: 'Therapy plan not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Therapy plan not found' }, { status: 404 });
     }
 
     // Update therapy plan
     const updatedPlan = await prisma.therapyPlan.update({
       where: { id },
-      data: updateData,
+      data: updateData
     });
 
     // If updating Stripe product info is needed (for name/description changes)
     if (updateData.name || updateData.description) {
       try {
-        const stripe = await import('stripe').then(Stripe => new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
-          apiVersion: '2024-12-18.acacia',
-        }));
+        const stripe = await import('stripe').then(
+          Stripe =>
+            new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
+              apiVersion: '2024-12-18.acacia'
+            })
+        );
 
         await stripe.products.update(existingPlan.stripeProductId, {
           ...(updateData.name && { name: updateData.name }),
           ...(updateData.description && { description: updateData.description }),
-          ...(updateData.features && { 
-            metadata: { 
-              features: JSON.stringify(updateData.features) 
+          ...(updateData.features && {
+            metadata: {
+              features: JSON.stringify(updateData.features)
             }
-          }),
+          })
         });
       } catch (stripeError) {
         console.warn('Failed to update Stripe product:', stripeError);
@@ -305,37 +273,33 @@ export async function PUT(request: NextRequest) {
       action: 'THERAPY_PLAN_UPDATED_VIA_API',
       entity: 'TherapyPlan',
       entityId: id,
-      details: { 
+      details: {
         oldData: existingPlan,
         newData: updateData
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       therapyPlan: updatedPlan,
       success: true,
-      message: 'Therapy plan updated successfully',
+      message: 'Therapy plan updated successfully'
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     if (session?.user?.id) {
       await auditLog({
         userId: session.user.id,
         action: 'THERAPY_PLAN_UPDATE_FAILED_API',
         entity: 'TherapyPlan',
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
     }
 
     console.error('Error updating therapy plan:', error);
-    return NextResponse.json(
-      { error: 'Failed to update therapy plan' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update therapy plan' }, { status: 500 });
   }
 }
 
@@ -348,26 +312,17 @@ export async function DELETE(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'therapy-plan-delete', 5, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many delete attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many delete attempts' }, { status: 429 });
     }
 
     // Authentication and authorization
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const userId = session.user.id;
@@ -375,37 +330,31 @@ export async function DELETE(request: NextRequest) {
     const planId = searchParams.get('id');
 
     if (!planId) {
-      return NextResponse.json(
-        { error: 'Plan ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 });
     }
 
     // Check if therapy plan exists
     const existingPlan = await prisma.therapyPlan.findUnique({
-      where: { id: planId },
+      where: { id: planId }
     });
 
     if (!existingPlan) {
-      return NextResponse.json(
-        { error: 'Therapy plan not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Therapy plan not found' }, { status: 404 });
     }
 
     // Check if plan has active subscriptions
     const activeSubscriptions = await prisma.subscription.count({
       where: {
         stripeProductId: existingPlan.stripeProductId,
-        status: { in: ['ACTIVE', 'TRIALING'] },
-      },
+        status: { in: ['ACTIVE', 'TRIALING'] }
+      }
     });
 
     if (activeSubscriptions > 0) {
       return NextResponse.json(
-        { 
+        {
           error: 'Cannot deactivate therapy plan with active subscriptions',
-          activeSubscriptions 
+          activeSubscriptions
         },
         { status: 400 }
       );
@@ -414,17 +363,20 @@ export async function DELETE(request: NextRequest) {
     // Deactivate therapy plan (don't delete for audit purposes)
     const deactivatedPlan = await prisma.therapyPlan.update({
       where: { id: planId },
-      data: { isActive: false },
+      data: { isActive: false }
     });
 
     // Deactivate Stripe product
     try {
-      const stripe = await import('stripe').then(Stripe => new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2024-12-18.acacia',
-      }));
+      const stripe = await import('stripe').then(
+        Stripe =>
+          new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
+            apiVersion: '2024-12-18.acacia'
+          })
+      );
 
       await stripe.products.update(existingPlan.stripeProductId, {
-        active: false,
+        active: false
       });
     } catch (stripeError) {
       console.warn('Failed to deactivate Stripe product:', stripeError);
@@ -436,36 +388,32 @@ export async function DELETE(request: NextRequest) {
       action: 'THERAPY_PLAN_DEACTIVATED_VIA_API',
       entity: 'TherapyPlan',
       entityId: planId,
-      details: { 
+      details: {
         planName: existingPlan.name,
         activeSubscriptions
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       therapyPlan: deactivatedPlan,
       success: true,
-      message: 'Therapy plan deactivated successfully',
+      message: 'Therapy plan deactivated successfully'
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     if (session?.user?.id) {
       await auditLog({
         userId: session.user.id,
         action: 'THERAPY_PLAN_DEACTIVATION_FAILED_API',
         entity: 'TherapyPlan',
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        outcome: 'FAILURE',
+        outcome: 'FAILURE'
       });
     }
 
     console.error('Error deactivating therapy plan:', error);
-    return NextResponse.json(
-      { error: 'Failed to deactivate therapy plan' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to deactivate therapy plan' }, { status: 500 });
   }
 }

@@ -98,11 +98,11 @@ export default function AnalyticsDashboard() {
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'improving':
-        return <span className="text-green-500">📈</span>;
+        return <span className='text-green-500'>📈</span>;
       case 'declining':
-        return <span className="text-red-500">📉</span>;
+        return <span className='text-red-500'>📉</span>;
       default:
-        return <span className="text-blue-500">➡️</span>;
+        return <span className='text-blue-500'>➡️</span>;
     }
   };
 
@@ -114,17 +114,17 @@ export default function AnalyticsDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className='flex items-center justify-center min-h-screen'>
+        <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
       </div>
     );
   }
 
   if (!analytics) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">No analytics data available</p>
-        <Button onClick={fetchAnalytics} className="mt-4">
+      <div className='text-center py-12'>
+        <p className='text-gray-500 dark:text-gray-400'>No analytics data available</p>
+        <Button onClick={fetchAnalytics} className='mt-4'>
           Try Again
         </Button>
       </div>
@@ -132,35 +132,29 @@ export default function AnalyticsDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8'>
+      <div className='max-w-7xl mx-auto px-4'>
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Analytics Dashboard
-          </h1>
-          <div className="flex items-center gap-4">
+        <div className='flex justify-between items-center mb-8'>
+          <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Analytics Dashboard</h1>
+          <div className='flex items-center gap-4'>
             <select
               value={dateRange}
-              onChange={(e) => setDateRange(parseInt(e.target.value))}
-              className="px-3 py-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              onChange={e => setDateRange(parseInt(e.target.value))}
+              className='px-3 py-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
               <option value={90}>Last 90 days</option>
               <option value={365}>Last year</option>
             </select>
-            <Button
-              onClick={refreshData}
-              disabled={refreshing}
-              variant="secondary"
-            >
+            <Button onClick={refreshData} disabled={refreshing} variant='secondary'>
               {refreshing ? 'Refreshing...' : '🔄 Refresh'}
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'>
           {/* Wellness Analytics */}
           {analytics.wellness && (
             <Card>
@@ -168,42 +162,46 @@ export default function AnalyticsDashboard() {
                 <CardTitle>Wellness Metrics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Average Mood</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Average Mood</span>
+                    <div className='flex items-center gap-2'>
+                      <span className='font-semibold'>
                         {analytics.wellness.averageMoodScore}/10
                       </span>
                       {getTrendIcon(analytics.wellness.moodTrend)}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Anxiety Level</span>
-                    <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${getStatusColor(
-                        10 - analytics.wellness.averageAnxietyLevel,
-                        { good: 7, warning: 4 }
-                      )}`}>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Anxiety Level</span>
+                    <div className='flex items-center gap-2'>
+                      <span
+                        className={`font-semibold ${getStatusColor(
+                          10 - analytics.wellness.averageAnxietyLevel,
+                          { good: 7, warning: 4 }
+                        )}`}
+                      >
                         {analytics.wellness.averageAnxietyLevel}/10
                       </span>
                       {getTrendIcon(analytics.wellness.anxietyTrend)}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Stress Level</span>
-                    <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${getStatusColor(
-                        10 - analytics.wellness.averageStressLevel,
-                        { good: 7, warning: 4 }
-                      )}`}>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Stress Level</span>
+                    <div className='flex items-center gap-2'>
+                      <span
+                        className={`font-semibold ${getStatusColor(
+                          10 - analytics.wellness.averageStressLevel,
+                          { good: 7, warning: 4 }
+                        )}`}
+                      >
                         {analytics.wellness.averageStressLevel}/10
                       </span>
                       {getTrendIcon(analytics.wellness.stressTrend)}
                     </div>
                   </div>
-                  <div className="pt-2 border-t">
-                    <span className="text-xs text-gray-500">
+                  <div className='pt-2 border-t'>
+                    <span className='text-xs text-gray-500'>
                       {analytics.wellness.totalEntries} entries recorded
                     </span>
                   </div>
@@ -219,31 +217,29 @@ export default function AnalyticsDashboard() {
                 <CardTitle>Therapy Progress</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Sessions</span>
-                    <span className="font-semibold">{analytics.therapy.totalSessions}</span>
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Total Sessions</span>
+                    <span className='font-semibold'>{analytics.therapy.totalSessions}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Completed</span>
-                    <span className="font-semibold text-green-600">
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Completed</span>
+                    <span className='font-semibold text-green-600'>
                       {analytics.therapy.completedSessions}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Active Plans</span>
-                    <span className="font-semibold">{analytics.therapy.treatmentPlansActive}</span>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Active Plans</span>
+                    <span className='font-semibold'>{analytics.therapy.treatmentPlansActive}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Goal Progress</span>
-                    <span className="font-semibold">
-                      {analytics.therapy.averageGoalProgress}%
-                    </span>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Goal Progress</span>
+                    <span className='font-semibold'>{analytics.therapy.averageGoalProgress}%</span>
                   </div>
-                  <div className="pt-2 border-t">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className='pt-2 border-t'>
+                    <div className='w-full bg-gray-200 rounded-full h-2'>
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        className='bg-blue-600 h-2 rounded-full transition-all duration-300'
                         style={{ width: `${analytics.therapy.averageGoalProgress}%` }}
                       ></div>
                     </div>
@@ -260,31 +256,41 @@ export default function AnalyticsDashboard() {
                 <CardTitle>Crisis Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Interventions</span>
-                    <span className="font-semibold">{analytics.crisis.totalInterventions}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Avg Response Time</span>
-                    <span className="font-semibold">
-                      {analytics.crisis.averageResponseTime}min
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Total Interventions
                     </span>
+                    <span className='font-semibold'>{analytics.crisis.totalInterventions}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Resolution Rate</span>
-                    <span className={`font-semibold ${getStatusColor(
-                      analytics.crisis.resolutionRate,
-                      { good: 80, warning: 60 }
-                    )}`}>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Avg Response Time
+                    </span>
+                    <span className='font-semibold'>{analytics.crisis.averageResponseTime}min</span>
+                  </div>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Resolution Rate
+                    </span>
+                    <span
+                      className={`font-semibold ${getStatusColor(analytics.crisis.resolutionRate, {
+                        good: 80,
+                        warning: 60
+                      })}`}
+                    >
                       {analytics.crisis.resolutionRate}%
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Escalation Rate</span>
-                    <span className={`font-semibold ${
-                      analytics.crisis.escalationRate < 20 ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Escalation Rate
+                    </span>
+                    <span
+                      className={`font-semibold ${
+                        analytics.crisis.escalationRate < 20 ? 'text-green-600' : 'text-yellow-600'
+                      }`}
+                    >
                       {analytics.crisis.escalationRate}%
                     </span>
                   </div>
@@ -300,25 +306,33 @@ export default function AnalyticsDashboard() {
                 <CardTitle>User Engagement</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Daily Active Users</span>
-                    <span className="font-semibold">{analytics.engagement.dailyActiveUsers}</span>
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Daily Active Users
+                    </span>
+                    <span className='font-semibold'>{analytics.engagement.dailyActiveUsers}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Weekly Active Users</span>
-                    <span className="font-semibold">{analytics.engagement.weeklyActiveUsers}</span>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Weekly Active Users
+                    </span>
+                    <span className='font-semibold'>{analytics.engagement.weeklyActiveUsers}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Messages Exchanged</span>
-                    <span className="font-semibold">{analytics.engagement.messagesExchanged}</span>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Messages Exchanged
+                    </span>
+                    <span className='font-semibold'>{analytics.engagement.messagesExchanged}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Retention Rate</span>
-                    <span className={`font-semibold ${getStatusColor(
-                      analytics.engagement.retentionRate,
-                      { good: 70, warning: 50 }
-                    )}`}>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Retention Rate</span>
+                    <span
+                      className={`font-semibold ${getStatusColor(
+                        analytics.engagement.retentionRate,
+                        { good: 70, warning: 50 }
+                      )}`}
+                    >
                       {analytics.engagement.retentionRate}%
                     </span>
                   </div>
@@ -334,27 +348,33 @@ export default function AnalyticsDashboard() {
                 <CardTitle>System Performance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Avg Response Time</span>
-                    <span className={`font-semibold ${getStatusColor(
-                      1000 - analytics.performance.apiResponseTimes.average,
-                      { good: 900, warning: 700 }
-                    )}`}>
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Avg Response Time
+                    </span>
+                    <span
+                      className={`font-semibold ${getStatusColor(
+                        1000 - analytics.performance.apiResponseTimes.average,
+                        { good: 900, warning: 700 }
+                      )}`}
+                    >
                       {analytics.performance.apiResponseTimes.average}ms
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Error Rate</span>
-                    <span className={`font-semibold ${
-                      analytics.performance.errorRate < 1 ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Error Rate</span>
+                    <span
+                      className={`font-semibold ${
+                        analytics.performance.errorRate < 1 ? 'text-green-600' : 'text-yellow-600'
+                      }`}
+                    >
                       {analytics.performance.errorRate}%
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Uptime</span>
-                    <span className="font-semibold text-green-600">
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Uptime</span>
+                    <span className='font-semibold text-green-600'>
                       {analytics.performance.uptime}%
                     </span>
                   </div>
@@ -370,26 +390,34 @@ export default function AnalyticsDashboard() {
                 <CardTitle>Compliance & Security</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Data Encryption</span>
-                    <span className="font-semibold text-green-600">
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Data Encryption
+                    </span>
+                    <span className='font-semibold text-green-600'>
                       {analytics.compliance.dataEncryptionStatus}%
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Audit Logs</span>
-                    <span className="font-semibold">{analytics.compliance.auditLogsGenerated}</span>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Audit Logs</span>
+                    <span className='font-semibold'>{analytics.compliance.auditLogsGenerated}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Security Scans</span>
-                    <span className="font-semibold">{analytics.compliance.securityScans}</span>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>Security Scans</span>
+                    <span className='font-semibold'>{analytics.compliance.securityScans}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Vulnerabilities</span>
-                    <span className={`font-semibold ${
-                      analytics.compliance.vulnerabilitiesFound === 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                  <div className='flex justify-between items-center'>
+                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                      Vulnerabilities
+                    </span>
+                    <span
+                      className={`font-semibold ${
+                        analytics.compliance.vulnerabilitiesFound === 0
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {analytics.compliance.vulnerabilitiesFound}
                     </span>
                   </div>
@@ -400,41 +428,45 @@ export default function AnalyticsDashboard() {
         </div>
 
         {/* Role-specific insights */}
-        <div className="mt-8">
+        <div className='mt-8'>
           <Card>
             <CardHeader>
               <CardTitle>Insights & Recommendations</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className='text-sm text-gray-600 dark:text-gray-400'>
                 {analytics.role === 'CLIENT' && analytics.wellness && (
-                  <div className="space-y-2">
+                  <div className='space-y-2'>
                     {analytics.wellness.moodTrend === 'improving' && (
-                      <p className="text-green-700 dark:text-green-400">
+                      <p className='text-green-700 dark:text-green-400'>
                         🎉 Your mood has been improving! Keep up the great work.
                       </p>
                     )}
                     {analytics.wellness.averageStressLevel > 7 && (
-                      <p className="text-yellow-700 dark:text-yellow-400">
-                        ⚠️ Your stress levels are high. Consider discussing stress management with your therapist.
+                      <p className='text-yellow-700 dark:text-yellow-400'>
+                        ⚠️ Your stress levels are high. Consider discussing stress management with
+                        your therapist.
                       </p>
                     )}
                     <p>Continue tracking your wellness data to identify patterns and progress.</p>
                   </div>
                 )}
-                
+
                 {analytics.role === 'THERAPIST' && (
-                  <div className="space-y-2">
-                    <p>Monitor your clients' progress and engagement levels.</p>
+                  <div className='space-y-2'>
+                    <p>Monitor your clients&apos; progress and engagement levels.</p>
                     <p>Review treatment plan effectiveness and adjust as needed.</p>
                     <p>Consider reaching out to clients who show declining trends.</p>
                   </div>
                 )}
-                
+
                 {analytics.role === 'ADMIN' && (
-                  <div className="space-y-2">
+                  <div className='space-y-2'>
                     <p>System performance is within acceptable parameters.</p>
-                    <p>Security compliance remains strong with {analytics.compliance?.dataEncryptionStatus}% encryption coverage.</p>
+                    <p>
+                      Security compliance remains strong with{' '}
+                      {analytics.compliance?.dataEncryptionStatus}% encryption coverage.
+                    </p>
                     <p>Monitor user engagement trends to identify areas for improvement.</p>
                   </div>
                 )}

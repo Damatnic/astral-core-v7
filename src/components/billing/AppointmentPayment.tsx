@@ -53,11 +53,11 @@ interface AppointmentPaymentProps {
   className?: string;
 }
 
-const AppointmentPayment = ({ 
-  appointment, 
-  onPaymentSuccess, 
-  onPaymentError, 
-  className 
+const AppointmentPayment = ({
+  appointment,
+  onPaymentSuccess,
+  onPaymentError,
+  className
 }: AppointmentPaymentProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -68,7 +68,7 @@ const AppointmentPayment = ({
   const [useCustomAmount, setUseCustomAmount] = useState(false);
 
   // Check if appointment already has a successful payment
-  const existingPayment = appointment.payments.find(p => 
+  const existingPayment = appointment.payments.find(p =>
     ['succeeded', 'processing', 'requires_confirmation'].includes(p.status.toLowerCase())
   );
 
@@ -86,21 +86,22 @@ const AppointmentPayment = ({
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit',
+      minute: '2-digit'
     });
   };
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'USD'
     }).format(amount);
   };
 
   const getAppointmentTypeDisplay = (type: string) => {
-    return type.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
+    return type
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   const getStatusBadge = (status: string) => {
@@ -124,10 +125,12 @@ const AppointmentPayment = ({
     };
 
     return (
-      <span className={clsx(
-        'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
-        getStatusStyles(status)
-      )}>
+      <span
+        className={clsx(
+          'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+          getStatusStyles(status)
+        )}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace('_', ' ')}
       </span>
     );
@@ -144,7 +147,7 @@ const AppointmentPayment = ({
 
     try {
       const amount = useCustomAmount ? parseFloat(customAmount) : paymentAmount;
-      
+
       if (amount <= 0 || amount > 10000) {
         throw new Error('Please enter a valid amount between $0.01 and $10,000');
       }
@@ -152,13 +155,13 @@ const AppointmentPayment = ({
       const response = await fetch('/api/payments/sessions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           appointmentId: appointment.id,
           amount: amount,
-          savePaymentMethod: true,
-        }),
+          savePaymentMethod: true
+        })
       });
 
       if (!response.ok) {
@@ -178,7 +181,7 @@ const AppointmentPayment = ({
     }
   };
 
-  const handlePaymentSuccess = (paymentIntent: any) => {
+  const handlePaymentSuccess = (paymentIntent: { id: string; status: string }) => {
     setShowPaymentForm(false);
     setClientSecret(null);
     onPaymentSuccess?.();
@@ -194,13 +197,13 @@ const AppointmentPayment = ({
   const handleCustomAmountChange = (value: string) => {
     // Only allow numbers and decimal point
     const cleanValue = value.replace(/[^0-9.]/g, '');
-    
+
     // Prevent multiple decimal points
     const parts = cleanValue.split('.');
     if (parts.length > 2) {
       return;
     }
-    
+
     // Limit to 2 decimal places
     if (parts[1] && parts[1].length > 2) {
       return;
@@ -212,44 +215,42 @@ const AppointmentPayment = ({
   if (existingPayment) {
     return (
       <Card className={className}>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Payment Status
-            </h3>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+        <div className='p-6'>
+          <div className='flex items-center justify-between mb-4'>
+            <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>Payment Status</h3>
+            <span className='inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'>
               Paid
             </span>
           </div>
-          
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Amount:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
+
+          <div className='space-y-3'>
+            <div className='flex justify-between text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Amount:</span>
+              <span className='font-medium text-gray-900 dark:text-white'>
                 {formatAmount(existingPayment.amount)}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Payment Date:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
-                {existingPayment.processedAt 
+            <div className='flex justify-between text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Payment Date:</span>
+              <span className='font-medium text-gray-900 dark:text-white'>
+                {existingPayment.processedAt
                   ? formatDate(existingPayment.processedAt)
-                  : formatDate(existingPayment.createdAt)
-                }
+                  : formatDate(existingPayment.createdAt)}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Status:</span>
-              <span className="font-medium text-green-600 dark:text-green-400">
-                {existingPayment.status.charAt(0).toUpperCase() + existingPayment.status.slice(1).toLowerCase().replace('_', ' ')}
+            <div className='flex justify-between text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Status:</span>
+              <span className='font-medium text-green-600 dark:text-green-400'>
+                {existingPayment.status.charAt(0).toUpperCase() +
+                  existingPayment.status.slice(1).toLowerCase().replace('_', ' ')}
               </span>
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Payment has been processed for this appointment. If you need a refund or have questions,
-              please contact your therapist or support.
+          <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
+            <p className='text-xs text-gray-500 dark:text-gray-400'>
+              Payment has been processed for this appointment. If you need a refund or have
+              questions, please contact your therapist or support.
             </p>
           </div>
         </div>
@@ -281,51 +282,49 @@ const AppointmentPayment = ({
 
   return (
     <Card className={className}>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Session Payment
-          </h3>
+      <div className='p-6'>
+        <div className='flex items-center justify-between mb-4'>
+          <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>Session Payment</h3>
           {getStatusBadge(appointment.status)}
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800">
-            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+          <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800'>
+            <p className='text-sm text-red-800 dark:text-red-200'>{error}</p>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {/* Appointment Details */}
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Therapist:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
+          <div className='space-y-3'>
+            <div className='flex justify-between text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Therapist:</span>
+              <span className='font-medium text-gray-900 dark:text-white'>
                 {appointment.therapist.name}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Session Date:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
+            <div className='flex justify-between text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Session Date:</span>
+              <span className='font-medium text-gray-900 dark:text-white'>
                 {formatDate(appointment.scheduledAt)}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
+            <div className='flex justify-between text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Duration:</span>
+              <span className='font-medium text-gray-900 dark:text-white'>
                 {appointment.duration} minutes
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Session Type:</span>
-              <span className="font-medium text-gray-900 dark:text-white">
+            <div className='flex justify-between text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Session Type:</span>
+              <span className='font-medium text-gray-900 dark:text-white'>
                 {getAppointmentTypeDisplay(appointment.type)}
               </span>
             </div>
             {appointment.therapist.therapistProfile?.specializations && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Specializations:</span>
-                <span className="font-medium text-gray-900 dark:text-white text-right">
+              <div className='flex justify-between text-sm'>
+                <span className='text-gray-600 dark:text-gray-400'>Specializations:</span>
+                <span className='font-medium text-gray-900 dark:text-white text-right'>
                   {appointment.therapist.therapistProfile.specializations.join(', ')}
                 </span>
               </div>
@@ -333,48 +332,48 @@ const AppointmentPayment = ({
           </div>
 
           {/* Payment Amount */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
+          <div className='border-t border-gray-200 dark:border-gray-700 pt-4'>
+            <div className='space-y-3'>
+              <div className='flex items-center justify-between'>
+                <label className='flex items-center'>
                   <input
-                    type="radio"
-                    name="amount-type"
+                    type='radio'
+                    name='amount-type'
                     checked={!useCustomAmount}
                     onChange={() => setUseCustomAmount(false)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                    className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                   />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                  <span className='ml-2 text-sm text-gray-700 dark:text-gray-300'>
                     Standard Rate
                   </span>
                 </label>
-                <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                <span className='text-lg font-semibold text-gray-900 dark:text-white'>
                   {formatAmount(paymentAmount)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
+              <div className='flex items-center justify-between'>
+                <label className='flex items-center'>
                   <input
-                    type="radio"
-                    name="amount-type"
+                    type='radio'
+                    name='amount-type'
                     checked={useCustomAmount}
                     onChange={() => setUseCustomAmount(true)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                    className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                   />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                  <span className='ml-2 text-sm text-gray-700 dark:text-gray-300'>
                     Custom Amount
                   </span>
                 </label>
                 {useCustomAmount && (
-                  <div className="flex items-center">
-                    <span className="text-gray-500 dark:text-gray-400 mr-1">$</span>
+                  <div className='flex items-center'>
+                    <span className='text-gray-500 dark:text-gray-400 mr-1'>$</span>
                     <input
-                      type="text"
+                      type='text'
                       value={customAmount}
-                      onChange={(e) => handleCustomAmountChange(e.target.value)}
+                      onChange={e => handleCustomAmountChange(e.target.value)}
                       placeholder={paymentAmount.toString()}
-                      className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className='w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
                     />
                   </div>
                 )}
@@ -383,37 +382,40 @@ const AppointmentPayment = ({
           </div>
 
           {/* Payment Button */}
-          <div className="pt-4">
+          <div className='pt-4'>
             <Button
-              variant="primary"
+              variant='primary'
               fullWidth
               onClick={handlePaymentClick}
               isLoading={isProcessing}
               disabled={
-                isProcessing || 
+                isProcessing ||
                 (useCustomAmount && (!customAmount || parseFloat(customAmount) <= 0)) ||
                 !['scheduled', 'confirmed', 'completed'].includes(appointment.status.toLowerCase())
               }
             >
-              {isProcessing 
-                ? 'Processing...' 
-                : `Pay ${formatAmount(useCustomAmount && customAmount ? parseFloat(customAmount) : paymentAmount)}`
-              }
+              {isProcessing
+                ? 'Processing...'
+                : `Pay ${formatAmount(useCustomAmount && customAmount ? parseFloat(customAmount) : paymentAmount)}`}
             </Button>
           </div>
 
           {/* Information */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          <div className='pt-4 border-t border-gray-200 dark:border-gray-700'>
+            <div className='flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400'>
+              <svg className='h-4 w-4' fill='currentColor' viewBox='0 0 20 20'>
+                <path
+                  fillRule='evenodd'
+                  d='M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z'
+                  clipRule='evenodd'
+                />
               </svg>
               <span>Secure payment processing • HIPAA Compliant</span>
             </div>
-            
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Your payment will be processed securely. You'll receive a receipt after successful payment.
-              Payment method will be saved for future sessions.
+
+            <p className='text-xs text-gray-500 dark:text-gray-400 mt-2'>
+              Your payment will be processed securely. You&apos;ll receive a receipt after
+              successful payment. Payment method will be saved for future sessions.
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { createWriteStream, createReadStream, promises as fs } from 'fs';
 import { join } from 'path';
 import { pipeline } from 'stream/promises';
 import sharp from 'sharp';
+import { logError, logWarning } from '@/lib/logger';
 import { lookup } from 'mime-types';
 import crypto from 'crypto';
 import prisma from '@/lib/db/prisma';
@@ -45,56 +46,57 @@ export class FileUploadService {
       maxFileSize: 10 * 1024 * 1024, // 10MB
       allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
       uploadDir: 'uploads/consent-forms',
-      encryptFiles: true,
+      encryptFiles: true
     },
     INSURANCE: {
       maxFileSize: 5 * 1024 * 1024, // 5MB
       allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
       uploadDir: 'uploads/insurance',
-      encryptFiles: true,
+      encryptFiles: true
     },
     MEDICAL_RECORD: {
       maxFileSize: 20 * 1024 * 1024, // 20MB
       allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'text/plain'],
       uploadDir: 'uploads/medical-records',
-      encryptFiles: true,
+      encryptFiles: true
     },
     SESSION_NOTE: {
       maxFileSize: 5 * 1024 * 1024, // 5MB
       allowedMimeTypes: ['application/pdf', 'text/plain', 'application/msword'],
       uploadDir: 'uploads/session-notes',
-      encryptFiles: true,
+      encryptFiles: true
     },
     ASSESSMENT: {
       maxFileSize: 15 * 1024 * 1024, // 15MB
       allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
       uploadDir: 'uploads/assessments',
-      encryptFiles: true,
+      encryptFiles: true
     },
     REPORT: {
       maxFileSize: 10 * 1024 * 1024, // 10MB
-      allowedMimeTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      allowedMimeTypes: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ],
       uploadDir: 'uploads/reports',
-      encryptFiles: true,
+      encryptFiles: true
     },
     OTHER: {
       maxFileSize: 10 * 1024 * 1024, // 10MB
       allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'text/plain'],
       uploadDir: 'uploads/other',
-      encryptFiles: false,
-    },
+      encryptFiles: false
+    }
   };
 
   private readonly baseUploadDir = process.env['UPLOAD_BASE_DIR'] || './uploads';
 
   // Upload and process file
-  async uploadFile(
-    buffer: Buffer,
-    metadata: FileMetadata
-  ): Promise<ProcessedFile> {
+  async uploadFile(buffer: Buffer, metadata: FileMetadata): Promise<ProcessedFile> {
     try {
       const config = this.configs[metadata.category];
-      
+
       // Validate file
       await this.validateFile(buffer, metadata, config);
 
@@ -148,9 +150,9 @@ export class FileUploadService {
             isPrivate: metadata.isPrivate,
             thumbnailUrl,
             uploadedAt: new Date(),
-            checksum: this.calculateChecksum(buffer),
-          },
-        },
+            checksum: this.calculateChecksum(buffer)
+          }
+        }
       });
 
       // Audit log
@@ -162,7 +164,7 @@ export class FileUploadService {
           category: metadata.category,
           size: buffer.length,
           mimeType: metadata.mimeType,
-          isEncrypted,
+          isEncrypted
         },
         metadata.userId
       );
@@ -174,7 +176,7 @@ export class FileUploadService {
           title: 'Document Uploaded',
           message: `Your ${metadata.category.toLowerCase().replace('_', ' ')} has been uploaded successfully`,
           type: 'SYSTEM',
-          actionUrl: `/files/${fileId}`,
+          actionUrl: `/files/${fileId}`
         });
       }
 
@@ -187,10 +189,10 @@ export class FileUploadService {
         mimeType: metadata.mimeType,
         category: metadata.category,
         isEncrypted,
-        thumbnailUrl,
+        thumbnailUrl
       };
     } catch (error) {
-      console.error('Error uploading file:', error);
+      logError('Error uploading file', error, 'file-upload-service');
       throw error;
     }
   }
@@ -202,8 +204,8 @@ export class FileUploadService {
       const fileRecord = await prisma.file.findUnique({
         where: { id: fileId },
         include: {
-          user: true,
-        },
+          user: true
+        }
       });
 
       if (!fileRecord) {
@@ -246,10 +248,10 @@ export class FileUploadService {
         stream,
         filename: fileRecord.originalName,
         mimeType: fileRecord.mimeType,
-        size: fileRecord.size,
+        size: fileRecord.size
       };
     } catch (error) {
-      console.error('Error getting file stream:', error);
+      logError('Error getting file stream', error, 'file-upload-service');
       throw error;
     }
   }
@@ -270,7 +272,7 @@ export class FileUploadService {
       // Check if user has admin access or is requesting their own files
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { role: true },
+        select: { role: true }
       });
 
       if (user?.role !== 'ADMIN') {
@@ -279,10 +281,10 @@ export class FileUploadService {
           { userId },
           {
             AND: [
-              { 'metadata.isPrivate': false },
+              { 'metadata.isPrivate': false }
               // Add additional access logic here for shared files
-            ],
-          },
+            ]
+          }
         ];
       }
 
@@ -302,27 +304,27 @@ export class FileUploadService {
               select: {
                 id: true,
                 name: true,
-                email: true,
-              },
-            },
+                email: true
+              }
+            }
           },
           orderBy: { uploadedAt: 'desc' },
           take: filters.limit || 20,
-          skip: filters.offset || 0,
+          skip: filters.offset || 0
         }),
-        prisma.file.count({ where }),
+        prisma.file.count({ where })
       ]);
 
       return {
         files: files.map(file => ({
           ...file,
-          metadata: file.metadata as any,
+          metadata: file.metadata as any
         })),
         total,
-        hasMore: (filters.offset || 0) + files.length < total,
+        hasMore: (filters.offset || 0) + files.length < total
       };
     } catch (error) {
-      console.error('Error getting user files:', error);
+      logError('Error getting user files', error, 'file-upload-service');
       throw error;
     }
   }
@@ -331,7 +333,7 @@ export class FileUploadService {
   async deleteFile(fileId: string, userId: string) {
     try {
       const fileRecord = await prisma.file.findUnique({
-        where: { id: fileId },
+        where: { id: fileId }
       });
 
       if (!fileRecord) {
@@ -348,23 +350,31 @@ export class FileUploadService {
       try {
         await fs.unlink(fullPath);
       } catch (error) {
-        console.warn('Physical file not found, continuing with database deletion');
+        logWarning(
+          'Physical file not found, continuing with database deletion',
+          'file-upload-service'
+        );
       }
 
       // Delete thumbnail if exists
       const metadata = fileRecord.metadata as any;
       if (metadata?.thumbnailUrl) {
-        const thumbnailPath = join(this.baseUploadDir, config.uploadDir, 'thumbnails', `thumb_${fileRecord.filename}`);
+        const thumbnailPath = join(
+          this.baseUploadDir,
+          config.uploadDir,
+          'thumbnails',
+          `thumb_${fileRecord.filename}`
+        );
         try {
           await fs.unlink(thumbnailPath);
         } catch (error) {
-          console.warn('Thumbnail file not found');
+          logWarning('Thumbnail file not found', 'file-upload-service');
         }
       }
 
       // Delete database record
       await prisma.file.delete({
-        where: { id: fileId },
+        where: { id: fileId }
       });
 
       // Audit log
@@ -378,16 +388,21 @@ export class FileUploadService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error deleting file:', error);
+      logError('Error deleting file', error, 'file-upload-service');
       throw error;
     }
   }
 
   // Share file with another user
-  async shareFile(fileId: string, fromUserId: string, toUserId: string, permissions: string[] = ['read']) {
+  async shareFile(
+    fileId: string,
+    fromUserId: string,
+    toUserId: string,
+    permissions: string[] = ['read']
+  ) {
     try {
       const fileRecord = await prisma.file.findUnique({
-        where: { id: fileId },
+        where: { id: fileId }
       });
 
       if (!fileRecord) {
@@ -410,22 +425,16 @@ export class FileUploadService {
         metadata: {
           fileId,
           fromUserId,
-          permissions,
-        },
+          permissions
+        }
       });
 
       // Audit log
-      await audit.logSuccess(
-        'FILE_SHARED',
-        'File',
-        fileId,
-        { toUserId, permissions },
-        fromUserId
-      );
+      await audit.logSuccess('FILE_SHARED', 'File', fileId, { toUserId, permissions }, fromUserId);
 
       return { success: true };
     } catch (error) {
-      console.error('Error sharing file:', error);
+      logError('Error sharing file', error, 'file-upload-service');
       throw error;
     }
   }
@@ -435,14 +444,8 @@ export class FileUploadService {
     // In production, integrate with antivirus service like ClamAV
     // For now, just check for suspicious patterns
     const content = buffer.toString();
-    
-    const suspiciousPatterns = [
-      /<script/i,
-      /javascript:/i,
-      /vbscript:/i,
-      /onload=/i,
-      /onerror=/i,
-    ];
+
+    const suspiciousPatterns = [/<script/i, /javascript:/i, /vbscript:/i, /onload=/i, /onerror=/i];
 
     for (const pattern of suspiciousPatterns) {
       if (pattern.test(content)) {
@@ -457,7 +460,9 @@ export class FileUploadService {
   private async validateFile(buffer: Buffer, metadata: FileMetadata, config: UploadConfig) {
     // Check file size
     if (buffer.length > config.maxFileSize) {
-      throw new Error(`File size exceeds maximum allowed size of ${config.maxFileSize / (1024 * 1024)}MB`);
+      throw new Error(
+        `File size exceeds maximum allowed size of ${config.maxFileSize / (1024 * 1024)}MB`
+      );
     }
 
     // Check MIME type
@@ -481,9 +486,9 @@ export class FileUploadService {
   private detectMimeType(buffer: Buffer): string | null {
     // Check magic numbers for common file types
     const signatures = [
-      { signature: [0xFF, 0xD8, 0xFF], mimeType: 'image/jpeg' },
-      { signature: [0x89, 0x50, 0x4E, 0x47], mimeType: 'image/png' },
-      { signature: [0x25, 0x50, 0x44, 0x46], mimeType: 'application/pdf' },
+      { signature: [0xff, 0xd8, 0xff], mimeType: 'image/jpeg' },
+      { signature: [0x89, 0x50, 0x4e, 0x47], mimeType: 'image/png' },
+      { signature: [0x25, 0x50, 0x44, 0x46], mimeType: 'application/pdf' }
     ];
 
     for (const { signature, mimeType } of signatures) {
@@ -518,7 +523,9 @@ export class FileUploadService {
         .jpeg({ quality: 85 })
         .toBuffer();
     } catch (error) {
-      console.warn('Image optimization failed, using original:', error);
+      logWarning('Image optimization failed, using original', 'file-upload-service', {
+        error: error.message
+      });
       return buffer;
     }
   }
@@ -539,12 +546,12 @@ export class FileUploadService {
 
       const thumbnailFilename = `thumb_${fileId}.jpg`;
       const thumbnailPath = join(thumbnailDir, thumbnailFilename);
-      
+
       await fs.writeFile(thumbnailPath, thumbnailBuffer);
 
       return `/api/files/${fileId}/thumbnail`;
     } catch (error) {
-      console.warn('Thumbnail generation failed:', error);
+      logWarning('Thumbnail generation failed', 'file-upload-service', { error: error.message });
       return '';
     }
   }
@@ -561,7 +568,7 @@ export class FileUploadService {
   private async checkFileAccess(fileRecord: any, userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { role: true }
     });
 
     // Admin can access all files

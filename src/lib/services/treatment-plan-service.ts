@@ -13,7 +13,7 @@ export const goalSchema = z.object({
   priority: z.enum(['HIGH', 'MEDIUM', 'LOW']),
   status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'ACHIEVED', 'MODIFIED', 'DISCONTINUED']),
   progress: z.number().min(0).max(100),
-  notes: z.string().optional(),
+  notes: z.string().optional()
 });
 
 export const objectiveSchema = z.object({
@@ -26,7 +26,7 @@ export const objectiveSchema = z.object({
   currentValue: z.number().optional(),
   unit: z.string().optional(),
   timeline: z.string(),
-  status: z.enum(['PENDING', 'ACTIVE', 'COMPLETED', 'REVISED']),
+  status: z.enum(['PENDING', 'ACTIVE', 'COMPLETED', 'REVISED'])
 });
 
 export const interventionSchema = z.object({
@@ -39,7 +39,7 @@ export const interventionSchema = z.object({
   materials: z.array(z.string()).optional(),
   homework: z.string().optional(),
   effectiveness: z.number().min(0).max(10).optional(),
-  notes: z.string().optional(),
+  notes: z.string().optional()
 });
 
 export const treatmentPlanSchema = z.object({
@@ -52,7 +52,7 @@ export const treatmentPlanSchema = z.object({
   duration: z.string(),
   startDate: z.string(),
   reviewDate: z.string(),
-  endDate: z.string().optional(),
+  endDate: z.string().optional()
 });
 
 interface CreateTreatmentPlanDto {
@@ -85,8 +85,8 @@ export class TreatmentPlanService {
       const clientProfile = await prisma.clientProfile.findFirst({
         where: {
           id: data.clientId,
-          therapistId: data.therapistId,
-        },
+          therapistId: data.therapistId
+        }
       });
 
       if (!clientProfile) {
@@ -108,8 +108,8 @@ export class TreatmentPlanService {
             lastUpdated: new Date(),
             overallProgress: 0,
             goalsProgress: {},
-            objectivesProgress: {},
-          },
+            objectivesProgress: {}
+          }
         },
         include: {
           client: {
@@ -118,21 +118,21 @@ export class TreatmentPlanService {
                 select: {
                   id: true,
                   name: true,
-                  email: true,
-                },
-              },
-            },
+                  email: true
+                }
+              }
+            }
           },
           therapist: {
             include: {
               user: {
                 select: {
-                  name: true,
-                },
-              },
-            },
-          },
-        },
+                  name: true
+                }
+              }
+            }
+          }
+        }
       });
 
       // Send notification to client
@@ -142,7 +142,7 @@ export class TreatmentPlanService {
         message: `Your therapist has created a treatment plan: "${data.title}"`,
         type: 'SESSION',
         priority: 'HIGH',
-        actionUrl: `/treatment-plans/${treatmentPlan.id}`,
+        actionUrl: `/treatment-plans/${treatmentPlan.id}`
       });
 
       // Audit log
@@ -173,22 +173,22 @@ export class TreatmentPlanService {
                 select: {
                   id: true,
                   name: true,
-                  email: true,
-                },
-              },
-            },
+                  email: true
+                }
+              }
+            }
           },
           therapist: {
             include: {
               user: {
                 select: {
                   id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
+                  name: true
+                }
+              }
+            }
+          }
+        }
       });
 
       if (!plan) {
@@ -210,7 +210,7 @@ export class TreatmentPlanService {
 
       return {
         ...plan,
-        diagnosis: decryptedDiagnosis,
+        diagnosis: decryptedDiagnosis
       };
     } catch (error) {
       console.error('Error fetching treatment plan:', error);
@@ -229,8 +229,8 @@ export class TreatmentPlanService {
       const existingPlan = await prisma.treatmentPlan.findFirst({
         where: {
           id: planId,
-          therapistId,
-        },
+          therapistId
+        }
       });
 
       if (!existingPlan) {
@@ -254,12 +254,12 @@ export class TreatmentPlanService {
               user: {
                 select: {
                   id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
+                  name: true
+                }
+              }
+            }
+          }
+        }
       });
 
       // Notify client of changes
@@ -268,7 +268,7 @@ export class TreatmentPlanService {
         title: 'Treatment Plan Updated',
         message: 'Your treatment plan has been updated by your therapist',
         type: 'SESSION',
-        actionUrl: `/treatment-plans/${planId}`,
+        actionUrl: `/treatment-plans/${planId}`
       });
 
       // Audit log
@@ -288,11 +288,7 @@ export class TreatmentPlanService {
   }
 
   // Update progress on goals/objectives
-  async updateProgress(
-    planId: string,
-    userId: string,
-    progressData: UpdateProgressDto
-  ) {
+  async updateProgress(planId: string, userId: string, progressData: UpdateProgressDto) {
     try {
       const plan = await prisma.treatmentPlan.findUnique({
         where: { id: planId },
@@ -300,10 +296,10 @@ export class TreatmentPlanService {
           therapist: true,
           client: {
             include: {
-              user: true,
-            },
-          },
-        },
+              user: true
+            }
+          }
+        }
       });
 
       if (!plan) {
@@ -319,15 +315,15 @@ export class TreatmentPlanService {
       }
 
       // Update progress object
-      const currentProgress = plan.progress as any || {};
-      
+      const currentProgress = (plan.progress as any) || {};
+
       if (progressData.goalId) {
         currentProgress.goalsProgress = currentProgress.goalsProgress || {};
         currentProgress.goalsProgress[progressData.goalId] = {
           progress: progressData.progress,
           lastUpdated: new Date(),
           notes: progressData.notes,
-          updatedBy: userId,
+          updatedBy: userId
         };
 
         // Update goal in goals array
@@ -346,7 +342,7 @@ export class TreatmentPlanService {
           lastUpdated: new Date(),
           notes: progressData.notes,
           evidenceData: progressData.evidenceData,
-          updatedBy: userId,
+          updatedBy: userId
         };
 
         // Update objective in objectives array
@@ -354,9 +350,10 @@ export class TreatmentPlanService {
         const objIndex = objectives.findIndex(o => o.id === progressData.objectiveId);
         if (objIndex !== -1) {
           objectives[objIndex].currentValue = progressData.progress;
-          objectives[objIndex].status = progressData.progress >= (objectives[objIndex].targetValue || 100) 
-            ? 'COMPLETED' 
-            : 'ACTIVE';
+          objectives[objIndex].status =
+            progressData.progress >= (objectives[objIndex].targetValue || 100)
+              ? 'COMPLETED'
+              : 'ACTIVE';
         }
       }
 
@@ -372,8 +369,8 @@ export class TreatmentPlanService {
         data: {
           progress: currentProgress,
           goals: plan.goals,
-          objectives: plan.objectives,
-        },
+          objectives: plan.objectives
+        }
       });
 
       // Send notification if milestone reached
@@ -383,7 +380,7 @@ export class TreatmentPlanService {
           title: 'Treatment Progress Milestone',
           message: `You've reached ${currentProgress.overallProgress}% of your treatment goals!`,
           type: 'ACHIEVEMENT',
-          priority: 'HIGH',
+          priority: 'HIGH'
         });
       }
 
@@ -392,9 +389,9 @@ export class TreatmentPlanService {
         'TREATMENT_PROGRESS_UPDATED',
         'TreatmentPlan',
         planId,
-        { 
+        {
           progressType: progressData.goalId ? 'goal' : 'objective',
-          progress: progressData.progress,
+          progress: progressData.progress
         },
         userId
       );
@@ -416,10 +413,10 @@ export class TreatmentPlanService {
           user: true,
           therapist: {
             include: {
-              user: true,
-            },
-          },
-        },
+              user: true
+            }
+          }
+        }
       });
 
       if (!client) {
@@ -441,21 +438,19 @@ export class TreatmentPlanService {
             include: {
               user: {
                 select: {
-                  name: true,
-                },
-              },
-            },
-          },
-        },
+                  name: true
+                }
+              }
+            }
+          }
+        }
       });
 
       // Decrypt diagnosis for each plan
       const decryptedPlans = await Promise.all(
         plans.map(async plan => ({
           ...plan,
-          diagnosis: await Promise.all(
-            plan.diagnosis.map(d => phiService.decryptField(d))
-          ),
+          diagnosis: await Promise.all(plan.diagnosis.map(d => phiService.decryptField(d)))
         }))
       );
 
@@ -477,15 +472,15 @@ export class TreatmentPlanService {
       const plan = await prisma.treatmentPlan.findFirst({
         where: {
           id: planId,
-          therapistId,
+          therapistId
         },
         include: {
           client: {
             include: {
-              user: true,
-            },
-          },
-        },
+              user: true
+            }
+          }
+        }
       });
 
       if (!plan) {
@@ -498,7 +493,7 @@ export class TreatmentPlanService {
         notes: reviewNotes,
         recommendations,
         progress: plan.progress,
-        nextReviewDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+        nextReviewDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
       };
 
       // Update plan with review
@@ -508,9 +503,9 @@ export class TreatmentPlanService {
           reviewDate: review.nextReviewDate,
           progress: {
             ...(plan.progress as any),
-            lastReview: review,
-          },
-        },
+            lastReview: review
+          }
+        }
       });
 
       // Create progress report
@@ -521,10 +516,10 @@ export class TreatmentPlanService {
           reportType: 'TREATMENT_REVIEW',
           content: {
             planId,
-            review,
+            review
           },
-          recommendations,
-        },
+          recommendations
+        }
       });
 
       // Notify client
@@ -533,7 +528,7 @@ export class TreatmentPlanService {
         title: 'Treatment Plan Reviewed',
         message: 'Your treatment plan has been reviewed. Check the recommendations.',
         type: 'SESSION',
-        actionUrl: `/treatment-plans/${planId}/review`,
+        actionUrl: `/treatment-plans/${planId}/review`
       });
 
       // Audit log
@@ -563,15 +558,15 @@ export class TreatmentPlanService {
       const plan = await prisma.treatmentPlan.findFirst({
         where: {
           id: planId,
-          therapistId,
+          therapistId
         },
         include: {
           client: {
             include: {
-              user: true,
-            },
-          },
-        },
+              user: true
+            }
+          }
+        }
       });
 
       if (!plan) {
@@ -588,9 +583,9 @@ export class TreatmentPlanService {
             ...(plan.progress as any),
             completionNotes,
             outcomes,
-            completedAt: new Date(),
-          },
-        },
+            completedAt: new Date()
+          }
+        }
       });
 
       // Create final progress report
@@ -603,10 +598,10 @@ export class TreatmentPlanService {
             planId,
             completionNotes,
             outcomes,
-            finalProgress: plan.progress,
+            finalProgress: plan.progress
           },
-          recommendations: outcomes.recommendations || [],
-        },
+          recommendations: outcomes.recommendations || []
+        }
       });
 
       // Notify client
@@ -616,7 +611,7 @@ export class TreatmentPlanService {
         message: 'Your treatment plan has been successfully completed!',
         type: 'ACHIEVEMENT',
         priority: 'HIGH',
-        actionUrl: `/treatment-plans/${planId}/summary`,
+        actionUrl: `/treatment-plans/${planId}/summary`
       });
 
       // Audit log
@@ -648,7 +643,7 @@ export class TreatmentPlanService {
             targetDate: '3 months',
             priority: 'HIGH',
             status: 'NOT_STARTED',
-            progress: 0,
+            progress: 0
           },
           {
             id: 'g2',
@@ -656,8 +651,8 @@ export class TreatmentPlanService {
             targetDate: '6 weeks',
             priority: 'HIGH',
             status: 'NOT_STARTED',
-            progress: 0,
-          },
+            progress: 0
+          }
         ],
         objectives: [
           {
@@ -670,8 +665,8 @@ export class TreatmentPlanService {
             currentValue: 15,
             unit: 'points',
             timeline: '12 weeks',
-            status: 'PENDING',
-          },
+            status: 'PENDING'
+          }
         ],
         interventions: [
           {
@@ -680,11 +675,11 @@ export class TreatmentPlanService {
             description: 'Cognitive Behavioral Therapy for anxiety',
             frequency: 'Weekly',
             duration: '50 minutes',
-            techniques: ['Cognitive restructuring', 'Exposure therapy', 'Relaxation training'],
-          },
+            techniques: ['Cognitive restructuring', 'Exposure therapy', 'Relaxation training']
+          }
         ],
         frequency: 'Weekly',
-        duration: '12 weeks',
+        duration: '12 weeks'
       },
       depression: {
         title: 'Depression Treatment Plan',
@@ -696,7 +691,7 @@ export class TreatmentPlanService {
             targetDate: '3 months',
             priority: 'HIGH',
             status: 'NOT_STARTED',
-            progress: 0,
+            progress: 0
           },
           {
             id: 'g2',
@@ -704,8 +699,8 @@ export class TreatmentPlanService {
             targetDate: '2 months',
             priority: 'HIGH',
             status: 'NOT_STARTED',
-            progress: 0,
-          },
+            progress: 0
+          }
         ],
         objectives: [
           {
@@ -718,8 +713,8 @@ export class TreatmentPlanService {
             currentValue: 18,
             unit: 'points',
             timeline: '12 weeks',
-            status: 'PENDING',
-          },
+            status: 'PENDING'
+          }
         ],
         interventions: [
           {
@@ -728,11 +723,11 @@ export class TreatmentPlanService {
             description: 'Cognitive Behavioral Therapy for depression',
             frequency: 'Weekly',
             duration: '50 minutes',
-            techniques: ['Behavioral activation', 'Cognitive restructuring', 'Problem-solving'],
-          },
+            techniques: ['Behavioral activation', 'Cognitive restructuring', 'Problem-solving']
+          }
         ],
         frequency: 'Weekly',
-        duration: '16 weeks',
+        duration: '16 weeks'
       },
       trauma: {
         title: 'Trauma Recovery Treatment Plan',
@@ -744,7 +739,7 @@ export class TreatmentPlanService {
             targetDate: '6 months',
             priority: 'HIGH',
             status: 'NOT_STARTED',
-            progress: 0,
+            progress: 0
           },
           {
             id: 'g2',
@@ -752,8 +747,8 @@ export class TreatmentPlanService {
             targetDate: '4 months',
             priority: 'HIGH',
             status: 'NOT_STARTED',
-            progress: 0,
-          },
+            progress: 0
+          }
         ],
         objectives: [
           {
@@ -766,8 +761,8 @@ export class TreatmentPlanService {
             currentValue: 50,
             unit: 'points',
             timeline: '16 weeks',
-            status: 'PENDING',
-          },
+            status: 'PENDING'
+          }
         ],
         interventions: [
           {
@@ -776,7 +771,7 @@ export class TreatmentPlanService {
             description: 'Eye Movement Desensitization and Reprocessing',
             frequency: 'Weekly',
             duration: '90 minutes',
-            techniques: ['Bilateral stimulation', 'Resource installation', 'Cognitive interweave'],
+            techniques: ['Bilateral stimulation', 'Resource installation', 'Cognitive interweave']
           },
           {
             id: 'i2',
@@ -784,12 +779,12 @@ export class TreatmentPlanService {
             description: 'Cognitive Processing Therapy',
             frequency: 'Weekly',
             duration: '50 minutes',
-            techniques: ['Written accounts', 'Cognitive worksheets', 'Challenging stuck points'],
-          },
+            techniques: ['Written accounts', 'Cognitive worksheets', 'Challenging stuck points']
+          }
         ],
         frequency: 'Weekly',
-        duration: '20 weeks',
-      },
+        duration: '20 weeks'
+      }
     };
 
     if (condition && templates[condition as keyof typeof templates]) {
@@ -798,7 +793,7 @@ export class TreatmentPlanService {
 
     return Object.keys(templates).map(key => ({
       condition: key,
-      ...templates[key as keyof typeof templates],
+      ...templates[key as keyof typeof templates]
     }));
   }
 
@@ -806,7 +801,7 @@ export class TreatmentPlanService {
   async calculateEffectiveness(planId: string) {
     try {
       const plan = await prisma.treatmentPlan.findUnique({
-        where: { id: planId },
+        where: { id: planId }
       });
 
       if (!plan) {
@@ -821,16 +816,18 @@ export class TreatmentPlanService {
       const goalsAchieved = goals.filter(g => g.status === 'ACHIEVED').length;
       const objectivesCompleted = objectives.filter(o => o.status === 'COMPLETED').length;
       const averageProgress = goals.reduce((sum, g) => sum + (g.progress || 0), 0) / goals.length;
-      
+
       // Calculate intervention effectiveness
       const interventionScores = interventions.map(i => i.effectiveness || 5);
-      const averageInterventionScore = interventionScores.length > 0
-        ? interventionScores.reduce((a, b) => a + b, 0) / interventionScores.length
-        : 0;
+      const averageInterventionScore =
+        interventionScores.length > 0
+          ? interventionScores.reduce((a, b) => a + b, 0) / interventionScores.length
+          : 0;
 
       // Calculate duration efficiency
-      const plannedDuration = new Date(plan.reviewDate).getTime() - new Date(plan.startDate).getTime();
-      const actualDuration = plan.endDate 
+      const plannedDuration =
+        new Date(plan.reviewDate).getTime() - new Date(plan.startDate).getTime();
+      const actualDuration = plan.endDate
         ? new Date(plan.endDate).getTime() - new Date(plan.startDate).getTime()
         : Date.now() - new Date(plan.startDate).getTime();
       const durationEfficiency = Math.min(100, (plannedDuration / actualDuration) * 100);
@@ -841,12 +838,11 @@ export class TreatmentPlanService {
         averageProgress,
         interventionEffectiveness: averageInterventionScore * 10,
         durationEfficiency,
-        overallEffectiveness: (
-          ((goalsAchieved / goals.length) * 40) +
-          ((objectivesCompleted / objectives.length) * 30) +
-          (averageInterventionScore * 2) +
-          (durationEfficiency * 0.1)
-        ),
+        overallEffectiveness:
+          (goalsAchieved / goals.length) * 40 +
+          (objectivesCompleted / objectives.length) * 30 +
+          averageInterventionScore * 2 +
+          durationEfficiency * 0.1
       };
     } catch (error) {
       console.error('Error calculating effectiveness:', error);

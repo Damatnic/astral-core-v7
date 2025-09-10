@@ -8,12 +8,13 @@ import { audit } from '@/lib/security/audit';
 import { rateLimiters } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 import prisma from '@/lib/db/prisma';
+import { logError } from '@/lib/logger';
 
 // GET /api/wellness/data - Get wellness data
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -27,8 +28,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '30');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const where: any = { userId: session.user.id };
-    
+    const where: {
+      userId: string;
+      date?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    } = { userId: session.user.id };
+
     if (startDate || endDate) {
       where.date = {};
       if (startDate) where.date.gte = new Date(startDate);
@@ -42,11 +49,11 @@ export async function GET(request: NextRequest) {
           where,
           orderBy: { date: 'desc' },
           take: limit,
-          skip: offset,
+          skip: offset
         },
         { userId: session.user.id, userRole: session.user.role }
       ),
-      prisma.wellnessData.count({ where }),
+      prisma.wellnessData.count({ where })
     ]);
 
     return NextResponse.json({
@@ -56,13 +63,13 @@ export async function GET(request: NextRequest) {
         total,
         page: Math.floor(offset / limit) + 1,
         limit,
-        hasMore: offset + limit < total,
-      },
+        hasMore: offset + limit < total
+      }
     });
   } catch (error) {
-    console.error('Error fetching wellness data:', error);
+    logError('Error fetching wellness data', error, 'wellness-data-get');
     await audit.logError('GET_WELLNESS_DATA', 'WellnessData', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -74,7 +81,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Rate limiting for wellness tracking
     const identifier = rateLimiters.wellness.getIdentifier(request);
     const { allowed } = await rateLimiters.wellness.check(identifier);
-    
+
     if (!allowed) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.RATE_LIMIT },
@@ -97,10 +104,8 @@ export async function POST(request: NextRequest) {
     const validatedData = wellnessDataSchema.parse(body);
 
     // Set date to today if not provided
-    const date = validatedData.date 
-      ? new Date(validatedData.date) 
-      : new Date();
-    
+    const date = validatedData.date ? new Date(validatedData.date) : new Date();
+
     // Set to start of day for consistency
     date.setHours(0, 0, 0, 0);
 
@@ -109,9 +114,9 @@ export async function POST(request: NextRequest) {
       where: {
         userId_date: {
           userId: session.user.id,
-          date,
-        },
-      },
+          date
+        }
+      }
     });
 
     if (existingData) {
@@ -126,7 +131,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: SUCCESS_MESSAGES.DATA_SAVED,
-        data: updated,
+        data: updated
       });
     } else {
       // Create new data
@@ -135,16 +140,19 @@ export async function POST(request: NextRequest) {
         {
           ...validatedData,
           userId: session.user.id,
-          date,
+          date
         },
         { userId: session.user.id, userRole: session.user.role }
       );
 
-      return NextResponse.json({
-        success: true,
-        message: SUCCESS_MESSAGES.DATA_SAVED,
-        data: created,
-      }, { status: HTTP_STATUS.CREATED });
+      return NextResponse.json(
+        {
+          success: true,
+          message: SUCCESS_MESSAGES.DATA_SAVED,
+          data: created
+        },
+        { status: HTTP_STATUS.CREATED }
+      );
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -154,9 +162,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error saving wellness data:', error);
+    logError('Error saving wellness data', error, 'wellness-data-post');
     await audit.logError('SAVE_WELLNESS_DATA', 'WellnessData', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -168,7 +176,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -178,20 +186,17 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
-      return NextResponse.json(
-        { error: 'ID is required' },
-        { status: HTTP_STATUS.BAD_REQUEST }
-      );
+      return NextResponse.json({ error: 'ID is required' }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 
     // Verify ownership
     const data = await prisma.wellnessData.findFirst({
       where: {
         id,
-        userId: session.user.id,
-      },
+        userId: session.user.id
+      }
     });
 
     if (!data) {
@@ -209,12 +214,12 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Wellness data deleted successfully',
+      message: 'Wellness data deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting wellness data:', error);
+    logError('Error deleting wellness data', error, 'wellness-data-delete');
     await audit.logError('DELETE_WELLNESS_DATA', 'WellnessData', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

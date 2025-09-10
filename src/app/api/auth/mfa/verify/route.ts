@@ -3,6 +3,7 @@ import { mfaService } from '@/lib/services/mfa-service';
 import { rateLimiter } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 import { z } from 'zod';
+import { logError } from '@/lib/logger';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
@@ -10,7 +11,7 @@ const verifySchema = z.object({
   userId: z.string(),
   code: z.string(),
   isBackupCode: z.boolean().optional(),
-  sessionToken: z.string(), // Temporary token from login
+  sessionToken: z.string() // Temporary token from login
 });
 
 // POST /api/auth/mfa/verify - Verify MFA code during login
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
         {
           userId: validated.userId,
           mfaVerified: true,
-          exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24), // 24 hours
+          exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24 hours
         },
         process.env['JWT_SECRET'] || 'your-secret-key'
       );
@@ -62,19 +63,19 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 60 * 60 * 24, // 24 hours
-        path: '/',
+        path: '/'
       });
 
       return NextResponse.json({
         success: true,
         message: result.message,
-        redirectUrl: '/dashboard',
+        redirectUrl: '/dashboard'
       });
     } else {
       return NextResponse.json(
         {
           error: result.message,
-          remainingAttempts: result.remainingAttempts,
+          remainingAttempts: result.remainingAttempts
         },
         { status: HTTP_STATUS.UNAUTHORIZED }
       );
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error verifying MFA:', error);
+    logError('Error verifying MFA', error, 'mfa-verify');
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -102,10 +103,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: HTTP_STATUS.BAD_REQUEST }
-      );
+      return NextResponse.json({ error: 'User ID required' }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 
     const mfaEnabled = await mfaService.isMfaEnabled(userId);
@@ -113,10 +111,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       required: mfaEnabled,
-      status: mfaStatus,
+      status: mfaStatus
     });
   } catch (error) {
-    console.error('Error checking MFA status:', error);
+    logError('Error checking MFA status', error, 'mfa-verify');
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

@@ -11,7 +11,7 @@ const progressSchema = z.object({
   objectiveId: z.string().optional(),
   progress: z.number().min(0).max(100),
   notes: z.string().optional(),
-  evidenceData: z.any().optional(),
+  evidenceData: z.record(z.unknown()).optional()
 });
 
 // POST /api/treatment-plans/progress - Update progress
@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Progress updated successfully',
-      data: updatedPlan,
+      data: updatedPlan
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.issues },
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     console.error('Error updating progress:', error);
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.SERVER_ERROR },
+      { error: error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }

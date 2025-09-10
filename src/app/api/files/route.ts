@@ -36,9 +36,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const filters: any = {
+    const filters: {
+      limit: number;
+      offset: number;
+      category?: FileCategory;
+      isPrivate?: boolean;
+    } = {
       limit: Math.min(limit, 100), // Cap at 100 files per request
-      offset,
+      offset
     };
 
     if (category && Object.values(FileCategory).includes(category)) {
@@ -53,10 +58,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result,
+      data: result
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching files:', error);
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },

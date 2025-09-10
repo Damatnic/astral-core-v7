@@ -8,7 +8,7 @@ import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
@@ -21,8 +21,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const where: any = {
-      userId: session.user.id,
+    const where: {
+      userId: string;
+      status?: string;
+    } = {
+      userId: session.user.id
     };
 
     if (status) {
@@ -37,15 +40,15 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
-              email: true,
-            },
-          },
+              email: true
+            }
+          }
         },
         orderBy: { scheduledAt: 'asc' },
         take: limit,
-        skip: offset,
+        skip: offset
       }),
-      prisma.appointment.count({ where }),
+      prisma.appointment.count({ where })
     ]);
 
     return NextResponse.json({
@@ -55,12 +58,12 @@ export async function GET(request: NextRequest) {
         total,
         page: Math.floor(offset / limit) + 1,
         limit,
-        hasMore: offset + limit < total,
-      },
+        hasMore: offset + limit < total
+      }
     });
   } catch (error) {
     console.error('Error fetching appointments:', error);
-    
+
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

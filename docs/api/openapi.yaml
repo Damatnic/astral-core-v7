@@ -1,0 +1,2079 @@
+openapi: 3.0.3
+info:
+  title: Astral Core v7 API
+  version: 7.0.0
+  description: |
+    Comprehensive mental health platform API providing secure endpoints for:
+    - User authentication and MFA management
+    - Crisis assessment and intervention
+    - Wellness data tracking and analytics
+    - Payment processing and subscription management
+    - Appointment scheduling and session management
+    - Secure messaging and file management
+    
+    **Security Features:**
+    - Rate limiting on all endpoints
+    - PHI-compliant data encryption
+    - Comprehensive audit logging
+    - Role-based access control
+    
+    **Base URL:** `https://astral-core.app/api`
+    
+  contact:
+    name: Astral Core API Support
+    email: api-support@astral-core.app
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://astral-core.app/api
+    description: Production server
+  - url: https://staging.astral-core.app/api
+    description: Staging server
+  - url: http://localhost:3000/api
+    description: Local development server
+
+security:
+  - bearerAuth: []
+  - sessionAuth: []
+
+paths:
+  # ==================== AUTHENTICATION ENDPOINTS ====================
+  
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      description: |
+        Create a new user account with email verification.
+        Includes automatic rate limiting and security validation.
+      operationId: registerUser
+      security: [] # Public endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              basic_registration:
+                summary: Basic user registration
+                value:
+                  email: "user@example.com"
+                  name: "John Doe"
+                  password: "SecureP@ssw0rd!"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+              examples:
+                success:
+                  summary: Successful registration
+                  value:
+                    success: true
+                    message: "Registration successful. Please check your email for verification."
+                    data:
+                      id: "cm3abc123def456"
+                      email: "user@example.com"
+                      name: "John Doe"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                email_exists:
+                  summary: Email already registered
+                  value:
+                    error: "An account with this email already exists"
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/mfa/setup:
+    post:
+      tags: [Authentication, MFA]
+      summary: Initialize MFA setup
+      description: |
+        Initialize multi-factor authentication setup for the user.
+        Supports TOTP, SMS, and Email methods.
+      operationId: setupMFA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFASetupRequest'
+            examples:
+              totp_setup:
+                summary: TOTP (Authenticator app) setup
+                value:
+                  method: "TOTP"
+              sms_setup:
+                summary: SMS setup
+                value:
+                  method: "SMS"
+                  phoneNumber: "+1234567890"
+              email_setup:
+                summary: Email setup
+                value:
+                  method: "EMAIL"
+      responses:
+        '200':
+          description: MFA setup initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFASetupResponse'
+              examples:
+                totp_response:
+                  summary: TOTP setup response
+                  value:
+                    success: true
+                    data:
+                      method: "TOTP"
+                      secret: "JBSWY3DPEHPK3PXP"
+                      qrCode: "data:image/png;base64,iVBOR..."
+                      backupCodes: ["12345-67890", "09876-54321"]
+                sms_response:
+                  summary: SMS setup response
+                  value:
+                    success: true
+                    message: "SMS code sent"
+                    data:
+                      method: "SMS"
+                      phoneNumber: "7890"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/mfa/verify:
+    post:
+      tags: [Authentication, MFA]
+      summary: Verify MFA token
+      description: Verify MFA token to complete authentication or setup
+      operationId: verifyMFA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAVerifyRequest'
+            examples:
+              totp_verify:
+                summary: TOTP token verification
+                value:
+                  method: "TOTP"
+                  token: "123456"
+              backup_code:
+                summary: Backup code verification
+                value:
+                  method: "BACKUP_CODE"
+                  token: "12345-67890"
+      responses:
+        '200':
+          description: MFA verification successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAVerifyResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Invalid MFA token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/mfa/disable:
+    post:
+      tags: [Authentication, MFA]
+      summary: Disable MFA
+      description: Disable multi-factor authentication for the user account
+      operationId: disableMFA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFADisableRequest'
+      responses:
+        '200':
+          description: MFA disabled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/mfa/backup-codes:
+    get:
+      tags: [Authentication, MFA]
+      summary: Get MFA backup codes
+      description: Retrieve backup codes for MFA recovery
+      operationId: getMFABackupCodes
+      responses:
+        '200':
+          description: Backup codes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupCodesResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: MFA not enabled
+        '500':
+          $ref: '#/components/responses/ServerError'
+    
+    post:
+      tags: [Authentication, MFA]
+      summary: Generate new backup codes
+      description: Generate new backup codes and invalidate old ones
+      operationId: generateMFABackupCodes
+      responses:
+        '200':
+          description: New backup codes generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupCodesResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== CRISIS ASSESSMENT ====================
+  
+  /crisis/assess:
+    post:
+      tags: [Crisis Management]
+      summary: Perform crisis assessment
+      description: |
+        Perform a comprehensive crisis risk assessment.
+        Automatically determines severity level and intervention type.
+        Provides immediate resources and next steps.
+        
+        **Special Features:**
+        - Higher rate limits for emergency situations
+        - Always returns crisis resources, even on errors
+        - Automatic alerting for high-severity assessments
+      operationId: assessCrisis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrisisAssessmentRequest'
+            examples:
+              high_risk:
+                summary: High-risk assessment
+                value:
+                  suicidalIdeation: true
+                  hasPlan: true
+                  hasMeans: false
+                  immediateRisk: false
+                  symptoms: ["hopelessness", "isolation", "sleep_disturbance"]
+                  triggerEvent: "Recent job loss"
+              emergency:
+                summary: Emergency assessment
+                value:
+                  suicidalIdeation: true
+                  hasPlan: true
+                  hasMeans: true
+                  immediateRisk: true
+                  symptoms: ["active_ideation", "intent", "means_available"]
+                  triggerEvent: "Crisis situation"
+      responses:
+        '200':
+          description: Crisis assessment completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrisisAssessmentResponse'
+              examples:
+                high_severity:
+                  summary: High severity response
+                  value:
+                    success: true
+                    severity: "HIGH"
+                    interventionId: "cm3crisis123"
+                    message: "Professional support recommended"
+                    urgent: false
+                    nextSteps:
+                      - "Schedule an urgent appointment with your therapist"
+                      - "Call the crisis line if you need immediate support"
+                      - "Create a safety plan"
+                      - "Stay with supportive people"
+                    resources:
+                      US:
+                        suicide: "988"
+                        crisis: "741741"
+                        emergency: "911"
+                emergency:
+                  summary: Emergency response
+                  value:
+                    success: true
+                    severity: "EMERGENCY"
+                    interventionId: "cm3crisis456"
+                    message: "IMMEDIATE HELP NEEDED"
+                    urgent: true
+                    alertsSent: true
+                    nextSteps:
+                      - "Call 911 immediately"
+                      - "Go to the nearest emergency room"
+                      - "Call 988 for immediate crisis support"
+                      - "Do not leave the person alone"
+        '400':
+          description: Validation error (still includes resources)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - type: object
+                    properties:
+                      resources:
+                        $ref: '#/components/schemas/CrisisResources'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Rate limited (still includes emergency resources)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - type: object
+                    properties:
+                      resources:
+                        $ref: '#/components/schemas/CrisisResources'
+        '500':
+          description: Server error (still includes emergency resources)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - type: object
+                    properties:
+                      resources:
+                        $ref: '#/components/schemas/CrisisResources'
+
+    get:
+      tags: [Crisis Management]
+      summary: Get crisis resources
+      description: Get 24/7 crisis support resources
+      operationId: getCrisisResources
+      security: [] # Public endpoint
+      responses:
+        '200':
+          description: Crisis resources retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  resources:
+                    $ref: '#/components/schemas/CrisisResources'
+                  message:
+                    type: string
+                    example: "Crisis resources are available 24/7"
+
+  # ==================== PAYMENTS & SUBSCRIPTIONS ====================
+  
+  /payments/webhook:
+    post:
+      tags: [Payments, Webhooks]
+      summary: Stripe webhook handler
+      description: |
+        Handles Stripe webhook events for payment processing.
+        Supports comprehensive payment lifecycle management.
+        
+        **Supported Events:**
+        - Subscription lifecycle (created, updated, deleted)
+        - Payment processing (succeeded, failed)
+        - Invoice handling (payment succeeded/failed)
+        - Payment method management
+        - Dispute handling with automated workflows
+      operationId: handleStripeWebhook
+      security: [] # Validated by Stripe signature
+      parameters:
+        - name: stripe-signature
+          in: header
+          required: true
+          description: Stripe webhook signature for verification
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Stripe webhook event payload
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid webhook signature or payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payments/subscriptions:
+    get:
+      tags: [Payments, Subscriptions]
+      summary: Get user subscription
+      description: Retrieve current user's subscription details
+      operationId: getUserSubscription
+      responses:
+        '200':
+          description: Subscription details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Payments, Subscriptions]
+      summary: Create subscription
+      description: |
+        Create a new subscription for a therapy plan.
+        Automatically handles payment method setup if needed.
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+            examples:
+              with_payment_method:
+                summary: With existing payment method
+                value:
+                  therapyPlanId: "plan_therapy_basic"
+                  paymentMethodId: "pm_1234567890"
+                  couponCode: "SAVE20"
+              setup_required:
+                summary: Requires payment setup
+                value:
+                  therapyPlanId: "plan_therapy_premium"
+      responses:
+        '201':
+          description: Subscription created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSubscriptionResponse'
+              examples:
+                immediate_active:
+                  summary: Subscription immediately active
+                  value:
+                    subscription:
+                      id: "sub_1234567890"
+                      status: "ACTIVE"
+                      planName: "Basic Therapy Plan"
+                      amount: 99.00
+                    success: true
+                    message: "Subscription created successfully"
+                setup_required:
+                  summary: Payment setup required
+                  value:
+                    subscription:
+                      id: "sub_0987654321"
+                      status: "INCOMPLETE"
+                      planName: "Premium Therapy Plan"
+                      amount: 199.00
+                    setupIntent:
+                      id: "seti_1234567890"
+                      clientSecret: "seti_1234567890_secret_abc123"
+                    success: true
+                    message: "Subscription created. Please complete payment setup."
+        '400':
+          description: Invalid request or user already has subscription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags: [Payments, Subscriptions]
+      summary: Update subscription
+      description: Change subscription plan with proration options
+      operationId: updateSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubscriptionRequest'
+      responses:
+        '200':
+          description: Subscription updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags: [Payments, Subscriptions]
+      summary: Cancel subscription
+      description: Cancel user subscription with options for immediate or period-end cancellation
+      operationId: cancelSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelSubscriptionRequest'
+      responses:
+        '200':
+          description: Subscription canceled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /payments/payment-methods:
+    get:
+      tags: [Payments, Payment Methods]
+      summary: List payment methods
+      description: Get user's saved payment methods
+      operationId: getPaymentMethods
+      responses:
+        '200':
+          description: Payment methods retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Payments, Payment Methods]
+      summary: Add payment method
+      description: Add a new payment method to user account
+      operationId: addPaymentMethod
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPaymentMethodRequest'
+      responses:
+        '201':
+          description: Payment method added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== USER PROFILES ====================
+  
+  /user/profile:
+    get:
+      tags: [User Management]
+      summary: Get user profile
+      description: Retrieve current user's profile information
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [User Management]
+      summary: Create user profile
+      description: Create a new user profile (first-time setup)
+      operationId: createUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileRequest'
+            examples:
+              complete_profile:
+                summary: Complete profile creation
+                value:
+                  firstName: "John"
+                  lastName: "Doe"
+                  dateOfBirth: "1990-01-15"
+                  phoneNumber: "+1234567890"
+                  address: "123 Main St"
+                  city: "Anytown"
+                  state: "CA"
+                  zipCode: "12345"
+                  country: "US"
+                  emergencyContact:
+                    name: "Jane Doe"
+                    relationship: "Spouse"
+                    phone: "+1234567891"
+                  medicalHistory:
+                    - condition: "Anxiety"
+                      diagnosedDate: "2020-03-15"
+                  medications:
+                    - name: "Sertraline"
+                      dosage: "50mg"
+                      frequency: "Daily"
+                  allergies:
+                    - name: "Penicillin"
+                      severity: "Severe"
+      responses:
+        '201':
+          description: Profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Profile already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags: [User Management]
+      summary: Update user profile
+      description: Update existing user profile information
+      operationId: updateUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags: [User Management]
+      summary: Delete user data
+      description: |
+        Delete all user data (GDPR right to erasure).
+        This action is irreversible and removes all user information.
+      operationId: deleteUserData
+      responses:
+        '200':
+          description: User data deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== WELLNESS TRACKING ====================
+  
+  /wellness/data:
+    get:
+      tags: [Wellness]
+      summary: Get wellness data
+      description: |
+        Retrieve user's wellness tracking data with filtering and pagination.
+        Supports date range filtering and pagination.
+      operationId: getWellnessData
+      parameters:
+        - name: startDate
+          in: query
+          description: Start date for data retrieval (ISO 8601)
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: endDate
+          in: query
+          description: End date for data retrieval (ISO 8601)
+          schema:
+            type: string
+            format: date
+            example: "2024-01-31"
+        - name: limit
+          in: query
+          description: Maximum number of records to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+        - name: offset
+          in: query
+          description: Number of records to skip for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Wellness data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WellnessDataResponse'
+              examples:
+                with_data:
+                  summary: Response with data
+                  value:
+                    success: true
+                    data:
+                      items:
+                        - id: "cm3wellness123"
+                          date: "2024-01-15"
+                          moodScore: 7
+                          anxietyLevel: 3
+                          stressLevel: 4
+                          sleepHours: 8.0
+                          sleepQuality: 8
+                          exercise: true
+                          exerciseMinutes: 45
+                          meditation: true
+                          meditationMinutes: 15
+                          socialContact: true
+                          medications: ["sertraline_50mg"]
+                          symptoms: ["mild_anxiety"]
+                          triggers: []
+                          copingStrategies: ["deep_breathing", "exercise"]
+                          notes: "Good day overall"
+                      total: 31
+                      page: 1
+                      limit: 30
+                      hasMore: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Wellness]
+      summary: Log wellness data
+      description: |
+        Log daily wellness tracking data.
+        Automatically updates existing data for the same date.
+      operationId: logWellnessData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WellnessDataRequest'
+            examples:
+              daily_checkin:
+                summary: Daily wellness check-in
+                value:
+                  date: "2024-01-15"
+                  moodScore: 7
+                  anxietyLevel: 3
+                  stressLevel: 4
+                  sleepHours: 8.0
+                  sleepQuality: 8
+                  exercise: true
+                  exerciseMinutes: 45
+                  meditation: true
+                  meditationMinutes: 15
+                  socialContact: true
+                  medications: ["sertraline_50mg"]
+                  symptoms: ["mild_anxiety"]
+                  triggers: []
+                  copingStrategies: ["deep_breathing", "exercise"]
+                  notes: "Feeling much better today after morning workout"
+      responses:
+        '200':
+          description: Wellness data updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WellnessDataItemResponse'
+        '201':
+          description: Wellness data logged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WellnessDataItemResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags: [Wellness]
+      summary: Delete wellness data
+      description: Delete a specific wellness data entry
+      operationId: deleteWellnessData
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: ID of the wellness data entry to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wellness data deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: ID parameter required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== APPOINTMENTS ====================
+  
+  /appointments:
+    get:
+      tags: [Appointments]
+      summary: Get user appointments
+      description: |
+        Retrieve user's appointments with filtering and pagination.
+        Supports status filtering and pagination.
+      operationId: getUserAppointments
+      parameters:
+        - name: status
+          in: query
+          description: Filter by appointment status
+          schema:
+            type: string
+            enum: [SCHEDULED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW, RESCHEDULED]
+            example: "SCHEDULED"
+        - name: limit
+          in: query
+          description: Maximum number of appointments to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: offset
+          in: query
+          description: Number of appointments to skip for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Appointments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentsResponse'
+              examples:
+                upcoming_appointments:
+                  summary: Upcoming appointments
+                  value:
+                    success: true
+                    data:
+                      items:
+                        - id: "cm3appt123"
+                          scheduledAt: "2024-01-20T10:00:00Z"
+                          duration: 60
+                          type: "THERAPY_SESSION"
+                          status: "SCHEDULED"
+                          meetingUrl: "https://meet.astral-core.app/session/abc123"
+                          notes: "Follow-up on anxiety management techniques"
+                          reminderSent: true
+                          therapist:
+                            id: "cm3therapist456"
+                            name: "Dr. Sarah Johnson"
+                            email: "sarah.johnson@astral-core.app"
+                      total: 5
+                      page: 1
+                      limit: 10
+                      hasMore: false
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== ADDITIONAL ENDPOINTS ====================
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Get user notifications
+      description: Retrieve user's notifications with pagination and filtering
+      operationId: getUserNotifications
+      parameters:
+        - name: isRead
+          in: query
+          description: Filter by read status
+          schema:
+            type: boolean
+        - name: type
+          in: query
+          description: Filter by notification type
+          schema:
+            type: string
+            enum: [APPOINTMENT, MESSAGE, CRISIS, SYSTEM, WELLNESS, MEDICATION, SESSION, ACHIEVEMENT, GROUP, GENERAL]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/upload:
+    post:
+      tags: [Files]
+      summary: Upload file
+      description: |
+        Upload a file with automatic encryption and PHI compliance.
+        Supports various file types for medical records, consent forms, etc.
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                category:
+                  type: string
+                  enum: [CONSENT_FORM, INSURANCE, MEDICAL_RECORD, SESSION_NOTE, ASSESSMENT, REPORT, OTHER]
+                description:
+                  type: string
+              required:
+                - file
+                - category
+      responses:
+        '201':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '413':
+          description: File too large
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token
+    
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: NextAuth session cookie
+
+  schemas:
+    # ==================== REQUEST SCHEMAS ====================
+    
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - name
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "user@example.com"
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: User's full name
+          example: "John Doe"
+        password:
+          type: string
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]'
+          description: Password with uppercase, lowercase, number, and special character
+          example: "SecureP@ssw0rd!"
+
+    MFASetupRequest:
+      type: object
+      required:
+        - method
+      properties:
+        method:
+          type: string
+          enum: [TOTP, SMS, EMAIL]
+          description: MFA method to set up
+        phoneNumber:
+          type: string
+          description: Phone number for SMS MFA (required for SMS method)
+          example: "+1234567890"
+
+    MFAVerifyRequest:
+      type: object
+      required:
+        - method
+        - token
+      properties:
+        method:
+          type: string
+          enum: [TOTP, SMS, EMAIL, BACKUP_CODE]
+          description: MFA method used for verification
+        token:
+          type: string
+          description: MFA token or backup code
+          example: "123456"
+
+    MFADisableRequest:
+      type: object
+      required:
+        - currentPassword
+        - confirmDisable
+      properties:
+        currentPassword:
+          type: string
+          description: User's current password for verification
+        confirmDisable:
+          type: boolean
+          description: Confirmation that user wants to disable MFA
+          example: true
+
+    CrisisAssessmentRequest:
+      type: object
+      required:
+        - suicidalIdeation
+        - homicidalIdeation
+        - immediateRisk
+      properties:
+        suicidalIdeation:
+          type: boolean
+          description: Presence of suicidal thoughts
+        homicidalIdeation:
+          type: boolean
+          description: Presence of homicidal thoughts
+        hasPlan:
+          type: boolean
+          description: Has a plan for self-harm
+        hasMeans:
+          type: boolean
+          description: Has access to means for self-harm
+        immediateRisk:
+          type: boolean
+          description: Is there immediate risk of harm
+        selfHarmRisk:
+          type: boolean
+          description: Risk of self-harm behaviors
+        substanceUse:
+          type: boolean
+          description: Recent substance use affecting judgment
+        symptoms:
+          type: array
+          items:
+            type: string
+          description: Current symptoms
+          example: ["hopelessness", "isolation", "sleep_disturbance"]
+        triggerEvent:
+          type: string
+          description: Event that triggered the crisis
+          example: "Recent job loss"
+        severity:
+          type: string
+          enum: [LOW, MODERATE, HIGH, CRITICAL, EMERGENCY]
+          description: Optional severity override (system will calculate if not provided)
+
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - therapyPlanId
+      properties:
+        therapyPlanId:
+          type: string
+          description: ID of the therapy plan to subscribe to
+          example: "plan_therapy_basic"
+        paymentMethodId:
+          type: string
+          description: ID of existing payment method (optional)
+          example: "pm_1234567890"
+        couponCode:
+          type: string
+          description: Optional coupon code for discount
+          example: "SAVE20"
+
+    UpdateSubscriptionRequest:
+      type: object
+      required:
+        - newTherapyPlanId
+      properties:
+        newTherapyPlanId:
+          type: string
+          description: ID of the new therapy plan
+        prorationBehavior:
+          type: string
+          enum: [create_prorations, none, always_invoice]
+          description: How to handle proration
+          default: create_prorations
+
+    CancelSubscriptionRequest:
+      type: object
+      required:
+        - subscriptionId
+      properties:
+        subscriptionId:
+          type: string
+          description: ID of subscription to cancel
+        cancelAtPeriodEnd:
+          type: boolean
+          description: Cancel at period end (true) or immediately (false)
+          default: true
+        cancellationReason:
+          type: string
+          description: Optional reason for cancellation
+          example: "No longer needed"
+
+    AddPaymentMethodRequest:
+      type: object
+      required:
+        - paymentMethodId
+      properties:
+        paymentMethodId:
+          type: string
+          description: Stripe payment method ID
+          example: "pm_1234567890"
+        setAsDefault:
+          type: boolean
+          description: Set as default payment method
+          default: false
+
+    CreateProfileRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: "John"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: "Doe"
+        dateOfBirth:
+          type: string
+          format: date
+          example: "1990-01-15"
+        phoneNumber:
+          type: string
+          example: "+1234567890"
+        address:
+          type: string
+          example: "123 Main St"
+        city:
+          type: string
+          example: "Anytown"
+        state:
+          type: string
+          example: "CA"
+        zipCode:
+          type: string
+          example: "12345"
+        country:
+          type: string
+          example: "US"
+        emergencyContact:
+          type: object
+          properties:
+            name:
+              type: string
+            relationship:
+              type: string
+            phone:
+              type: string
+        medicalHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              condition:
+                type: string
+              diagnosedDate:
+                type: string
+                format: date
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              dosage:
+                type: string
+              frequency:
+                type: string
+        allergies:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              severity:
+                type: string
+
+    UpdateProfileRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateProfileRequest'
+      description: All fields are optional for updates
+
+    WellnessDataRequest:
+      type: object
+      required:
+        - moodScore
+        - anxietyLevel
+        - stressLevel
+      properties:
+        date:
+          type: string
+          format: date
+          description: Date for the wellness data (defaults to today)
+        moodScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Mood score from 1 (very poor) to 10 (excellent)
+        anxietyLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Anxiety level from 1 (none) to 10 (severe)
+        stressLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Stress level from 1 (none) to 10 (extreme)
+        sleepHours:
+          type: number
+          minimum: 0
+          maximum: 24
+          description: Hours of sleep
+        sleepQuality:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Sleep quality rating
+        exercise:
+          type: boolean
+          description: Whether exercise was performed
+        exerciseMinutes:
+          type: integer
+          minimum: 0
+          description: Minutes of exercise
+        meditation:
+          type: boolean
+          description: Whether meditation was performed
+        meditationMinutes:
+          type: integer
+          minimum: 0
+          description: Minutes of meditation
+        socialContact:
+          type: boolean
+          description: Whether there was meaningful social contact
+        medications:
+          type: array
+          items:
+            type: string
+          description: Medications taken
+        symptoms:
+          type: array
+          items:
+            type: string
+          description: Symptoms experienced
+        triggers:
+          type: array
+          items:
+            type: string
+          description: Identified triggers
+        copingStrategies:
+          type: array
+          items:
+            type: string
+          description: Coping strategies used
+        notes:
+          type: string
+          maxLength: 1000
+          description: Additional notes
+
+    # ==================== RESPONSE SCHEMAS ====================
+    
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Registration successful. Please check your email for verification."
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "cm3abc123def456"
+            email:
+              type: string
+              example: "user@example.com"
+            name:
+              type: string
+              example: "John Doe"
+
+    MFASetupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            method:
+              type: string
+              enum: [TOTP, SMS, EMAIL]
+            secret:
+              type: string
+              description: TOTP secret (TOTP method only)
+            qrCode:
+              type: string
+              description: QR code data URL (TOTP method only)
+            backupCodes:
+              type: array
+              items:
+                type: string
+              description: Backup codes (TOTP method only)
+            phoneNumber:
+              type: string
+              description: Masked phone number (SMS method only)
+
+    MFAVerifyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        mfaEnabled:
+          type: boolean
+          description: Whether MFA is now enabled
+
+    BackupCodesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        backupCodes:
+          type: array
+          items:
+            type: string
+          example: ["12345-67890", "09876-54321"]
+
+    CrisisAssessmentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        severity:
+          type: string
+          enum: [LOW, MODERATE, HIGH, CRITICAL, EMERGENCY]
+        interventionId:
+          type: string
+          description: ID of the crisis intervention record
+        message:
+          type: string
+          description: Assessment message
+        urgent:
+          type: boolean
+          description: Whether this requires urgent attention
+        alertsSent:
+          type: boolean
+          description: Whether emergency alerts were sent
+        nextSteps:
+          type: array
+          items:
+            type: string
+          description: Recommended next steps
+        resources:
+          $ref: '#/components/schemas/CrisisResources'
+
+    CrisisResources:
+      type: object
+      properties:
+        US:
+          type: object
+          properties:
+            suicide:
+              type: string
+              example: "988"
+            suicideAlt:
+              type: string
+              example: "1-800-273-8255"
+            crisis:
+              type: string
+              example: "741741"
+            emergency:
+              type: string
+              example: "911"
+        resources:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              number:
+                type: string
+              description:
+                type: string
+              text:
+                type: boolean
+
+    SubscriptionResponse:
+      type: object
+      properties:
+        subscription:
+          type: object
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+              enum: [INCOMPLETE, INCOMPLETE_EXPIRED, TRIALING, ACTIVE, PAST_DUE, CANCELED, UNPAID, PAUSED]
+            planName:
+              type: string
+            amount:
+              type: number
+            currency:
+              type: string
+            interval:
+              type: string
+            currentPeriodStart:
+              type: string
+              format: date-time
+            currentPeriodEnd:
+              type: string
+              format: date-time
+            cancelAt:
+              type: string
+              format: date-time
+              nullable: true
+            trialEnd:
+              type: string
+              format: date-time
+              nullable: true
+        success:
+          type: boolean
+
+    CreateSubscriptionResponse:
+      type: object
+      properties:
+        subscription:
+          type: object
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+            planName:
+              type: string
+            amount:
+              type: number
+        setupIntent:
+          type: object
+          properties:
+            id:
+              type: string
+            clientSecret:
+              type: string
+          description: Setup intent for payment method setup (if required)
+        success:
+          type: boolean
+        message:
+          type: string
+
+    PaymentMethodsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        paymentMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethod'
+
+    PaymentMethodResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethod'
+
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [CARD, BANK_ACCOUNT, ACH, PAYPAL, APPLE_PAY, GOOGLE_PAY]
+        card:
+          type: object
+          properties:
+            brand:
+              type: string
+            last4:
+              type: string
+            expMonth:
+              type: integer
+            expYear:
+              type: integer
+        isDefault:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            firstName:
+              type: string
+            lastName:
+              type: string
+            dateOfBirth:
+              type: string
+              format: date
+            phoneNumber:
+              type: string
+            address:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            zipCode:
+              type: string
+            country:
+              type: string
+            emergencyContact:
+              type: object
+            medicalHistory:
+              type: array
+              items:
+                type: object
+            medications:
+              type: array
+              items:
+                type: object
+            allergies:
+              type: array
+              items:
+                type: object
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    WellnessDataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/WellnessDataItem'
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+            hasMore:
+              type: boolean
+
+    WellnessDataItemResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/WellnessDataItem'
+
+    WellnessDataItem:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date
+        moodScore:
+          type: integer
+        anxietyLevel:
+          type: integer
+        stressLevel:
+          type: integer
+        sleepHours:
+          type: number
+          nullable: true
+        sleepQuality:
+          type: integer
+          nullable: true
+        exercise:
+          type: boolean
+        exerciseMinutes:
+          type: integer
+          nullable: true
+        meditation:
+          type: boolean
+        meditationMinutes:
+          type: integer
+          nullable: true
+        socialContact:
+          type: boolean
+        medications:
+          type: array
+          items:
+            type: string
+        symptoms:
+          type: array
+          items:
+            type: string
+        triggers:
+          type: array
+          items:
+            type: string
+        copingStrategies:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AppointmentsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Appointment'
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+            hasMore:
+              type: boolean
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+        type:
+          type: string
+          enum: [INITIAL_CONSULTATION, THERAPY_SESSION, FOLLOW_UP, CRISIS_SESSION, GROUP_SESSION, ASSESSMENT]
+        status:
+          type: string
+          enum: [SCHEDULED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW, RESCHEDULED]
+        location:
+          type: string
+          nullable: true
+        meetingUrl:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        reminderSent:
+          type: boolean
+        therapist:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+
+    NotificationsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Notification'
+            total:
+              type: integer
+            unreadCount:
+              type: integer
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [APPOINTMENT, MESSAGE, CRISIS, SYSTEM, WELLNESS, MEDICATION, SESSION, ACHIEVEMENT, GROUP, GENERAL]
+        priority:
+          type: string
+          enum: [LOW, NORMAL, HIGH, URGENT]
+        isRead:
+          type: boolean
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        actionUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    FileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        file:
+          type: object
+          properties:
+            id:
+              type: string
+            filename:
+              type: string
+            originalName:
+              type: string
+            mimeType:
+              type: string
+            size:
+              type: integer
+            url:
+              type: string
+            category:
+              type: string
+            isEncrypted:
+              type: boolean
+            uploadedAt:
+              type: string
+              format: date-time
+
+    # ==================== COMMON RESPONSE SCHEMAS ====================
+    
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "An error occurred"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              path:
+                type: array
+                items:
+                  type: string
+          description: Detailed validation errors (when applicable)
+
+  # ==================== COMMON RESPONSES ====================
+  
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              summary: Unauthorized access
+              value:
+                error: "Authentication required"
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validation_failed:
+              summary: Validation failed
+              value:
+                error: "Validation failed"
+                details:
+                  - code: "invalid_type"
+                    message: "Expected string, received number"
+                    path: ["email"]
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            rate_limited:
+              summary: Too many requests
+              value:
+                error: "Too many requests. Please try again later."
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            not_found:
+              summary: Resource not found
+              value:
+                error: "The requested resource was not found"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            server_error:
+              summary: Server error
+              value:
+                error: "An internal server error occurred"
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: MFA
+    description: Multi-factor authentication management
+  - name: Crisis Management
+    description: Crisis assessment and intervention endpoints
+  - name: Payments
+    description: Payment processing and billing management
+  - name: Subscriptions
+    description: Subscription management for therapy plans
+  - name: Payment Methods
+    description: Payment method management
+  - name: Webhooks
+    description: Webhook handlers for external integrations
+  - name: User Management
+    description: User profile and account management
+  - name: Wellness
+    description: Wellness tracking and analytics
+  - name: Appointments
+    description: Appointment scheduling and management
+  - name: Notifications
+    description: User notification management
+  - name: Files
+    description: File upload and management
+
+externalDocs:
+  description: Astral Core v7 Documentation
+  url: https://docs.astral-core.app

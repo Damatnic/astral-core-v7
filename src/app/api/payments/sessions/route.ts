@@ -17,13 +17,13 @@ const createPaymentSchema = z.object({
   appointmentId: z.string().min(1),
   amount: z.number().min(1).max(10000), // Max $10,000 per session
   paymentMethodId: z.string().optional(),
-  savePaymentMethod: z.boolean().optional(),
+  savePaymentMethod: z.boolean().optional()
 });
 
 const refundPaymentSchema = z.object({
   paymentIntentId: z.string().min(1),
   amount: z.number().min(0.01).optional(),
-  reason: z.string().optional(),
+  reason: z.string().optional()
 });
 
 /**
@@ -35,19 +35,13 @@ export async function POST(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'session-payment', 5, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many payment attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many payment attempts' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -57,9 +51,9 @@ export async function POST(request: NextRequest) {
     const validationResult = createPaymentSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request data',
-          details: validationResult.error.errors 
+          details: validationResult.error.errors
         },
         { status: 400 }
       );
@@ -71,10 +65,7 @@ export async function POST(request: NextRequest) {
     const appointment = await prisma.appointment.findFirst({
       where: {
         id: appointmentId,
-        OR: [
-          { userId: userId },
-          { therapistId: userId }
-        ]
+        OR: [{ userId: userId }, { therapistId: userId }]
       },
       include: {
         user: true,
@@ -88,10 +79,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!appointment) {
-      return NextResponse.json(
-        { error: 'Appointment not found or unauthorized' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Appointment not found or unauthorized' }, { status: 404 });
     }
 
     // Check if appointment is in a valid state for payment
@@ -103,10 +91,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if payment already exists for this appointment
-    const existingPayment = appointment.payments.find(p => 
+    const existingPayment = appointment.payments.find(p =>
       ['SUCCEEDED', 'PROCESSING', 'REQUIRES_CONFIRMATION'].includes(p.status)
     );
-    
+
     if (existingPayment) {
       return NextResponse.json(
         { error: 'Payment already exists for this appointment' },
@@ -116,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     // Determine who is paying (client pays for the session)
     const payingUserId = appointment.userId; // Client pays
-    
+
     // Get or create customer
     const customer = await StripeService.getOrCreateCustomer(
       payingUserId,
@@ -134,7 +122,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         appointmentId,
         therapistId: appointment.therapistId,
-        sessionDate: appointment.scheduledAt.toISOString(),
+        sessionDate: appointment.scheduledAt.toISOString()
       }
     });
 
@@ -153,13 +141,13 @@ export async function POST(request: NextRequest) {
       action: 'SESSION_PAYMENT_CREATED',
       entity: 'Payment',
       entityId: payment.id,
-      details: { 
+      details: {
         appointmentId,
         amount,
         paymentIntentId: paymentIntent.id,
         payingUserId
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
@@ -167,28 +155,24 @@ export async function POST(request: NextRequest) {
       paymentIntent: {
         id: paymentIntent.id,
         client_secret: paymentIntent.client_secret,
-        status: paymentIntent.status,
+        status: paymentIntent.status
       },
       success: true,
-      message: 'Payment intent created successfully',
+      message: 'Payment intent created successfully'
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     await auditLog({
       userId: session?.user?.id,
       action: 'SESSION_PAYMENT_CREATION_FAILED',
       entity: 'Payment',
       details: { error: error instanceof Error ? error.message : 'Unknown error' },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
     console.error('Error creating session payment:', error);
-    return NextResponse.json(
-      { error: 'Failed to create payment' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 });
   }
 }
 
@@ -201,19 +185,13 @@ export async function GET(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'payment-history', 20, 60000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -223,14 +201,14 @@ export async function GET(request: NextRequest) {
 
     // Get user's customer record
     const customer = await prisma.customer.findUnique({
-      where: { userId },
+      where: { userId }
     });
 
     if (!customer) {
       return NextResponse.json({
         payments: [],
         total: 0,
-        success: true,
+        success: true
       });
     }
 
@@ -238,7 +216,7 @@ export async function GET(request: NextRequest) {
     const payments = await prisma.payment.findMany({
       where: {
         customerId: customer.id,
-        type: 'SESSION_PAYMENT',
+        type: 'SESSION_PAYMENT'
       },
       include: {
         appointment: {
@@ -255,57 +233,53 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        refunds: true,
+        refunds: true
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'desc'
       },
       skip: offset,
-      take: limit,
+      take: limit
     });
 
     // Get total count
     const totalCount = await prisma.payment.count({
       where: {
         customerId: customer.id,
-        type: 'SESSION_PAYMENT',
-      },
+        type: 'SESSION_PAYMENT'
+      }
     });
 
     await auditLog({
       userId,
       action: 'PAYMENT_HISTORY_RETRIEVED',
       entity: 'Payment',
-      details: { 
+      details: {
         limit,
         offset,
         totalCount
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       payments,
       total: totalCount,
-      success: true,
+      success: true
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     await auditLog({
       userId: session?.user?.id,
       action: 'PAYMENT_HISTORY_RETRIEVAL_FAILED',
       entity: 'Payment',
       details: { error: error instanceof Error ? error.message : 'Unknown error' },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
     console.error('Error retrieving payment history:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve payment history' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to retrieve payment history' }, { status: 500 });
   }
 }
 
@@ -318,19 +292,13 @@ export async function PUT(request: NextRequest) {
     // Rate limiting
     const rateLimitResult = await rateLimit(request, 'payment-refund', 3, 300000);
     if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Too many refund attempts' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many refund attempts' }, { status: 429 });
     }
 
     // Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -338,10 +306,7 @@ export async function PUT(request: NextRequest) {
 
     // Check authorization - only therapists and admins can process refunds
     if (!['THERAPIST', 'ADMIN'].includes(userRole)) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -350,9 +315,9 @@ export async function PUT(request: NextRequest) {
     const validationResult = refundPaymentSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request data',
-          details: validationResult.error.errors 
+          details: validationResult.error.errors
         },
         { status: 400 }
       );
@@ -365,15 +330,12 @@ export async function PUT(request: NextRequest) {
       where: { stripePaymentIntentId: paymentIntentId },
       include: {
         customer: true,
-        appointment: true,
+        appointment: true
       }
     });
 
     if (!payment) {
-      return NextResponse.json(
-        { error: 'Payment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 
     // Additional authorization check for therapists
@@ -388,54 +350,43 @@ export async function PUT(request: NextRequest) {
 
     // Check if payment is refundable
     if (payment.status !== 'SUCCEEDED') {
-      return NextResponse.json(
-        { error: 'Payment is not in a refundable state' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Payment is not in a refundable state' }, { status: 400 });
     }
 
     // Process refund
-    const { refund } = await StripeService.createRefund(
-      paymentIntentId,
-      amount,
-      reason
-    );
+    const { refund } = await StripeService.createRefund(paymentIntentId, amount, reason);
 
     await auditLog({
       userId,
       action: 'SESSION_PAYMENT_REFUNDED',
       entity: 'Refund',
       entityId: refund.id,
-      details: { 
+      details: {
         paymentIntentId,
         refundAmount: amount || payment.amount,
         reason,
         originalPaymentAmount: payment.amount
       },
-      outcome: 'SUCCESS',
+      outcome: 'SUCCESS'
     });
 
     return NextResponse.json({
       refund,
       success: true,
-      message: 'Refund processed successfully',
+      message: 'Refund processed successfully'
     });
-
   } catch (error) {
     const session = await getServerSession(authOptions);
-    
+
     await auditLog({
       userId: session?.user?.id,
       action: 'SESSION_PAYMENT_REFUND_FAILED',
       entity: 'Refund',
       details: { error: error instanceof Error ? error.message : 'Unknown error' },
-      outcome: 'FAILURE',
+      outcome: 'FAILURE'
     });
 
     console.error('Error processing refund:', error);
-    return NextResponse.json(
-      { error: 'Failed to process refund' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to process refund' }, { status: 500 });
   }
 }

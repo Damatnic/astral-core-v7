@@ -12,11 +12,11 @@ const preferencesSchema = z.object({
   appointments: z.boolean().optional(),
   messages: z.boolean().optional(),
   wellness: z.boolean().optional(),
-  crisis: z.boolean().optional(),
+  crisis: z.boolean().optional()
 });
 
 // GET /api/notifications/preferences
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -26,9 +26,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const preferences = await notificationService.getNotificationPreferences(
-      session.user.id
-    );
+    const preferences = await notificationService.getNotificationPreferences(session.user.id);
 
     return NextResponse.json({
       success: true,
@@ -39,8 +37,8 @@ export async function GET(request: NextRequest) {
         appointments: true,
         messages: true,
         wellness: true,
-        crisis: true,
-      },
+        crisis: true
+      }
     });
   } catch (error) {
     console.error('Error fetching notification preferences:', error);
@@ -73,7 +71,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Preferences updated successfully',
-      data: updated,
+      data: updated
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -5,10 +5,7 @@ import { fileUploadService } from '@/lib/services/file-upload-service';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 
 // GET /api/files/[id] - Download a file
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -35,11 +32,11 @@ export async function GET(
     );
 
     // Create response with proper headers
-    const response = new NextResponse(stream as any);
-    
+    const response = new NextResponse(stream as ReadableStream);
+
     response.headers.set('Content-Type', mimeType);
     response.headers.set('Content-Length', size.toString());
-    
+
     if (download) {
       response.headers.set('Content-Disposition', `attachment; filename="${filename}"`);
     } else {
@@ -49,20 +46,19 @@ export async function GET(
     // Security headers
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
-    
+
     // Cache control for files
     response.headers.set('Cache-Control', 'private, max-age=3600');
 
     return response;
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error serving file:', error);
-    
-    if (error.message === 'File not found' || error.message === 'Access denied') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: HTTP_STATUS.NOT_FOUND }
-      );
+
+    if (
+      error instanceof Error &&
+      (error.message === 'File not found' || error.message === 'Access denied')
+    ) {
+      return NextResponse.json({ error: error.message }, { status: HTTP_STATUS.NOT_FOUND });
     }
 
     return NextResponse.json(
@@ -73,10 +69,7 @@ export async function GET(
 }
 
 // DELETE /api/files/[id] - Delete a file
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -86,21 +79,20 @@ export async function DELETE(
       );
     }
 
-    const result = await fileUploadService.deleteFile(params.id, session.user.id);
+    await fileUploadService.deleteFile(params.id, session.user.id);
 
     return NextResponse.json({
       success: true,
-      message: 'File deleted successfully',
+      message: 'File deleted successfully'
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting file:', error);
-    
-    if (error.message === 'File not found' || error.message === 'Access denied') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: HTTP_STATUS.NOT_FOUND }
-      );
+
+    if (
+      error instanceof Error &&
+      (error.message === 'File not found' || error.message === 'Access denied')
+    ) {
+      return NextResponse.json({ error: error.message }, { status: HTTP_STATUS.NOT_FOUND });
     }
 
     return NextResponse.json(
@@ -110,7 +102,7 @@ export async function DELETE(
   }
 }
 
-async function handleThumbnail(fileId: string, userId: string) {
+async function handleThumbnail(_fileId: string, _userId: string) {
   try {
     // This would serve the thumbnail file
     // For now, return a placeholder response
@@ -118,7 +110,7 @@ async function handleThumbnail(fileId: string, userId: string) {
       { error: 'Thumbnail service not implemented' },
       { status: HTTP_STATUS.NOT_IMPLEMENTED }
     );
-  } catch (error) {
+  } catch (_error: unknown) {
     return NextResponse.json(
       { error: 'Thumbnail not available' },
       { status: HTTP_STATUS.NOT_FOUND }

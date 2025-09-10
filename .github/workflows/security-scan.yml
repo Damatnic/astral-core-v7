@@ -1,0 +1,420 @@
+name: 'Security Scanning'
+
+on:
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  push:
+    branches: ['main', 'master', 'develop']
+    paths:
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'src/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: ['main', 'master', 'develop']
+    paths:
+      - 'package*.json'
+      - 'Dockerfile'
+      - 'src/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan to run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - 'full'
+          - 'dependencies-only'
+          - 'code-only'
+          - 'container-only'
+
+# Cancel previous runs for the same workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18.17'
+
+jobs:
+  # Dependency vulnerability scanning
+  dependency-scan:
+    name: 'Dependency Vulnerability Scan'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type != 'code-only' && github.event.inputs.scan_type != 'container-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Run npm audit'
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=moderate --production > npm-audit-report.json 2>&1 || true
+          cat npm-audit-report.json
+
+      - name: 'Run Snyk Dependency Scan'
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --json > snyk-deps-report.json
+        continue-on-error: true
+
+      - name: 'Run OSV Scanner'
+        uses: google/osv-scanner-action@v1.7.4
+        with:
+          scan-args: |-
+            -r
+            --skip-git
+            .
+        continue-on-error: true
+
+      - name: 'Upload Dependency Scan Results'
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+        continue-on-error: true
+
+      - name: 'Store Scan Artifacts'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-scan-reports
+          path: |
+            npm-audit-report.json
+            snyk-deps-report.json
+            osv-scanner-results.json
+          retention-days: 30
+
+  # Static code analysis
+  sast-scan:
+    name: 'Static Code Analysis (SAST)'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type != 'dependencies-only' && github.event.inputs.scan_type != 'container-only'
+    
+    strategy:
+      matrix:
+        tool: ['codeql', 'semgrep', 'snyk-code']
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup Node.js'
+        if: matrix.tool != 'codeql'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # CodeQL Analysis
+      - name: 'Initialize CodeQL'
+        if: matrix.tool == 'codeql'
+        uses: github/codeql-action/init@v3
+        with:
+          languages: typescript, javascript
+          queries: security-extended,security-and-quality
+          config: |
+            paths-ignore:
+              - node_modules
+              - .next
+              - coverage
+              - build
+              - dist
+
+      - name: 'Install Dependencies for CodeQL'
+        if: matrix.tool == 'codeql'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Perform CodeQL Analysis'
+        if: matrix.tool == 'codeql'
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:typescript"
+
+      # Semgrep Analysis
+      - name: 'Run Semgrep SAST'
+        if: matrix.tool == 'semgrep'
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/typescript
+            p/react
+          generateSarif: "1"
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      # Snyk Code Analysis
+      - name: 'Run Snyk Code Analysis'
+        if: matrix.tool == 'snyk-code'
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: code test
+          args: --sarif-file-output=snyk-code.sarif
+
+      - name: 'Upload SAST Results'
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ matrix.tool == 'semgrep' && 'semgrep.sarif' || matrix.tool == 'snyk-code' && 'snyk-code.sarif' || '' }}
+        continue-on-error: true
+
+  # Secret scanning
+  secret-scan:
+    name: 'Secret Scanning'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type != 'dependencies-only' && github.event.inputs.scan_type != 'container-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Run TruffleHog Secret Scan'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          path: .
+          extra_args: --debug --only-verified
+
+      - name: 'Run GitLeaks Secret Scan'
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config: .github/security/gitleaks.toml
+
+      - name: 'Store Secret Scan Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: secret-scan-results
+          path: |
+            gitleaks-report.json
+            trufflehog-results.json
+          retention-days: 30
+
+  # Container security scanning
+  container-scan:
+    name: 'Container Security Scan'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type != 'dependencies-only' && github.event.inputs.scan_type != 'code-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Build Docker Image'
+        run: |
+          docker build -t astral-core-v7:security-scan .
+
+      - name: 'Run Trivy Container Scan'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'astral-core-v7:security-scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: 'Run Snyk Container Scan'
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: astral-core-v7:security-scan
+          args: --severity-threshold=medium --file=Dockerfile
+
+      - name: 'Run Anchore Grype Scan'
+        uses: anchore/scan-action@v3
+        id: grype-scan
+        with:
+          image: astral-core-v7:security-scan
+          fail-build: false
+          severity-cutoff: high
+
+      - name: 'Upload Container Scan Results'
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: 'Store Container Scan Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-scan-results
+          path: |
+            trivy-results.sarif
+            snyk-container-report.json
+            ${{ steps.grype-scan.outputs.sarif }}
+          retention-days: 30
+
+  # Infrastructure as Code (IaC) scanning
+  iac-scan:
+    name: 'Infrastructure as Code Scan'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type != 'dependencies-only' && github.event.inputs.scan_type != 'container-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Run Checkov IaC Scan'
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: dockerfile,github_actions,secrets
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+
+      - name: 'Run Trivy IaC Scan'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          format: 'sarif'
+          output: 'trivy-iac-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: 'Upload IaC Scan Results'
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: |
+            checkov-results.sarif
+            trivy-iac-results.sarif
+        continue-on-error: true
+
+  # License compliance scanning
+  license-scan:
+    name: 'License Compliance Scan'
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type != 'code-only' && github.event.inputs.scan_type != 'container-only'
+    
+    steps:
+      - name: 'Checkout Code'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 'Install Dependencies'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 'Run License Check'
+        run: |
+          npm install -g license-checker
+          license-checker --json --out license-report.json
+          
+          # Check for problematic licenses
+          if license-checker --summary --excludePackages 'astral-core-v7@0.1.0' | grep -E '(GPL|AGPL|LGPL|MPL|EPL|CDDL|OSL)'; then
+            echo "⚠️ Found potentially problematic licenses"
+            exit 1
+          fi
+
+      - name: 'Store License Report'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: license-compliance-report
+          path: license-report.json
+          retention-days: 30
+
+  # Security summary and reporting
+  security-summary:
+    name: 'Security Summary Report'
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, sast-scan, secret-scan, container-scan, iac-scan, license-scan]
+    if: always()
+    
+    steps:
+      - name: 'Download All Scan Results'
+        uses: actions/download-artifact@v4
+        with:
+          path: scan-results
+        continue-on-error: true
+
+      - name: 'Generate Security Summary'
+        run: |
+          echo "# 🔒 Security Scan Summary" > security-summary.md
+          echo "" >> security-summary.md
+          echo "**Scan Date:** $(date -u)" >> security-summary.md
+          echo "**Repository:** ${{ github.repository }}" >> security-summary.md
+          echo "**Branch/Tag:** ${{ github.ref }}" >> security-summary.md
+          echo "**Commit:** ${{ github.sha }}" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          echo "## 📊 Scan Results" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          echo "| Scan Type | Status | Issues Found |" >> security-summary.md
+          echo "|-----------|---------|--------------|" >> security-summary.md
+          echo "| Dependency Scan | ${{ needs.dependency-scan.result == 'success' && '✅ Passed' || needs.dependency-scan.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | - |" >> security-summary.md
+          echo "| SAST Scan | ${{ needs.sast-scan.result == 'success' && '✅ Passed' || needs.sast-scan.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | - |" >> security-summary.md
+          echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || needs.secret-scan.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | - |" >> security-summary.md
+          echo "| Container Scan | ${{ needs.container-scan.result == 'success' && '✅ Passed' || needs.container-scan.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | - |" >> security-summary.md
+          echo "| IaC Scan | ${{ needs.iac-scan.result == 'success' && '✅ Passed' || needs.iac-scan.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | - |" >> security-summary.md
+          echo "| License Scan | ${{ needs.license-scan.result == 'success' && '✅ Passed' || needs.license-scan.result == 'failure' && '❌ Failed' || '⏩ Skipped' }} | - |" >> security-summary.md
+          
+          echo "" >> security-summary.md
+          echo "## 🎯 Recommendations" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "- Review all scan results in the GitHub Security tab" >> security-summary.md
+          echo "- Address any critical or high-severity findings immediately" >> security-summary.md
+          echo "- Update dependencies regularly to get security patches" >> security-summary.md
+          echo "- Monitor for new vulnerabilities in third-party dependencies" >> security-summary.md
+          
+          cat security-summary.md
+
+      - name: 'Store Security Summary'
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-summary-report
+          path: security-summary.md
+          retention-days: 90
+
+      - name: 'Create Security Issue (if findings)'
+        if: needs.dependency-scan.result == 'failure' || needs.sast-scan.result == 'failure' || needs.secret-scan.result == 'failure' || needs.container-scan.result == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = await require('fs').promises.readFile('security-summary.md', 'utf8');
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔒 Security Issues Found - ${new Date().toISOString().split('T')[0]}`,
+              body: summary,
+              labels: ['security', 'high-priority']
+            });
+
+      - name: 'Send Security Notification'
+        if: always()
+        run: |
+          echo "📧 Security scan completed. Results available in artifacts."
+          echo "Check the GitHub Security tab for detailed findings."

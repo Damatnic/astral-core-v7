@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: templates,
+      data: templates
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching templates:', error);
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.SERVER_ERROR },
+      { error: error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
