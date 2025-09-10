@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
-import { logError, logWarning } from '@/lib/logger';
+import { logError, logWarning, logInfo } from '@/lib/logger';
 
 interface WebSocketOptions {
   autoConnect?: boolean;
@@ -81,7 +81,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
 
     // Connection events
     socket.on('connect', () => {
-      console.log('WebSocket connected');
+      logInfo('WebSocket connected', 'useWebSocket');
       setConnectionState(prev => ({
         ...prev,
         isConnected: true,
@@ -90,8 +90,8 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       }));
     });
 
-        socket.on('disconnect', (reason) => {
-      console.log(`WebSocket disconnected: ${reason}`);
+    socket.on('disconnect', reason => {
+      logInfo(`WebSocket disconnected: ${reason}`, 'useWebSocket');
       setConnectionState(prev => ({
         ...prev,
         isConnected: false,
@@ -400,5 +400,5 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   };
 }
 
-// Note: For app-wide WebSocket connection, use a context provider 
+// Note: For app-wide WebSocket connection, use a context provider
 // instead of this singleton pattern which violates React hooks rules

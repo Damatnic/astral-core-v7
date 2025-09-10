@@ -31,10 +31,15 @@ export const logNotificationEvent = (
   userId: string,
   metadata?: Record<string, unknown>
 ): void => {
-  logSystemEvent('notification', action, {
-    notificationId,
-    ...metadata
-  }, userId);
+  logSystemEvent(
+    'notification',
+    action,
+    {
+      notificationId,
+      ...metadata
+    },
+    userId
+  );
 };
 
 export const logWebSocketEvent = (

@@ -1,7 +1,7 @@
 import { POST, GET } from '@/app/api/crisis/assess/route';
 import { getServerSession } from 'next-auth';
-import { 
-  createAPIRequest, 
+import {
+  createAPIRequest,
   createAuthenticatedSession,
   createPHIMock
 } from '../../../utils/api-test-helpers';
@@ -56,12 +56,14 @@ describe('Crisis Assessment Algorithm Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetPrismaMocks();
-    
+
     // Default session setup
-    mockedGetServerSession.mockResolvedValue(createAuthenticatedSession({
-      id: 'user-123',
-      role: 'CLIENT'
-    }));
+    mockedGetServerSession.mockResolvedValue(
+      createAuthenticatedSession({
+        id: 'user-123',
+        role: 'CLIENT'
+      })
+    );
 
     // Default PHI service setup
     phiService.create.mockResolvedValue({
@@ -72,7 +74,9 @@ describe('Crisis Assessment Algorithm Tests', () => {
   });
 
   describe('Crisis Severity Determination Algorithm', () => {
-    const createAssessmentData = (overrides: Partial<CrisisAssessmentInput> = {}): CrisisAssessmentInput => ({
+    const createAssessmentData = (
+      overrides: Partial<CrisisAssessmentInput> = {}
+    ): CrisisAssessmentInput => ({
       symptoms: ['anxiety', 'depression'],
       suicidalIdeation: false,
       homicidalIdeation: false,
@@ -189,7 +193,9 @@ describe('Crisis Assessment Algorithm Tests', () => {
 
       expect(responseData1.severity).toBe('HIGH');
       expect(responseData1.message).toBe('Professional support recommended');
-      expect(responseData1.nextSteps).toContain('Schedule an urgent appointment with your therapist');
+      expect(responseData1.nextSteps).toContain(
+        'Schedule an urgent appointment with your therapist'
+      );
 
       // Test homicidal ideation only
       const assessmentData2 = createAssessmentData({
@@ -408,7 +414,7 @@ describe('Crisis Assessment Algorithm Tests', () => {
       expect(followUpDate).toBeInstanceOf(Date);
       const followUpTime = followUpDate.getTime();
       const expectedTime = now + 24 * 60 * 60 * 1000;
-      
+
       // Allow 1 second tolerance
       expect(Math.abs(followUpTime - expectedTime)).toBeLessThan(1000);
     });
@@ -435,7 +441,9 @@ describe('Crisis Assessment Algorithm Tests', () => {
 
       // Suicidal ideation should take precedence over self-harm/substance use
       expect(responseData.severity).toBe('HIGH');
-      expect(responseData.nextSteps).toContain('Schedule an urgent appointment with your therapist');
+      expect(responseData.nextSteps).toContain(
+        'Schedule an urgent appointment with your therapist'
+      );
     });
 
     it('should prioritize immediate risk over other factors', async () => {
@@ -721,7 +729,9 @@ describe('Crisis Assessment Algorithm Tests', () => {
 });
 
 // Helper function to create test assessment data
-const createAssessmentData = (overrides: Partial<CrisisAssessmentInput> = {}): CrisisAssessmentInput => ({
+const createAssessmentData = (
+  overrides: Partial<CrisisAssessmentInput> = {}
+): CrisisAssessmentInput => ({
   symptoms: ['anxiety', 'depression'],
   suicidalIdeation: false,
   homicidalIdeation: false,

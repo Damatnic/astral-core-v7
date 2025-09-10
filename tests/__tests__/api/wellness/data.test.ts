@@ -44,7 +44,6 @@ import { getServerSession } from 'next-auth';
 import { phiService } from '@/lib/security/phi-service';
 
 describe('/api/wellness/data', () => {
-
   beforeEach(() => {
     resetPrismaMocks();
     jest.clearAllMocks();

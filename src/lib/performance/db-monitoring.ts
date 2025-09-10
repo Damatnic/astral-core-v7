@@ -55,11 +55,14 @@ export interface DatabaseStats {
     CREATE: number;
     DROP: number;
   };
-  tableStats: Map<string, {
-    queries: number;
-    totalDuration: number;
-    averageDuration: number;
-  }>;
+  tableStats: Map<
+    string,
+    {
+      queries: number;
+      totalDuration: number;
+      averageDuration: number;
+    }
+  >;
   performanceTrends: {
     timeframe: string;
     averageDuration: number;
@@ -85,9 +88,12 @@ class DatabaseMonitor {
   private setupPeriodicAnalysis() {
     // Run analysis every 5 minutes
     if (typeof window !== 'undefined') {
-      setInterval(() => {
-        this.analyzePerformance();
-      }, 5 * 60 * 1000);
+      setInterval(
+        () => {
+          this.analyzePerformance();
+        },
+        5 * 60 * 1000
+      );
     }
   }
 
@@ -109,7 +115,7 @@ class DatabaseMonitor {
 
   private extractOperation(query: string): QueryMetric['operation'] {
     const normalizedQuery = query.trim().toLowerCase();
-    
+
     if (normalizedQuery.startsWith('select')) return 'SELECT';
     if (normalizedQuery.startsWith('insert')) return 'INSERT';
     if (normalizedQuery.startsWith('update')) return 'UPDATE';
@@ -117,20 +123,20 @@ class DatabaseMonitor {
     if (normalizedQuery.startsWith('upsert')) return 'UPSERT';
     if (normalizedQuery.startsWith('create')) return 'CREATE';
     if (normalizedQuery.startsWith('drop')) return 'DROP';
-    
+
     return 'SELECT'; // Default fallback
   }
 
   private extractTable(query: string): string | undefined {
     const normalizedQuery = query.trim().toLowerCase();
-    
+
     // Extract table name for different operations
     const patterns = [
-      /from\s+([`"]?)(\w+)\1/i,          // SELECT ... FROM table
-      /into\s+([`"]?)(\w+)\1/i,          // INSERT INTO table
-      /update\s+([`"]?)(\w+)\1/i,        // UPDATE table
+      /from\s+([`"]?)(\w+)\1/i, // SELECT ... FROM table
+      /into\s+([`"]?)(\w+)\1/i, // INSERT INTO table
+      /update\s+([`"]?)(\w+)\1/i, // UPDATE table
       /delete\s+from\s+([`"]?)(\w+)\1/i, // DELETE FROM table
-      /table\s+([`"]?)(\w+)\1/i          // CREATE/DROP TABLE table
+      /table\s+([`"]?)(\w+)\1/i // CREATE/DROP TABLE table
     ];
 
     for (const pattern of patterns) {
@@ -171,7 +177,7 @@ class DatabaseMonitor {
 
   private analyzePerformance() {
     const insights = this.generateInsights();
-    
+
     if (process.env.NODE_ENV === 'development' && insights.length > 0) {
       console.group('Database Performance Insights');
       insights.forEach(insight => {
@@ -191,7 +197,11 @@ class DatabaseMonitor {
       timestamp: queryData.timestamp || Date.now(),
       rows: queryData.rows || 0,
       success: queryData.success !== undefined ? queryData.success : true,
-      ...(queryData.table ? { table: queryData.table } : this.extractTable(queryData.query || '') ? { table: this.extractTable(queryData.query || '')! } : {}),
+      ...(queryData.table
+        ? { table: queryData.table }
+        : this.extractTable(queryData.query || '')
+          ? { table: this.extractTable(queryData.query || '')! }
+          : {}),
       ...(queryData.userId && { userId: queryData.userId }),
       ...(queryData.endpoint && { endpoint: queryData.endpoint }),
       ...(queryData.errorMessage && { errorMessage: queryData.errorMessage }),
@@ -209,7 +219,10 @@ class DatabaseMonitor {
     }
 
     // Log slow queries in development
-    if (process.env.NODE_ENV === 'development' && metric.duration > this.alertThresholds.slowQueryMs) {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      metric.duration > this.alertThresholds.slowQueryMs
+    ) {
       console.warn(`Slow query detected (${metric.duration}ms):`, metric.query);
     }
 
@@ -239,8 +252,7 @@ class DatabaseMonitor {
   }
 
   public getQueryPatterns(): QueryPattern[] {
-    return Array.from(this.patterns.values())
-      .sort((a, b) => b.averageDuration - a.averageDuration);
+    return Array.from(this.patterns.values()).sort((a, b) => b.averageDuration - a.averageDuration);
   }
 
   public getStats(): DatabaseStats {
@@ -267,9 +279,7 @@ class DatabaseMonitor {
     const totalDuration = this.queries.reduce((sum, q) => sum + q.duration, 0);
     const averageDuration = totalDuration / this.queries.length;
 
-    const slowestQueries = [...this.queries]
-      .sort((a, b) => b.duration - a.duration)
-      .slice(0, 10);
+    const slowestQueries = [...this.queries].sort((a, b) => b.duration - a.duration).slice(0, 10);
 
     const queryDistribution = {
       SELECT: 0,
@@ -285,11 +295,18 @@ class DatabaseMonitor {
       queryDistribution[query.operation]++;
     });
 
-    const tableStats = new Map<string, { queries: number; totalDuration: number; averageDuration: number }>();
-    
+    const tableStats = new Map<
+      string,
+      { queries: number; totalDuration: number; averageDuration: number }
+    >();
+
     this.queries.forEach(query => {
       if (query.table) {
-        const existing = tableStats.get(query.table) || { queries: 0, totalDuration: 0, averageDuration: 0 };
+        const existing = tableStats.get(query.table) || {
+          queries: 0,
+          totalDuration: 0,
+          averageDuration: 0
+        };
         existing.queries++;
         existing.totalDuration += query.duration;
         existing.averageDuration = existing.totalDuration / existing.queries;
@@ -300,17 +317,18 @@ class DatabaseMonitor {
     // Performance trends over time (last 24 hours in 1-hour buckets)
     const now = Date.now();
     const performanceTrends = [];
-    
+
     for (let i = 23; i >= 0; i--) {
       const bucketStart = now - (i + 1) * 60 * 60 * 1000;
       const bucketEnd = now - i * 60 * 60 * 1000;
-      
-      const bucketQueries = this.queries.filter(q => 
-        q.timestamp >= bucketStart && q.timestamp < bucketEnd
+
+      const bucketQueries = this.queries.filter(
+        q => q.timestamp >= bucketStart && q.timestamp < bucketEnd
       );
-      
+
       if (bucketQueries.length > 0) {
-        const bucketAvgDuration = bucketQueries.reduce((sum, q) => sum + q.duration, 0) / bucketQueries.length;
+        const bucketAvgDuration =
+          bucketQueries.reduce((sum, q) => sum + q.duration, 0) / bucketQueries.length;
         performanceTrends.push({
           timeframe: new Date(bucketStart).toISOString().substring(11, 16),
           averageDuration: Math.round(bucketAvgDuration * 100) / 100,
@@ -322,7 +340,8 @@ class DatabaseMonitor {
     // Cache hit rate
     const queriesWithCacheInfo = this.queries.filter(q => q.cacheHit !== undefined);
     const cacheHits = queriesWithCacheInfo.filter(q => q.cacheHit).length;
-    const cacheHitRate = queriesWithCacheInfo.length > 0 ? cacheHits / queriesWithCacheInfo.length : 0;
+    const cacheHitRate =
+      queriesWithCacheInfo.length > 0 ? cacheHits / queriesWithCacheInfo.length : 0;
 
     return {
       totalQueries: this.queries.length,
@@ -347,50 +366,58 @@ class DatabaseMonitor {
         type: 'slow-query',
         severity: slowQueries.length > 10 ? 'critical' : slowQueries.length > 5 ? 'high' : 'medium',
         message: `Found ${slowQueries.length} slow queries (>${this.alertThresholds.slowQueryMs}ms)`,
-        recommendation: 'Consider adding indexes, optimizing WHERE clauses, or restructuring queries',
+        recommendation:
+          'Consider adding indexes, optimizing WHERE clauses, or restructuring queries',
         queries: slowQueries.slice(0, 5),
         impact: Math.min(100, slowQueries.length * 10)
       });
     }
 
     // Frequent query detection
-    const frequentQueries = patterns.filter(p => p.count >= this.alertThresholds.frequentQueryCount);
+    const frequentQueries = patterns.filter(
+      p => p.count >= this.alertThresholds.frequentQueryCount
+    );
     if (frequentQueries.length > 0) {
       insights.push({
         type: 'frequent-query',
         severity: 'medium',
         message: `Found ${frequentQueries.length} frequently executed query patterns`,
-        recommendation: 'Consider caching results or optimizing these queries as they run frequently',
-        queries: this.queries.filter(q => 
-          frequentQueries.some(fq => this.normalizeQuery(q.query) === fq.pattern)
-        ).slice(0, 5),
+        recommendation:
+          'Consider caching results or optimizing these queries as they run frequently',
+        queries: this.queries
+          .filter(q => frequentQueries.some(fq => this.normalizeQuery(q.query) === fq.pattern))
+          .slice(0, 5),
         impact: Math.min(100, frequentQueries.reduce((sum, fq) => sum + fq.count, 0) / 10)
       });
     }
 
     // N+1 query detection (simplified heuristic)
     const recentQueries = this.getRecentQueries(200);
-    const groupedByEndpoint = recentQueries.reduce((acc, query) => {
-      if (query.endpoint) {
-        if (!acc[query.endpoint]) {
-          acc[query.endpoint] = [];
+    const groupedByEndpoint = recentQueries.reduce(
+      (acc, query) => {
+        if (query.endpoint) {
+          if (!acc[query.endpoint]) {
+            acc[query.endpoint] = [];
+          }
+          acc[query.endpoint]!.push(query);
         }
-        acc[query.endpoint]!.push(query);
-      }
-      return acc;
-    }, {} as Record<string, QueryMetric[]>);
+        return acc;
+      },
+      {} as Record<string, QueryMetric[]>
+    );
 
     Object.entries(groupedByEndpoint).forEach(([endpoint, queries]) => {
       if (queries.length > 20) {
         const selectQueries = queries.filter(q => q.operation === 'SELECT');
         const uniquePatterns = new Set(selectQueries.map(q => this.normalizeQuery(q.query)));
-        
+
         if (uniquePatterns.size === 1 && selectQueries.length > 10) {
           insights.push({
             type: 'n-plus-one',
             severity: 'high',
             message: `Potential N+1 query pattern detected on ${endpoint} (${selectQueries.length} similar queries)`,
-            recommendation: 'Consider using JOIN queries or eager loading to reduce the number of database round trips',
+            recommendation:
+              'Consider using JOIN queries or eager loading to reduce the number of database round trips',
             queries: selectQueries.slice(0, 5),
             impact: Math.min(100, selectQueries.length * 2)
           });
@@ -404,7 +431,8 @@ class DatabaseMonitor {
         type: 'cache-miss',
         severity: stats.cacheHitRate < 0.5 ? 'high' : 'medium',
         message: `Low cache hit rate: ${(stats.cacheHitRate * 100).toFixed(1)}%`,
-        recommendation: 'Review caching strategy and consider caching more frequently accessed data',
+        recommendation:
+          'Review caching strategy and consider caching more frequently accessed data',
         queries: this.queries.filter(q => q.cacheHit === false).slice(0, 5),
         impact: Math.round((1 - stats.cacheHitRate) * 100)
       });
@@ -418,7 +446,7 @@ class DatabaseMonitor {
 
   public subscribe(callback: (metric: QueryMetric) => void): () => void {
     this.subscribers.push(callback);
-    
+
     return () => {
       const index = this.subscribers.indexOf(callback);
       if (index > -1) {
@@ -466,7 +494,7 @@ export function getDatabaseMonitor(): DatabaseMonitor {
 // React hook
 export function useDatabaseMonitoring() {
   const monitor = getDatabaseMonitor();
-  
+
   return {
     trackQuery: monitor.trackQuery.bind(monitor),
     queries: monitor.getQueries(),
@@ -482,37 +510,54 @@ export function useDatabaseMonitoring() {
 
 // Utility functions for Prisma integration
 export function createPrismaMiddleware() {
-  return async (params: { model?: string; action: string; args: unknown }, next: (params: unknown) => Promise<unknown>) => {
+  return async (
+    params: { model?: string; action: string; args: unknown },
+    next: (params: unknown) => Promise<unknown>
+  ) => {
     const start = performance.now();
     const monitor = getDatabaseMonitor();
-    
+
     try {
       const result = await next(params);
       const duration = performance.now() - start;
-      
+
       monitor.trackQuery({
         query: `${params.action} on ${params.model}`,
-        operation: params.action.toUpperCase() as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
+        operation: params.action.toUpperCase() as
+          | 'SELECT'
+          | 'INSERT'
+          | 'UPDATE'
+          | 'DELETE'
+          | 'UPSERT'
+          | 'CREATE'
+          | 'DROP',
         duration,
         rows: Array.isArray(result) ? result.length : result ? 1 : 0,
         ...(params.model && { table: params.model }),
         success: true
       });
-      
+
       return result;
     } catch (error) {
       const duration = performance.now() - start;
-      
+
       monitor.trackQuery({
         query: `${params.action} on ${params.model}`,
-        operation: params.action.toUpperCase() as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
+        operation: params.action.toUpperCase() as
+          | 'SELECT'
+          | 'INSERT'
+          | 'UPDATE'
+          | 'DELETE'
+          | 'UPSERT'
+          | 'CREATE'
+          | 'DROP',
         duration,
         rows: 0,
         ...(params.model && { table: params.model }),
         success: false,
         errorMessage: error instanceof Error ? error.message : String(error)
       });
-      
+
       throw error;
     }
   };
@@ -523,7 +568,7 @@ export function logDatabaseReport() {
   if (process.env.NODE_ENV === 'development') {
     const monitor = getDatabaseMonitor();
     const data = monitor.exportData();
-    
+
     console.group('Database Performance Report');
     console.log('Total Queries:', data.stats.totalQueries);
     console.log('Average Duration:', `${data.stats.averageDuration.toFixed(2)}ms`);

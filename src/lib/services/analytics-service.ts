@@ -360,8 +360,8 @@ export class AnalyticsService {
       const [
         dailyActive,
         weeklyActive,
-        monthlyActive,
-        , // sessions - unused
+        monthlyActive, // sessions - unused
+        ,
         messages,
         journalEntries,
         wellnessEntries
@@ -654,7 +654,10 @@ export class AnalyticsService {
   }
 
   // Generate reports
-  async generateWellnessReport(userId: string, dateRange: DateRange): Promise<{
+  async generateWellnessReport(
+    userId: string,
+    dateRange: DateRange
+  ): Promise<{
     analytics: WellnessMetrics;
     chartData: unknown[];
     insights: string[];
@@ -696,7 +699,10 @@ export class AnalyticsService {
     }
   }
 
-  private generateWellnessInsights(analytics: WellnessMetrics, data: Array<{ exercise?: boolean; meditation?: boolean; sleep?: number }>): string[] {
+  private generateWellnessInsights(
+    analytics: WellnessMetrics,
+    data: Array<{ exercise?: boolean; meditation?: boolean; sleep?: number }>
+  ): string[] {
     const insights: string[] = [];
 
     if (analytics.moodTrend === 'improving') {
@@ -722,8 +728,6 @@ export class AnalyticsService {
 
     return insights;
   }
-
-
 }
 
 export const analyticsService = new AnalyticsService();

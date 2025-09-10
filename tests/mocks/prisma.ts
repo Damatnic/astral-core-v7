@@ -209,11 +209,15 @@ export const resetPrismaMocks = () => {
 // Commonly used mock implementations
 export const mockPrismaImplementations = {
   user: {
-    findUniqueSuccess: (userData: unknown) => mockPrisma.user.findUnique.mockResolvedValue(userData as never),
+    findUniqueSuccess: (userData: unknown) =>
+      mockPrisma.user.findUnique.mockResolvedValue(userData as never),
     findUniqueNotFound: () => mockPrisma.user.findUnique.mockResolvedValue(null as never),
-    createSuccess: (userData: unknown) => mockPrisma.user.create.mockResolvedValue(userData as never),
-    updateSuccess: (userData: unknown) => mockPrisma.user.update.mockResolvedValue(userData as never),
-    deleteSuccess: (userData: unknown) => mockPrisma.user.delete.mockResolvedValue(userData as never)
+    createSuccess: (userData: unknown) =>
+      mockPrisma.user.create.mockResolvedValue(userData as never),
+    updateSuccess: (userData: unknown) =>
+      mockPrisma.user.update.mockResolvedValue(userData as never),
+    deleteSuccess: (userData: unknown) =>
+      mockPrisma.user.delete.mockResolvedValue(userData as never)
   },
   appointment: {
     findManySuccess: (appointments: unknown[]) =>

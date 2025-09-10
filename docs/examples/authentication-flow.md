@@ -17,12 +17,12 @@ This document provides comprehensive examples for implementing authentication fl
 
 ```javascript
 // Register a new user
-const registerUser = async (userData) => {
+const registerUser = async userData => {
   try {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         email: userData.email,
@@ -74,7 +74,7 @@ registerUser(newUser).then(result => {
 
 ```javascript
 // Client-side validation before registration
-const validateRegistration = (userData) => {
+const validateRegistration = userData => {
   const errors = [];
 
   // Email validation
@@ -104,9 +104,9 @@ const validateRegistration = (userData) => {
 };
 
 // Enhanced registration with validation
-const registerUserWithValidation = async (userData) => {
+const registerUserWithValidation = async userData => {
   const validation = validateRegistration(userData);
-  
+
   if (!validation.isValid) {
     return {
       success: false,
@@ -126,7 +126,7 @@ const registerUserWithValidation = async (userData) => {
 import { signIn, getSession } from 'next-auth/react';
 
 // Login function
-const loginUser = async (credentials) => {
+const loginUser = async credentials => {
   try {
     const result = await signIn('credentials', {
       email: credentials.email,
@@ -166,7 +166,7 @@ const loginUser = async (credentials) => {
 };
 
 // Usage example
-const handleLogin = async (formData) => {
+const handleLogin = async formData => {
   const result = await loginUser({
     email: formData.email,
     password: formData.password
@@ -197,7 +197,7 @@ const setupTOTP = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
+        Authorization: `Bearer ${getAuthToken()}`
       },
       body: JSON.stringify({
         method: 'TOTP'
@@ -226,13 +226,13 @@ const setupTOTP = async () => {
 };
 
 // Verify TOTP setup
-const verifyTOTPSetup = async (token) => {
+const verifyTOTPSetup = async token => {
   try {
     const response = await fetch('/api/auth/mfa/verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
+        Authorization: `Bearer ${getAuthToken()}`
       },
       body: JSON.stringify({
         method: 'TOTP',
@@ -291,13 +291,13 @@ const completeTOTPSetup = async () => {
 
 ```javascript
 // Setup SMS MFA
-const setupSMS = async (phoneNumber) => {
+const setupSMS = async phoneNumber => {
   try {
     const response = await fetch('/api/auth/mfa/setup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
+        Authorization: `Bearer ${getAuthToken()}`
       },
       body: JSON.stringify({
         method: 'SMS',
@@ -326,13 +326,13 @@ const setupSMS = async (phoneNumber) => {
 };
 
 // Verify SMS code
-const verifySMSCode = async (code) => {
+const verifySMSCode = async code => {
   try {
     const response = await fetch('/api/auth/mfa/verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
+        Authorization: `Bearer ${getAuthToken()}`
       },
       body: JSON.stringify({
         method: 'SMS',
@@ -366,13 +366,13 @@ const verifySMSCode = async (code) => {
 
 ```javascript
 // Complete MFA verification during login
-const completeMFALogin = async (mfaData) => {
+const completeMFALogin = async mfaData => {
   try {
     const response = await fetch('/api/auth/mfa/verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${mfaData.tempToken}`
+        Authorization: `Bearer ${mfaData.tempToken}`
       },
       body: JSON.stringify({
         method: mfaData.method,
@@ -408,7 +408,7 @@ const useBackupCode = async (backupCode, tempToken) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tempToken}`
+        Authorization: `Bearer ${tempToken}`
       },
       body: JSON.stringify({
         method: 'BACKUP_CODE',
@@ -447,7 +447,7 @@ const useBackupCode = async (backupCode, tempToken) => {
 const checkAuthStatus = async () => {
   try {
     const session = await getSession();
-    
+
     if (!session) {
       return {
         isAuthenticated: false,
@@ -484,17 +484,17 @@ const checkAuthStatus = async () => {
 const refreshSession = async () => {
   try {
     const session = await getSession();
-    
+
     if (session) {
       // Force refresh the session
       await signIn('credentials', {
         redirect: false,
         token: session.accessToken
       });
-      
+
       return await getSession();
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error refreshing session:', error);
@@ -511,7 +511,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
-const withAuth = (WrappedComponent) => {
+const withAuth = WrappedComponent => {
   return function AuthenticatedComponent(props) {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -564,14 +564,14 @@ const handleAuthError = (error, context) => {
         message: 'An account with this email already exists.',
         field: 'email'
       };
-    
+
     case 'INVALID_CREDENTIALS':
       return {
         type: 'authentication',
         message: 'Invalid email or password.',
         action: 'retry'
       };
-    
+
     case 'MFA_REQUIRED':
       return {
         type: 'mfa',
@@ -579,28 +579,28 @@ const handleAuthError = (error, context) => {
         action: 'redirect',
         redirectTo: '/auth/mfa-verify'
       };
-    
+
     case 'INVALID_MFA_TOKEN':
       return {
         type: 'mfa',
         message: 'Invalid MFA token. Please try again.',
         field: 'mfaToken'
       };
-    
+
     case 'ACCOUNT_LOCKED':
       return {
         type: 'security',
         message: 'Account temporarily locked due to multiple failed attempts.',
         action: 'wait'
       };
-    
+
     case 'RATE_LIMIT_EXCEEDED':
       return {
         type: 'rate_limit',
         message: 'Too many requests. Please try again later.',
         action: 'wait'
       };
-    
+
     default:
       return {
         type: 'unknown',
@@ -611,14 +611,14 @@ const handleAuthError = (error, context) => {
 };
 
 // Usage in components
-const handleLoginSubmit = async (formData) => {
+const handleLoginSubmit = async formData => {
   try {
     const result = await loginUser(formData);
-    
+
     if (!result.success) {
       const errorInfo = handleAuthError(new Error(result.error), 'login');
       displayErrorMessage(errorInfo.message, errorInfo.type);
-      
+
       if (errorInfo.action === 'redirect') {
         router.push(errorInfo.redirectTo);
       }
@@ -642,10 +642,9 @@ const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => {
       if (i === maxRetries - 1) {
         throw error;
       }
-      
+
       // Check if error is retryable
-      if (error.message === 'RATE_LIMIT_EXCEEDED' || 
-          error.status >= 500) {
+      if (error.message === 'RATE_LIMIT_EXCEEDED' || error.status >= 500) {
         const delay = baseDelay * Math.pow(2, i);
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
@@ -656,7 +655,7 @@ const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => {
 };
 
 // Usage
-const loginWithRetry = async (credentials) => {
+const loginWithRetry = async credentials => {
   return await retryWithBackoff(() => loginUser(credentials));
 };
 ```
@@ -668,7 +667,7 @@ const loginWithRetry = async (credentials) => {
 ```javascript
 // Secure token storage
 const TokenManager = {
-  setToken: (token) => {
+  setToken: token => {
     // Use secure, httpOnly cookie in production
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('auth_token', token);
@@ -688,7 +687,7 @@ const TokenManager = {
     }
   },
 
-  isTokenExpired: (token) => {
+  isTokenExpired: token => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return Date.now() >= payload.exp * 1000;
@@ -703,7 +702,7 @@ const TokenManager = {
 
 ```javascript
 // Input sanitization for authentication
-const sanitizeAuthInput = (input) => {
+const sanitizeAuthInput = input => {
   return {
     email: input.email?.toLowerCase().trim(),
     name: input.name?.trim().replace(/[<>]/g, ''),

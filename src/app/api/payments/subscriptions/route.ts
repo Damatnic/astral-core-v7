@@ -33,7 +33,7 @@ const cancelSubscriptionSchema = z.object({
  * GET /api/payments/subscriptions
  * Get user's current subscription
  */
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // Rate limiting
     const rateLimitResult = await rateLimit.check('subscription-read');

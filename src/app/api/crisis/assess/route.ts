@@ -133,11 +133,15 @@ export async function POST(request: NextRequest) {
       resourcesProvided: CRISIS_RESOURCES.resources.map(r => r.name)
     };
 
-    const intervention = await phiService.create('CrisisIntervention', interventionData as unknown as Partial<PHIRecord>, {
-      userId: session.user.id,
-      userRole: session.user.role,
-      resourceType: 'CrisisIntervention'
-    });
+    const intervention = await phiService.create(
+      'CrisisIntervention',
+      interventionData as unknown as Partial<PHIRecord>,
+      {
+        userId: session.user.id,
+        userRole: session.user.role,
+        resourceType: 'CrisisIntervention'
+      }
+    );
 
     // Log critical assessment
     await audit.logSuccess(

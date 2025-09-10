@@ -18,9 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Rate limiting
-    const allowed = await rateLimiter.check(
-      `files-list:${session.user.id}`
-    );
+    const allowed = await rateLimiter.check(`files-list:${session.user.id}`);
     if (!allowed) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.RATE_LIMIT },

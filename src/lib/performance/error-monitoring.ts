@@ -76,7 +76,7 @@ class ErrorMonitor {
 
   private initialize() {
     if (typeof window === 'undefined' || this.isInitialized) return;
-    
+
     this.isInitialized = true;
     this.setupErrorListeners();
     this.setupDefaultAlertRules();
@@ -88,7 +88,7 @@ class ErrorMonitor {
 
   private setupErrorListeners() {
     // JavaScript errors
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       this.captureError({
         message: event.message,
         stack: event.error?.stack,
@@ -101,7 +101,7 @@ class ErrorMonitor {
     });
 
     // Unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', event => {
       this.captureError({
         message: event.reason?.message || String(event.reason),
         stack: event.reason?.stack,
@@ -111,17 +111,21 @@ class ErrorMonitor {
     });
 
     // Resource loading errors
-    window.addEventListener('error', (event) => {
-      const target = event.target as HTMLElement;
-      if (target && target instanceof HTMLElement) {
-        this.captureError({
-          message: `Failed to load resource: ${(target as HTMLImageElement).src || (target as HTMLAnchorElement).href}`,
-          filename: (target as HTMLImageElement).src || (target as HTMLAnchorElement).href,
-          type: 'resource',
-          severity: 'medium'
-        });
-      }
-    }, true);
+    window.addEventListener(
+      'error',
+      event => {
+        const target = event.target as HTMLElement;
+        if (target && target instanceof HTMLElement) {
+          this.captureError({
+            message: `Failed to load resource: ${(target as HTMLImageElement).src || (target as HTMLAnchorElement).href}`,
+            filename: (target as HTMLImageElement).src || (target as HTMLAnchorElement).href,
+            type: 'resource',
+            severity: 'medium'
+          });
+        }
+      },
+      true
+    );
   }
 
   private setupDefaultAlertRules() {
@@ -129,10 +133,9 @@ class ErrorMonitor {
       {
         id: 'critical-error-rate',
         name: 'High Critical Error Rate',
-        condition: (errors) => {
-          const recentCritical = errors.filter(e => 
-            e.severity === 'critical' && 
-            Date.now() - e.timestamp < 5 * 60 * 1000 // last 5 minutes
+        condition: errors => {
+          const recentCritical = errors.filter(
+            e => e.severity === 'critical' && Date.now() - e.timestamp < 5 * 60 * 1000 // last 5 minutes
           );
           return recentCritical.length >= 5;
         },
@@ -146,39 +149,37 @@ class ErrorMonitor {
       {
         id: 'memory-leak-warning',
         name: 'Potential Memory Leak',
-        condition: (errors) => {
-          const memoryErrors = errors.filter(e => 
-            e.message.toLowerCase().includes('memory') ||
-            e.message.toLowerCase().includes('heap')
+        condition: errors => {
+          const memoryErrors = errors.filter(
+            e =>
+              e.message.toLowerCase().includes('memory') || e.message.toLowerCase().includes('heap')
           );
           return memoryErrors.length >= 3;
         },
         severity: 'high',
         cooldown: 30,
-        actions: [
-          { type: 'console', config: { level: 'warn' } }
-        ]
+        actions: [{ type: 'console', config: { level: 'warn' } }]
       },
       {
         id: 'resource-loading-failures',
         name: 'Multiple Resource Loading Failures',
-        condition: (errors) => {
-          const resourceErrors = errors.filter(e => 
-            e.type === 'resource' && 
-            Date.now() - e.timestamp < 10 * 60 * 1000 // last 10 minutes
+        condition: errors => {
+          const resourceErrors = errors.filter(
+            e => e.type === 'resource' && Date.now() - e.timestamp < 10 * 60 * 1000 // last 10 minutes
           );
           return resourceErrors.length >= 10;
         },
         severity: 'medium',
         cooldown: 20,
-        actions: [
-          { type: 'console', config: { level: 'warn' } }
-        ]
+        actions: [{ type: 'console', config: { level: 'warn' } }]
       }
     ];
   }
 
-  private determineSeverity(error: Error | null, message: string): 'low' | 'medium' | 'high' | 'critical' {
+  private determineSeverity(
+    error: Error | null,
+    message: string
+  ): 'low' | 'medium' | 'high' | 'critical' {
     const criticalPatterns = [
       /cannot read prop/i,
       /null is not an object/i,
@@ -187,17 +188,9 @@ class ErrorMonitor {
       /out of memory/i
     ];
 
-    const highPatterns = [
-      /network error/i,
-      /failed to fetch/i,
-      /timeout/i,
-      /abort/i
-    ];
+    const highPatterns = [/network error/i, /failed to fetch/i, /timeout/i, /abort/i];
 
-    const mediumPatterns = [
-      /warning/i,
-      /deprecated/i
-    ];
+    const mediumPatterns = [/warning/i, /deprecated/i];
 
     const errorString = (error?.stack || message || '').toLowerCase();
 
@@ -218,7 +211,11 @@ class ErrorMonitor {
     const metrics: PerformanceMetrics = {};
 
     if ('memory' in performance) {
-      const memory = (performance as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+      const memory = (
+        performance as {
+          memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number };
+        }
+      ).memory;
       metrics.memoryUsage = {
         usedJSHeapSize: memory.usedJSHeapSize,
         totalJSHeapSize: memory.totalJSHeapSize
@@ -239,7 +236,7 @@ class ErrorMonitor {
 
   public captureError(errorData: Partial<ErrorEvent>) {
     const beforeMetrics = this.capturePerformanceMetrics();
-    
+
     const errorEvent: ErrorEvent = {
       id: this.generateErrorId(),
       message: errorData.message || 'Unknown error',
@@ -314,7 +311,7 @@ class ErrorMonitor {
 
   private updateErrorPatterns(error: ErrorEvent) {
     const pattern = this.extractErrorPattern(error);
-    
+
     if (this.patterns.has(pattern)) {
       const existing = this.patterns.get(pattern)!;
       existing.count++;
@@ -373,22 +370,23 @@ class ErrorMonitor {
   private executeAlertAction(action: AlertAction, rule: AlertRule) {
     switch (action.type) {
       case 'console':
-        const level = action.config['level'] as string || 'log';
+        const level = (action.config['level'] as string) || 'log';
         if (level === 'log') console.log(`Alert triggered: ${rule.name}`);
         else if (level === 'warn') console.warn(`Alert triggered: ${rule.name}`);
         else if (level === 'error') console.error(`Alert triggered: ${rule.name}`);
         else console.log(`Alert triggered: ${rule.name}`);
         break;
-      
+
       case 'notification':
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(action.config['title'] as string || rule.name, {
-            body: action.config['body'] as string || `Alert rule "${rule.name}" has been triggered`,
+          new Notification((action.config['title'] as string) || rule.name, {
+            body:
+              (action.config['body'] as string) || `Alert rule "${rule.name}" has been triggered`,
             icon: action.config['icon'] as string
           });
         }
         break;
-      
+
       case 'webhook':
         fetch(action.config['url'] as string, {
           method: 'POST',
@@ -426,8 +424,7 @@ class ErrorMonitor {
   }
 
   public getErrorPatterns(): ErrorPattern[] {
-    return Array.from(this.patterns.values())
-      .sort((a, b) => b.count - a.count);
+    return Array.from(this.patterns.values()).sort((a, b) => b.count - a.count);
   }
 
   public getErrorStats(): {
@@ -439,16 +436,22 @@ class ErrorMonitor {
   } {
     const now = Date.now();
     const last24Hours = this.errors.filter(e => now - e.timestamp < 24 * 60 * 60 * 1000).length;
-    
-    const bySeverity = this.errors.reduce((acc, error) => {
-      acc[error.severity] = (acc[error.severity] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
 
-    const byType = this.errors.reduce((acc, error) => {
-      acc[error.type] = (acc[error.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const bySeverity = this.errors.reduce(
+      (acc, error) => {
+        acc[error.severity] = (acc[error.severity] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    const byType = this.errors.reduce(
+      (acc, error) => {
+        acc[error.type] = (acc[error.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return {
       total: this.errors.length,
@@ -461,7 +464,7 @@ class ErrorMonitor {
 
   public subscribe(callback: (error: ErrorEvent) => void): () => void {
     this.subscribers.push(callback);
-    
+
     return () => {
       const index = this.subscribers.indexOf(callback);
       if (index > -1) {
@@ -513,7 +516,7 @@ export function getErrorMonitor(): ErrorMonitor {
 // React hook
 export function useErrorMonitoring() {
   const monitor = getErrorMonitor();
-  
+
   return {
     captureError: monitor.captureError.bind(monitor),
     errors: monitor.getErrors(),
@@ -532,7 +535,11 @@ export function requestNotificationPermission() {
   }
 }
 
-export function captureCustomError(message: string, context?: Record<string, unknown>, severity?: 'low' | 'medium' | 'high' | 'critical') {
+export function captureCustomError(
+  message: string,
+  context?: Record<string, unknown>,
+  severity?: 'low' | 'medium' | 'high' | 'critical'
+) {
   const monitor = getErrorMonitor();
   monitor.captureError({
     message,
@@ -547,7 +554,7 @@ export function logErrorReport() {
   if (process.env.NODE_ENV === 'development') {
     const monitor = getErrorMonitor();
     const data = monitor.exportData();
-    
+
     console.group('Error Monitor Report');
     console.log('Session ID:', data.sessionId);
     console.log('Statistics:', data.stats);

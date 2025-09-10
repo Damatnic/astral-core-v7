@@ -11,6 +11,7 @@ The production environment requires the highest level of security, performance, 
 ### Infrastructure Requirements
 
 #### Minimum Specifications
+
 - **Application Servers**: 2x 8 vCPU, 16GB RAM, 100GB SSD
 - **Database**: PostgreSQL 14+ with 4 vCPU, 8GB RAM, 500GB SSD
 - **Load Balancer**: Application Load Balancer with SSL termination
@@ -19,6 +20,7 @@ The production environment requires the highest level of security, performance, 
 - **Monitoring**: CloudWatch, Sentry for error tracking
 
 #### Network Security
+
 - **VPC**: Isolated network with private subnets
 - **Security Groups**: Restrictive firewall rules
 - **WAF**: Web Application Firewall
@@ -28,12 +30,14 @@ The production environment requires the highest level of security, performance, 
 ### Compliance Requirements
 
 #### HIPAA Technical Safeguards
+
 - Data encryption at rest and in transit
 - Access controls and audit logging
 - Automatic logoff and unique user identification
 - Data integrity and transmission security
 
 #### Security Certifications
+
 - SOC 2 Type II compliance
 - Regular penetration testing
 - Vulnerability assessments
@@ -133,6 +137,7 @@ COMPLIANCE_API_KEY="COMPLIANCE_MONITORING_API_KEY"
 ### AWS Infrastructure
 
 #### Application Architecture
+
 ```
 Internet Gateway
     ↓
@@ -150,6 +155,7 @@ Encrypted Storage (EBS/S3)
 #### Infrastructure as Code (Terraform)
 
 **main.tf:**
+
 ```hcl
 # VPC Configuration
 resource "aws_vpc" "astral_vpc" {
@@ -214,26 +220,26 @@ resource "aws_db_instance" "astral_db" {
   engine         = "postgres"
   engine_version = "14.9"
   instance_class = "db.r5.xlarge"
-  
+
   allocated_storage     = 500
   max_allocated_storage = 2000
   storage_encrypted     = true
   kms_key_id           = aws_kms_key.astral_db_key.arn
-  
+
   db_name  = "astralcore_prod"
   username = "astral_prod"
   password = var.db_password
-  
+
   multi_az               = true
   backup_retention_period = 30
   backup_window          = "03:00-04:00"
   maintenance_window     = "sun:04:00-sun:05:00"
-  
+
   security_group_names = [aws_security_group.db_sg.name]
   db_subnet_group_name = aws_db_subnet_group.astral_db_subnet_group.name
-  
+
   enabled_cloudwatch_logs_exports = ["postgresql"]
-  
+
   tags = {
     Name        = "astral-core-prod-db"
     Environment = "production"
@@ -268,6 +274,7 @@ resource "aws_s3_bucket_encryption" "astral_files_encryption" {
 ### Container Deployment (ECS Fargate)
 
 **docker-compose.production.yml:**
+
 ```yaml
 version: '3.8'
 
@@ -285,19 +292,19 @@ services:
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     ports:
-      - "3000:3000"
+      - '3000:3000'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     logging:
-      driver: "awslogs"
+      driver: 'awslogs'
       options:
-        awslogs-group: "/ecs/astral-core-prod"
-        awslogs-region: "us-east-1"
-        awslogs-stream-prefix: "ecs"
+        awslogs-group: '/ecs/astral-core-prod'
+        awslogs-region: 'us-east-1'
+        awslogs-stream-prefix: 'ecs'
     deploy:
       resources:
         limits:
@@ -375,6 +382,7 @@ aws elbv2 create-listener \
 ### SSL/TLS Configuration
 
 **nginx.production.conf:**
+
 ```nginx
 server {
     listen 80;
@@ -534,6 +542,7 @@ aws cloudwatch put-metric-alarm \
 ### Application Monitoring
 
 **monitoring/production.js:**
+
 ```javascript
 // Production monitoring configuration
 const monitoring = {
@@ -541,13 +550,13 @@ const monitoring = {
     dsn: process.env.SENTRY_DSN,
     environment: 'production',
     tracesSampleRate: 0.1, // 10% sampling for performance
-    beforeSend: (event) => {
+    beforeSend: event => {
       // Filter out non-critical errors in production
       if (event.level === 'warning') return null;
       return event;
     }
   },
-  
+
   metrics: {
     // Custom application metrics
     userSessions: new prometheus.Histogram({
@@ -555,13 +564,13 @@ const monitoring = {
       help: 'Duration of user sessions',
       buckets: [60, 300, 900, 1800, 3600] // 1min to 1hour
     }),
-    
+
     apiLatency: new prometheus.Histogram({
       name: 'api_request_duration_seconds',
       help: 'API request duration',
       labelNames: ['method', 'route', 'status']
     }),
-    
+
     crisisAssessments: new prometheus.Counter({
       name: 'crisis_assessments_total',
       help: 'Total crisis assessments performed',
@@ -574,6 +583,7 @@ const monitoring = {
 ### Health Checks
 
 **pages/api/health/index.ts:**
+
 ```typescript
 // Comprehensive production health check
 export default async function handler(req: Request, res: Response) {
@@ -609,7 +619,7 @@ export default async function handler(req: Request, res: Response) {
     checks.encryption = testData === decrypted;
 
     const allHealthy = Object.values(checks).every(check => check);
-    
+
     res.status(allHealthy ? 200 : 503).json({
       status: allHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -630,6 +640,7 @@ export default async function handler(req: Request, res: Response) {
 ### Automated Backups
 
 **scripts/backup.sh:**
+
 ```bash
 #!/bin/bash
 set -euo pipefail
@@ -675,7 +686,7 @@ aws s3 ls "s3://${BACKUP_BUCKET}/database/" | \
   while read -r line; do
     file_date=$(echo $line | awk '{print $1}')
     file_name=$(echo $line | awk '{print $4}')
-    
+
     if [[ $(date -d "$file_date" +%s) -lt $(date -d "$RETENTION_DAYS days ago" +%s) ]]; then
       aws s3 rm "s3://${BACKUP_BUCKET}/database/${file_name}"
     fi
@@ -724,11 +735,12 @@ npm run test:e2e:production
 ### HIPAA Audit Logging
 
 **lib/audit/audit-logger.ts:**
+
 ```typescript
 // Production audit logger for HIPAA compliance
 export class AuditLogger {
   private static instance: AuditLogger;
-  
+
   static getInstance(): AuditLogger {
     if (!AuditLogger.instance) {
       AuditLogger.instance = new AuditLogger();
@@ -753,10 +765,10 @@ export class AuditLogger {
 
     // Write to CloudWatch Logs
     await this.writeToCloudWatch(auditEntry);
-    
+
     // Write to immutable audit store
     await this.writeToAuditStore(auditEntry);
-    
+
     // Send to compliance monitoring
     await this.sendToComplianceMonitoring(auditEntry);
   }
@@ -764,16 +776,18 @@ export class AuditLogger {
   private async writeToAuditStore(entry: AuditEntry) {
     // Store in append-only S3 bucket with object lock
     const key = `audit-logs/${entry.timestamp.split('T')[0]}/${entry.timestamp}.json`;
-    
-    await s3.putObject({
-      Bucket: 'astral-core-audit-logs-immutable',
-      Key: key,
-      Body: JSON.stringify(entry),
-      ServerSideEncryption: 'aws:kms',
-      SSEKMSKeyId: process.env.AUDIT_KMS_KEY,
-      ObjectLockMode: 'GOVERNANCE',
-      ObjectLockRetainUntilDate: new Date(Date.now() + (7 * 365 * 24 * 60 * 60 * 1000)) // 7 years
-    }).promise();
+
+    await s3
+      .putObject({
+        Bucket: 'astral-core-audit-logs-immutable',
+        Key: key,
+        Body: JSON.stringify(entry),
+        ServerSideEncryption: 'aws:kms',
+        SSEKMSKeyId: process.env.AUDIT_KMS_KEY,
+        ObjectLockMode: 'GOVERNANCE',
+        ObjectLockRetainUntilDate: new Date(Date.now() + 7 * 365 * 24 * 60 * 60 * 1000) // 7 years
+      })
+      .promise();
   }
 }
 ```
@@ -820,27 +834,30 @@ pm2 start ecosystem.production.js --env production
 ```
 
 **ecosystem.production.js:**
+
 ```javascript
 module.exports = {
-  apps: [{
-    name: 'astral-core-prod',
-    script: 'server.js',
-    instances: 'max',
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000
-    },
-    max_memory_restart: '2G',
-    node_args: '--max-old-space-size=4096',
-    error_file: '/var/log/astral-core/error.log',
-    out_file: '/var/log/astral-core/out.log',
-    log_file: '/var/log/astral-core/combined.log',
-    time: true,
-    autorestart: true,
-    max_restarts: 10,
-    min_uptime: '10s'
-  }]
+  apps: [
+    {
+      name: 'astral-core-prod',
+      script: 'server.js',
+      instances: 'max',
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      },
+      max_memory_restart: '2G',
+      node_args: '--max-old-space-size=4096',
+      error_file: '/var/log/astral-core/error.log',
+      out_file: '/var/log/astral-core/out.log',
+      log_file: '/var/log/astral-core/combined.log',
+      time: true,
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s'
+    }
+  ]
 };
 ```
 

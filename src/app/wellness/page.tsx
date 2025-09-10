@@ -54,14 +54,14 @@ export default function WellnessPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const success = await submitWellnessData(formData);
       if (success) {
         router.push('/dashboard');
       }
-    } catch (err) {
-      console.error('Failed to submit wellness data:', err);
+    } catch {
+      // Error handling is managed by the store
     }
   };
 

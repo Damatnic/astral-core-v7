@@ -6,7 +6,7 @@
 export const CONTRAST_RATIOS = {
   NORMAL_TEXT: 4.5,
   LARGE_TEXT: 3.0,
-  NON_TEXT: 3.0,
+  NON_TEXT: 3.0
 } as const;
 
 /**
@@ -49,10 +49,13 @@ export function meetsContrastRequirement(
   level: 'normal' | 'large' | 'non-text' = 'normal'
 ): boolean {
   const ratio = getContrastRatio(foreground, background);
-  const requirement = level === 'normal' ? CONTRAST_RATIOS.NORMAL_TEXT : 
-                     level === 'large' ? CONTRAST_RATIOS.LARGE_TEXT :
-                     CONTRAST_RATIOS.NON_TEXT;
-  
+  const requirement =
+    level === 'normal'
+      ? CONTRAST_RATIOS.NORMAL_TEXT
+      : level === 'large'
+        ? CONTRAST_RATIOS.LARGE_TEXT
+        : CONTRAST_RATIOS.NON_TEXT;
+
   return ratio >= requirement;
 }
 
@@ -63,28 +66,28 @@ export const ACCESSIBLE_COLORS = {
   // High contrast color pairs that meet WCAG AA requirements
   PRIMARY: {
     blue: {
-      50: '#eff6ff',   // Light background
-      600: '#2563eb',  // Primary color
-      700: '#1d4ed8',  // Darker variant
-      900: '#1e3a8a'   // Very dark
+      50: '#eff6ff', // Light background
+      600: '#2563eb', // Primary color
+      700: '#1d4ed8', // Darker variant
+      900: '#1e3a8a' // Very dark
     }
   },
   SEMANTIC: {
     success: {
       light: '#dcfce7', // Light green background
-      dark: '#166534'   // Dark green text
+      dark: '#166534' // Dark green text
     },
     warning: {
-      light: '#fef3c7', // Light yellow background  
-      dark: '#92400e'   // Dark orange text
+      light: '#fef3c7', // Light yellow background
+      dark: '#92400e' // Dark orange text
     },
     error: {
       light: '#fef2f2', // Light red background
-      dark: '#dc2626'   // Dark red text
+      dark: '#dc2626' // Dark red text
     },
     info: {
       light: '#f0f9ff', // Light blue background
-      dark: '#1e40af'   // Dark blue text
+      dark: '#1e40af' // Dark blue text
     }
   }
 } as const;
@@ -117,7 +120,7 @@ export function trapFocus(element: HTMLElement): () => void {
   const focusableElements = element.querySelectorAll(
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
   ) as NodeListOf<HTMLElement>;
-  
+
   const firstFocusable = focusableElements[0];
   const lastFocusable = focusableElements[focusableElements.length - 1];
 
@@ -148,15 +151,18 @@ export function trapFocus(element: HTMLElement): () => void {
 /**
  * ARIA live region utilities
  */
-export function announceToScreenReader(message: string, priority: 'polite' | 'assertive' = 'polite'): void {
+export function announceToScreenReader(
+  message: string,
+  priority: 'polite' | 'assertive' = 'polite'
+): void {
   const announcement = document.createElement('div');
   announcement.setAttribute('aria-live', priority);
   announcement.setAttribute('aria-atomic', 'true');
   announcement.className = SR_ONLY_CLASS;
   announcement.textContent = message;
-  
+
   document.body.appendChild(announcement);
-  
+
   setTimeout(() => {
     document.body.removeChild(announcement);
   }, 1000);
@@ -165,12 +171,15 @@ export function announceToScreenReader(message: string, priority: 'polite' | 'as
 /**
  * Skip link generation
  */
-export function createSkipLink(targetId: string, label: string = 'Skip to main content'): HTMLAnchorElement {
+export function createSkipLink(
+  targetId: string,
+  label: string = 'Skip to main content'
+): HTMLAnchorElement {
   const skipLink = document.createElement('a');
   skipLink.href = `#${targetId}`;
   skipLink.className = `${SR_ONLY_CLASS} focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white`;
   skipLink.textContent = label;
-  
+
   return skipLink;
 }
 
@@ -205,13 +214,15 @@ export function validateAccessibilityFeatures(element: HTMLElement): {
   meetsContrastRequirement: boolean;
 } {
   const hasRole = element.hasAttribute('role');
-  const hasLabel = element.hasAttribute('aria-label') || 
-                   element.hasAttribute('aria-labelledby') ||
-                   element.hasAttribute('title');
+  const hasLabel =
+    element.hasAttribute('aria-label') ||
+    element.hasAttribute('aria-labelledby') ||
+    element.hasAttribute('title');
   const hasDescription = element.hasAttribute('aria-describedby');
-  const isKeyboardAccessible = element.tabIndex >= 0 || 
-                               ['button', 'a', 'input', 'select', 'textarea'].includes(element.tagName.toLowerCase());
-  
+  const isKeyboardAccessible =
+    element.tabIndex >= 0 ||
+    ['button', 'a', 'input', 'select', 'textarea'].includes(element.tagName.toLowerCase());
+
   // Note: Contrast checking would require actual color computation from DOM
   const meetsContrastRequirement = true; // Placeholder - would need actual color extraction
 

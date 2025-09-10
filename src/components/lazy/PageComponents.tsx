@@ -10,23 +10,20 @@ import LoadingFallback from '@/components/ui/LoadingFallback';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Create lazy loading wrappers for page components
-const createLazyPageComponent = (
-  importPath: string,
-  loadingMessage: string
-) => {
+const createLazyPageComponent = (importPath: string, loadingMessage: string) => {
   const LazyComponent = React.lazy(() => import(importPath));
-  
+
   const LazyPageWrapper = (props: Record<string, unknown>) => (
     <ErrorBoundary>
       <Suspense
         fallback={
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8'>
+            <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
               <LoadingFallback
-                variant="skeleton"
-                size="lg"
+                variant='skeleton'
+                size='lg'
                 message={loadingMessage}
-                className="min-h-[600px]"
+                className='min-h-[600px]'
               />
             </div>
           </div>
@@ -40,8 +37,6 @@ const createLazyPageComponent = (
   LazyPageWrapper.displayName = `LazyPage(${importPath})`;
   return LazyPageWrapper;
 };
-
-
 
 // Define preload functions
 export const preloadJournalPage = () => import('@/app/journal/page');
@@ -70,6 +65,6 @@ export const loadPageComponent = (path: string) => {
       preloadWellnessPage();
       break;
   }
-  
+
   return createRouteComponent(path);
 };

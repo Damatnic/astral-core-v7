@@ -38,10 +38,7 @@ export const toJsonValue = (value: unknown): Record<string, unknown> | null => {
 };
 
 // Type guard for checking if value has required properties
-export const hasProperty = <T extends string>(
-  obj: unknown,
-  prop: T
-): obj is Record<T, unknown> => {
+export const hasProperty = <T extends string>(obj: unknown, prop: T): obj is Record<T, unknown> => {
   return typeof obj === 'object' && obj !== null && prop in obj;
 };
 
@@ -72,12 +69,12 @@ export const createUpdateData = <T extends Record<string, unknown>>(
   updates: Partial<T>
 ): Partial<T> => {
   const result: Partial<T> = {};
-  
+
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined) {
       (result as Record<string, unknown>)[key] = value;
     }
   }
-  
+
   return result;
 };

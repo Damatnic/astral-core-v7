@@ -59,4 +59,8 @@ export {
 } from '../EnhancedErrorBoundary';
 
 // Hooks
-export { default as useErrorHandling, useAsyncOperation, useFormSubmission } from '../../hooks/useErrorHandling';
+export {
+  default as useErrorHandling,
+  useAsyncOperation,
+  useFormSubmission
+} from '../../hooks/useErrorHandling';

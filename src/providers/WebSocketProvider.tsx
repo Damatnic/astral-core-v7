@@ -76,9 +76,12 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       const crisisData = data as Record<string, unknown>;
       // For therapists - show crisis alert
       if (session?.user?.role === 'THERAPIST') {
-        toast.error(`Crisis Alert: User needs immediate assistance (${crisisData['severity'] || 'HIGH'})`, {
-          duration: 0
-        });
+        toast.error(
+          `Crisis Alert: User needs immediate assistance (${crisisData['severity'] || 'HIGH'})`,
+          {
+            duration: 0
+          }
+        );
       }
     });
 
@@ -91,10 +94,13 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     const unsubscribe = websocket.on('session:request', (data: unknown) => {
       const sessionData = data as Record<string, unknown>;
-      toast(`Session request from client for appointment ${sessionData['appointmentId'] || 'Unknown'}`, {
-        icon: '🎥',
-        duration: 6000
-      });
+      toast(
+        `Session request from client for appointment ${sessionData['appointmentId'] || 'Unknown'}`,
+        {
+          icon: '🎥',
+          duration: 6000
+        }
+      );
     });
 
     return unsubscribe;

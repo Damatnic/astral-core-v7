@@ -41,12 +41,11 @@ export function useLazyLoading<T = unknown>(
   } = options;
 
   const [shouldLoad, setShouldLoad] = useState(
-    strategy === LoadingStrategy.IMMEDIATE || 
-    priority === LoadingPriority.HIGH
+    strategy === LoadingStrategy.IMMEDIATE || priority === LoadingPriority.HIGH
   );
   const [isVisible, setIsVisible] = useState(false);
   const [hasPreloaded, setHasPreloaded] = useState(false);
-  
+
   const ref = useRef<HTMLElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const observerRef = useRef<IntersectionObserver | undefined>(undefined);
@@ -54,7 +53,7 @@ export function useLazyLoading<T = unknown>(
   // Preload function
   const preload = useCallback(async () => {
     if (hasPreloaded) return;
-    
+
     try {
       await preloadFn();
       setHasPreloaded(true);
@@ -95,12 +94,12 @@ export function useLazyLoading<T = unknown>(
     if (strategy !== LoadingStrategy.ON_VIEWPORT || !ref.current) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         const [entry] = entries;
         if (!entry) return;
-        
+
         setIsVisible(entry.isIntersecting);
-        
+
         if (entry.isIntersecting) {
           setShouldLoad(true);
           preload();
@@ -127,7 +126,7 @@ export function useLazyLoading<T = unknown>(
     if (strategy !== LoadingStrategy.ON_INTERACTION || !ref.current) return;
 
     const element = ref.current;
-    
+
     const handleInteraction = () => {
       setShouldLoad(true);
       preload();

@@ -411,9 +411,9 @@ export class AdminService {
 
       // Real-time notification
       websocketServer.sendToUser(userId, 'profile:updated', {
-  type: 'profile:updated',
-  timestamp: Date.now(),
-  data: updates
+        type: 'profile:updated',
+        timestamp: Date.now(),
+        data: updates
       });
 
       // Audit log
@@ -686,7 +686,7 @@ export class AdminService {
             }
           }
         },
-  orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' }
       });
 
       // Audit the audit report generation
@@ -765,7 +765,7 @@ export class AdminService {
           }
         },
         take: 10,
-  orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' }
       });
 
       return {

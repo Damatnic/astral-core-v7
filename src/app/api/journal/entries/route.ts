@@ -6,6 +6,7 @@ import { journalEntrySchema } from '@/lib/types/wellness';
 import { phiService } from '@/lib/security/phi-service';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 import prisma from '@/lib/db/prisma';
+import { logError } from '@/lib/logger';
 
 // GET /api/journal/entries - Get user's journal entries
 export async function GET(request: NextRequest) {
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching journal entries:', error);
+    logError('Error fetching journal entries', error, 'API:journal/entries:GET');
 
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error creating journal entry:', error);
+    logError('Error creating journal entry', error, 'API:journal/entries:POST');
 
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
@@ -187,7 +188,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    console.error('Error updating journal entry:', error);
+    logError('Error updating journal entry', error, 'API:journal/entries:PUT');
 
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
@@ -244,7 +245,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Journal entry deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting journal entry:', error);
+    logError('Error deleting journal entry', error, 'API:journal/entries:DELETE');
 
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },

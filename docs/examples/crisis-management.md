@@ -17,13 +17,13 @@ This document provides comprehensive examples for implementing crisis assessment
 
 ```javascript
 // Perform a crisis assessment
-const performCrisisAssessment = async (assessmentData) => {
+const performCrisisAssessment = async assessmentData => {
   try {
     const response = await fetch('/api/crisis/assess', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
+        Authorization: `Bearer ${getAuthToken()}`
       },
       body: JSON.stringify({
         suicidalIdeation: assessmentData.suicidalIdeation,
@@ -152,9 +152,10 @@ const CrisisAssessmentForm = ({ onComplete, onEmergency }) => {
 
   // Monitor for emergency conditions in real-time
   useEffect(() => {
-    const isEmergency = assessment.immediateRisk || 
+    const isEmergency =
+      assessment.immediateRisk ||
       (assessment.suicidalIdeation && assessment.hasPlan && assessment.hasMeans);
-    
+
     if (isEmergency && !emergencyDetected) {
       setEmergencyDetected(true);
       onEmergency?.(assessment);
@@ -179,14 +180,14 @@ const CrisisAssessmentForm = ({ onComplete, onEmergency }) => {
       key: 'hasPlan',
       question: 'Do you have a plan for how you would harm yourself?',
       type: 'boolean',
-      conditional: (data) => data.suicidalIdeation,
+      conditional: data => data.suicidalIdeation,
       critical: true
     },
     {
       key: 'hasMeans',
       question: 'Do you have access to the means to carry out this plan?',
       type: 'boolean',
-      conditional: (data) => data.hasPlan,
+      conditional: data => data.hasPlan,
       critical: true
     },
     {
@@ -210,10 +211,21 @@ const CrisisAssessmentForm = ({ onComplete, onEmergency }) => {
       question: 'What symptoms are you experiencing? (Select all that apply)',
       type: 'multiselect',
       options: [
-        'hopelessness', 'despair', 'severe_depression', 'anxiety',
-        'panic', 'anger', 'irritability', 'isolation', 'loneliness',
-        'sleep_disturbance', 'appetite_changes', 'concentration_problems',
-        'racing_thoughts', 'hearing_voices', 'paranoia'
+        'hopelessness',
+        'despair',
+        'severe_depression',
+        'anxiety',
+        'panic',
+        'anger',
+        'irritability',
+        'isolation',
+        'loneliness',
+        'sleep_disturbance',
+        'appetite_changes',
+        'concentration_problems',
+        'racing_thoughts',
+        'hearing_voices',
+        'paranoia'
       ]
     },
     {
@@ -246,14 +258,14 @@ const CrisisAssessmentForm = ({ onComplete, onEmergency }) => {
     const nextIndex = currentStep + 1;
     if (nextIndex < questions.length) {
       const nextQuestion = questions[nextIndex];
-      
+
       // Skip conditional questions if condition not met
       if (nextQuestion.conditional && !nextQuestion.conditional(assessment)) {
         setCurrentStep(nextIndex);
         nextQuestion();
         return;
       }
-      
+
       setCurrentStep(nextIndex);
     } else {
       // Assessment complete
@@ -267,8 +279,8 @@ const CrisisAssessmentForm = ({ onComplete, onEmergency }) => {
       onComplete?.(result);
     } catch (error) {
       console.error('Assessment submission failed:', error);
-      onComplete?.({ 
-        success: false, 
+      onComplete?.({
+        success: false,
         error: error.message,
         resources: await getEmergencyResources()
       });
@@ -283,42 +295,36 @@ const CrisisAssessmentForm = ({ onComplete, onEmergency }) => {
   if (!question) return null;
 
   return (
-    <div className="crisis-assessment-form">
-      <div className="progress-bar">
-        <div 
-          className="progress" 
-          style={{ width: `${(currentStep / questions.length) * 100}%` }}
-        />
+    <div className='crisis-assessment-form'>
+      <div className='progress-bar'>
+        <div className='progress' style={{ width: `${(currentStep / questions.length) * 100}%` }} />
       </div>
 
-      <div className="question-container">
+      <div className='question-container'>
         <h2>{question.question}</h2>
-        
+
         {question.type === 'boolean' && (
-          <div className="button-group">
-            <button 
+          <div className='button-group'>
+            <button
               onClick={() => handleAnswer(question.key, true)}
               className={question.critical ? 'critical-yes' : 'yes'}
             >
               Yes
             </button>
-            <button 
-              onClick={() => handleAnswer(question.key, false)}
-              className="no"
-            >
+            <button onClick={() => handleAnswer(question.key, false)} className='no'>
               No
             </button>
           </div>
         )}
 
         {question.type === 'multiselect' && (
-          <div className="checkbox-group">
+          <div className='checkbox-group'>
             {question.options.map(option => (
               <label key={option}>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={assessment.symptoms.includes(option)}
-                  onChange={(e) => {
+                  onChange={e => {
                     const symptoms = e.target.checked
                       ? [...assessment.symptoms, option]
                       : assessment.symptoms.filter(s => s !== option);
@@ -333,27 +339,33 @@ const CrisisAssessmentForm = ({ onComplete, onEmergency }) => {
         )}
 
         {question.type === 'textarea' && (
-          <div className="textarea-group">
+          <div className='textarea-group'>
             <textarea
               value={assessment.triggerEvent}
-              onChange={(e) => setAssessment(prev => ({
-                ...prev,
-                triggerEvent: e.target.value
-              }))}
-              placeholder="Describe what happened..."
+              onChange={e =>
+                setAssessment(prev => ({
+                  ...prev,
+                  triggerEvent: e.target.value
+                }))
+              }
+              placeholder='Describe what happened...'
               rows={4}
             />
-            <button onClick={() => {
-              handleAnswer('triggerEvent', assessment.triggerEvent);
-            }}>
+            <button
+              onClick={() => {
+                handleAnswer('triggerEvent', assessment.triggerEvent);
+              }}
+            >
               Complete Assessment
             </button>
           </div>
         )}
       </div>
 
-      <div className="crisis-resources-footer">
-        <p>If this is an emergency, call <strong>911</strong> or <strong>988</strong> immediately</p>
+      <div className='crisis-resources-footer'>
+        <p>
+          If this is an emergency, call <strong>911</strong> or <strong>988</strong> immediately
+        </p>
       </div>
     </div>
   );
@@ -393,7 +405,7 @@ const EmergencyResponse = ({ assessment }) => {
     // Attempt to get user's location for emergency services
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        position => {
           const location = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude
@@ -402,7 +414,7 @@ const EmergencyResponse = ({ assessment }) => {
           localStorage.setItem('emergency_location', JSON.stringify(location));
           setActionsTaken(prev => ({ ...prev, locationShared: true }));
         },
-        (error) => {
+        error => {
           console.error('Location access denied:', error);
         }
       );
@@ -430,18 +442,18 @@ const EmergencyResponse = ({ assessment }) => {
   };
 
   return (
-    <div className="emergency-response">
-      <div className="emergency-header">
+    <div className='emergency-response'>
+      <div className='emergency-header'>
         <h1>🚨 IMMEDIATE HELP NEEDED</h1>
         <p>Based on your responses, you need immediate professional help.</p>
       </div>
 
-      <div className="emergency-actions">
-        <div className="primary-actions">
-          <button 
+      <div className='emergency-actions'>
+        <div className='primary-actions'>
+          <button
             onClick={call911}
-            className="emergency-button call-911"
-            style={{ 
+            className='emergency-button call-911'
+            style={{
               backgroundColor: '#dc2626',
               color: 'white',
               fontSize: '1.2rem',
@@ -452,10 +464,10 @@ const EmergencyResponse = ({ assessment }) => {
             <small>Emergency Services</small>
           </button>
 
-          <button 
+          <button
             onClick={callCrisisLine}
-            className="emergency-button crisis-line"
-            style={{ 
+            className='emergency-button crisis-line'
+            style={{
               backgroundColor: '#7c3aed',
               color: 'white',
               fontSize: '1.1rem',
@@ -467,18 +479,15 @@ const EmergencyResponse = ({ assessment }) => {
           </button>
         </div>
 
-        <div className="secondary-actions">
-          <button 
-            onClick={textCrisisLine}
-            className="text-button"
-          >
+        <div className='secondary-actions'>
+          <button onClick={textCrisisLine} className='text-button'>
             💬 TEXT 741741
             <small>Crisis Text Line</small>
           </button>
 
-          <button 
+          <button
             onClick={() => window.open('https://findtreatment.gov', '_blank')}
-            className="resource-button"
+            className='resource-button'
           >
             🏥 FIND NEARBY HELP
             <small>Treatment Locator</small>
@@ -486,7 +495,7 @@ const EmergencyResponse = ({ assessment }) => {
         </div>
       </div>
 
-      <div className="safety-checklist">
+      <div className='safety-checklist'>
         <h3>Immediate Safety Steps:</h3>
         <ul>
           <li>✓ Stay on this page - help is coming</li>
@@ -497,30 +506,32 @@ const EmergencyResponse = ({ assessment }) => {
         </ul>
       </div>
 
-      <div className="resources-always-available">
+      <div className='resources-always-available'>
         <h3>24/7 Resources Always Available:</h3>
-        <div className="resource-list">
-          <div className="resource">
+        <div className='resource-list'>
+          <div className='resource'>
             <strong>988 - Suicide & Crisis Lifeline</strong>
             <p>24/7 crisis support and suicide prevention</p>
           </div>
-          <div className="resource">
+          <div className='resource'>
             <strong>741741 - Crisis Text Line</strong>
             <p>Text HOME for crisis counseling</p>
           </div>
-          <div className="resource">
+          <div className='resource'>
             <strong>911 - Emergency Services</strong>
             <p>Immediate emergency response</p>
           </div>
-          <div className="resource">
+          <div className='resource'>
             <strong>1-800-273-8255 - Veterans Crisis Line</strong>
             <p>Press 1 for veteran-specific support</p>
           </div>
         </div>
       </div>
 
-      <div className="emergency-footer">
-        <p><strong>Remember: This crisis is temporary. Help is available. You matter.</strong></p>
+      <div className='emergency-footer'>
+        <p>
+          <strong>Remember: This crisis is temporary. Help is available. You matter.</strong>
+        </p>
       </div>
     </div>
   );
@@ -608,7 +619,8 @@ const CrisisResponseSystem = {
       const emergencyContacts = user.emergencyContact;
 
       if (emergencyContacts) {
-        const message = `${user.firstName} ${user.lastName} has been assessed as being in crisis. ` +
+        const message =
+          `${user.firstName} ${user.lastName} has been assessed as being in crisis. ` +
           `They have been provided with immediate resources and professional help has been notified. ` +
           `Crisis resources: 988 (Suicide Lifeline), 741741 (Crisis Text), 911 (Emergency).`;
 
@@ -623,7 +635,7 @@ const CrisisResponseSystem = {
   async scheduleImmediateFollowUp(assessment) {
     // Schedule follow-up within 1 hour
     const followUpTime = new Date(Date.now() + 60 * 60 * 1000);
-    
+
     await scheduleTask({
       type: 'crisis_followup',
       userId: assessment.userId,
@@ -688,13 +700,15 @@ const CrisisRiskCalculator = {
 
     // Symptom-based risk factors
     const highRiskSymptoms = [
-      'hopelessness', 'active_ideation', 'plan_formulation',
-      'means_available', 'intent', 'severe_depression'
+      'hopelessness',
+      'active_ideation',
+      'plan_formulation',
+      'means_available',
+      'intent',
+      'severe_depression'
     ];
 
-    const mediumRiskSymptoms = [
-      'despair', 'isolation', 'hearing_voices', 'paranoia'
-    ];
+    const mediumRiskSymptoms = ['despair', 'isolation', 'hearing_voices', 'paranoia'];
 
     assessment.symptoms.forEach(symptom => {
       if (highRiskSymptoms.includes(symptom)) {
@@ -758,11 +772,11 @@ const CrisisRiskCalculator = {
 
   determineInterventionType(severity) {
     const interventions = {
-      'EMERGENCY': 'EMERGENCY_DISPATCH',
-      'CRITICAL': 'CALL',
-      'HIGH': 'VIDEO',
-      'MODERATE': 'CHAT',
-      'LOW': 'REFERRAL'
+      EMERGENCY: 'EMERGENCY_DISPATCH',
+      CRITICAL: 'CALL',
+      HIGH: 'VIDEO',
+      MODERATE: 'CHAT',
+      LOW: 'REFERRAL'
     };
 
     return interventions[severity];
@@ -906,8 +920,8 @@ const CrisisResourcesProvider = {
 
     // Filter by language if specified
     if (language !== 'en') {
-      baseResources.resources = baseResources.resources.filter(
-        resource => resource.languages.includes(language)
+      baseResources.resources = baseResources.resources.filter(resource =>
+        resource.languages.includes(language)
       );
     }
 
@@ -919,7 +933,7 @@ const CrisisResourcesProvider = {
       // Mock implementation - in production, this would query a database
       // or external API for local crisis resources
       const response = await fetch(`/api/resources/local?lat=${location.lat}&lng=${location.lng}`);
-      
+
       if (response.ok) {
         return await response.json();
       }
@@ -963,7 +977,9 @@ const CrisisResourcesProvider = {
             </div>
           </div>
           <div class="additional-resources">
-            ${resources.resources.map(resource => `
+            ${resources.resources
+              .map(
+                resource => `
               <div class="resource-item">
                 <strong>${resource.name}</strong>
                 <p>${resource.description}</p>
@@ -971,14 +987,20 @@ const CrisisResourcesProvider = {
                   <button onclick="window.location.href='tel:${resource.number}'">
                     📞 Call
                   </button>
-                  ${resource.website ? `
+                  ${
+                    resource.website
+                      ? `
                     <button onclick="window.open('${resource.website}', '_blank')">
                       🌐 Website
                     </button>
-                  ` : ''}
+                  `
+                      : ''
+                  }
                 </div>
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
         </div>
       `,
@@ -1026,32 +1048,32 @@ const CrisisResourcesProvider = {
 const CrisisFollowUpSystem = {
   async scheduleFollowUp(interventionId, severity, initialAssessment) {
     const followUpSchedule = {
-      'EMERGENCY': [
+      EMERGENCY: [
         { hours: 1, type: 'IMMEDIATE_CHECK' },
         { hours: 6, type: 'SAFETY_CHECK' },
         { hours: 24, type: 'STATUS_ASSESSMENT' },
         { days: 3, type: 'PROFESSIONAL_REVIEW' },
         { days: 7, type: 'OUTCOME_EVALUATION' }
       ],
-      'CRITICAL': [
+      CRITICAL: [
         { hours: 2, type: 'SAFETY_CHECK' },
         { hours: 12, type: 'STATUS_ASSESSMENT' },
         { days: 1, type: 'PROFESSIONAL_CONTACT' },
         { days: 3, type: 'FOLLOW_UP_ASSESSMENT' },
         { days: 14, type: 'OUTCOME_EVALUATION' }
       ],
-      'HIGH': [
+      HIGH: [
         { hours: 24, type: 'STATUS_CHECK' },
         { days: 3, type: 'FOLLOW_UP_ASSESSMENT' },
         { days: 7, type: 'PROFESSIONAL_REVIEW' },
         { days: 30, type: 'OUTCOME_EVALUATION' }
       ],
-      'MODERATE': [
+      MODERATE: [
         { days: 3, type: 'STATUS_CHECK' },
         { days: 7, type: 'FOLLOW_UP_ASSESSMENT' },
         { days: 30, type: 'OUTCOME_EVALUATION' }
       ],
-      'LOW': [
+      LOW: [
         { days: 7, type: 'STATUS_CHECK' },
         { days: 30, type: 'OUTCOME_EVALUATION' }
       ]
@@ -1061,7 +1083,7 @@ const CrisisFollowUpSystem = {
 
     for (const followUp of schedule) {
       const scheduledTime = this.calculateFollowUpTime(followUp);
-      
+
       await this.createFollowUpTask({
         interventionId,
         type: followUp.type,
@@ -1079,13 +1101,13 @@ const CrisisFollowUpSystem = {
 
   calculateFollowUpTime(followUp) {
     const now = new Date();
-    
+
     if (followUp.hours) {
       return new Date(now.getTime() + followUp.hours * 60 * 60 * 1000);
     } else if (followUp.days) {
       return new Date(now.getTime() + followUp.days * 24 * 60 * 60 * 1000);
     }
-    
+
     return now;
   },
 
@@ -1093,19 +1115,19 @@ const CrisisFollowUpSystem = {
     switch (followUpTask.type) {
       case 'IMMEDIATE_CHECK':
         return await this.performImmediateCheck(followUpTask);
-      
+
       case 'SAFETY_CHECK':
         return await this.performSafetyCheck(followUpTask);
-      
+
       case 'STATUS_ASSESSMENT':
         return await this.performStatusAssessment(followUpTask);
-      
+
       case 'PROFESSIONAL_REVIEW':
         return await this.scheduleProfessionalReview(followUpTask);
-      
+
       case 'OUTCOME_EVALUATION':
         return await this.performOutcomeEvaluation(followUpTask);
-      
+
       default:
         console.warn('Unknown follow-up type:', followUpTask.type);
         return { success: false, error: 'Unknown follow-up type' };
@@ -1117,7 +1139,7 @@ const CrisisFollowUpSystem = {
     const notification = {
       userId: task.userId,
       title: 'Crisis Support Check-In',
-      message: 'How are you feeling right now? We want to make sure you\'re safe.',
+      message: "How are you feeling right now? We want to make sure you're safe.",
       type: 'CRISIS',
       priority: 'URGENT',
       actionUrl: '/crisis/checkin',
@@ -1128,14 +1150,17 @@ const CrisisFollowUpSystem = {
     };
 
     await this.sendNotification(notification);
-    
+
     // If no response within 30 minutes, escalate
-    setTimeout(async () => {
-      const response = await this.checkForResponse(task.userId, task.interventionId);
-      if (!response) {
-        await this.escalateNoResponse(task);
-      }
-    }, 30 * 60 * 1000); // 30 minutes
+    setTimeout(
+      async () => {
+        const response = await this.checkForResponse(task.userId, task.interventionId);
+        if (!response) {
+          await this.escalateNoResponse(task);
+        }
+      },
+      30 * 60 * 1000
+    ); // 30 minutes
 
     return { success: true, type: 'IMMEDIATE_CHECK' };
   },
@@ -1174,7 +1199,7 @@ const CrisisFollowUpSystem = {
 
     // Send assessment notification
     await this.sendAssessmentNotification(task.userId, safetyAssessment, 'SAFETY_CHECK');
-    
+
     return { success: true, type: 'SAFETY_CHECK' };
   }
 };

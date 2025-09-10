@@ -110,8 +110,9 @@ const PaymentFormContent = ({
       if (!billingDetails.address.line1.trim()) errors['address.line1'] = 'Address is required';
       if (!billingDetails.address.city.trim()) errors['address.city'] = 'City is required';
       if (!billingDetails.address.state.trim()) errors['address.state'] = 'State is required';
-      if (!billingDetails.address.postal_code.trim()) errors['address.postal_code'] = 'ZIP code is required';
-      
+      if (!billingDetails.address.postal_code.trim())
+        errors['address.postal_code'] = 'ZIP code is required';
+
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
         setIsProcessing(false);
@@ -120,19 +121,19 @@ const PaymentFormContent = ({
         return;
       }
     }
-    
+
     setValidationErrors({});
-    
+
     try {
       setProcessingStep('Preparing payment...');
       setProgress(30);
-      
+
       // Add small delay to show progress
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       setProcessingStep('Processing payment...');
       setProgress(60);
-      
+
       // Confirm payment
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
@@ -142,7 +143,7 @@ const PaymentFormContent = ({
           })
         }
       });
-      
+
       setProgress(90);
 
       if (error) {
@@ -152,10 +153,10 @@ const PaymentFormContent = ({
       } else if (paymentIntent) {
         setProcessingStep('Payment successful!');
         setProgress(100);
-        
+
         // Brief delay to show success state
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         onSuccess?.(paymentIntent);
       }
     } catch (err) {
@@ -178,7 +179,7 @@ const PaymentFormContent = ({
         return newErrors;
       });
     }
-    
+
     if (field.startsWith('address.')) {
       const addressField = field.replace('address.', '');
       setBillingDetails(prev => ({
@@ -247,12 +248,8 @@ const PaymentFormContent = ({
 
         {/* Processing Progress */}
         {isProcessing && (
-          <div className="mb-4">
-            <ProgressBar 
-              progress={progress} 
-              message={processingStep}
-              className="mb-2"
-            />
+          <div className='mb-4'>
+            <ProgressBar progress={progress} message={processingStep} className='mb-2' />
           </div>
         )}
 
@@ -274,7 +271,7 @@ const PaymentFormContent = ({
                     className={getFieldError('name') ? 'border-red-500' : ''}
                   />
                   {getFieldError('name') && (
-                    <p className="text-red-500 text-xs mt-1">{getFieldError('name')}</p>
+                    <p className='text-red-500 text-xs mt-1'>{getFieldError('name')}</p>
                   )}
                 </div>
                 <div>
@@ -287,7 +284,7 @@ const PaymentFormContent = ({
                     className={getFieldError('email') ? 'border-red-500' : ''}
                   />
                   {getFieldError('email') && (
-                    <p className="text-red-500 text-xs mt-1">{getFieldError('email')}</p>
+                    <p className='text-red-500 text-xs mt-1'>{getFieldError('email')}</p>
                   )}
                 </div>
               </div>

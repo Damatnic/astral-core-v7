@@ -115,10 +115,7 @@ export default function FileUpload({
   const acceptTypes = accept || categoryConfig.accept;
 
   const onDrop = useCallback(
-    (
-      acceptedFiles: File[],
-      rejectedFiles: FileRejection[]
-    ) => {
+    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       // Handle rejected files
       rejectedFiles.forEach(({ file, errors }) => {
         errors.forEach((error: { code: string; message: string }) => {

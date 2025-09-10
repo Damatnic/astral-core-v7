@@ -1,6 +1,7 @@
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
+import { compare } from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { MfaMethod } from '@prisma/client';
 import { audit } from '@/lib/security/audit';
@@ -70,9 +71,7 @@ export class MfaService {
 
       // Generate backup codes
       const backupCodes = this.generateBackupCodes();
-      await Promise.all(
-        backupCodes.map(code => this.hashBackupCode(code))
-      );
+      await Promise.all(backupCodes.map(code => this.hashBackupCode(code)));
 
       // Store encrypted secret temporarily (not saved until verified)
       await phiService.encryptField(secret.base32);
@@ -204,7 +203,7 @@ export class MfaService {
    * ```typescript
    * // Regular TOTP code
    * const result = await mfaService.verifyMfa('user_123', '123456');
-   * 
+   *
    * // Backup code
    * const backupResult = await mfaService.verifyMfa('user_123', 'ABCD-EFGH', true);
    * ```
@@ -280,7 +279,7 @@ export class MfaService {
         };
       } else {
         this.verificationAttempts.set(userId, attempts + 1);
-        
+
         await audit.logFailure('MFA_VERIFICATION_FAILED', 'User', 'Invalid MFA code', userId);
 
         return {
@@ -476,23 +475,23 @@ export class MfaService {
         if (backupCode) {
           const isMatch = await this.compareBackupCode(code, backupCode);
           if (isMatch) {
-          // Remove used backup code
-          const newBackupCodes = [...user.mfaBackupCodes];
-          newBackupCodes.splice(i, 1);
+            // Remove used backup code
+            const newBackupCodes = [...user.mfaBackupCodes];
+            newBackupCodes.splice(i, 1);
 
-          await prisma.user.update({
-            where: { id: userId },
-            data: { mfaBackupCodes: newBackupCodes }
-          });
+            await prisma.user.update({
+              where: { id: userId },
+              data: { mfaBackupCodes: newBackupCodes }
+            });
 
-          // Notify user that backup code was used
-          await notificationService.createNotification({
-            userId,
-            title: 'Backup Code Used',
-            message: `A backup code was used to access your account. ${newBackupCodes.length} codes remaining.`,
-            type: 'SYSTEM',
-            priority: 'HIGH'
-          });
+            // Notify user that backup code was used
+            await notificationService.createNotification({
+              userId,
+              title: 'Backup Code Used',
+              message: `A backup code was used to access your account. ${newBackupCodes.length} codes remaining.`,
+              type: 'SYSTEM',
+              priority: 'HIGH'
+            });
 
             return true;
           }
@@ -520,10 +519,61 @@ export class MfaService {
    */
   async disableMfa(userId: string, password: string): Promise<boolean> {
     try {
-      // Verify password first (implement password verification)
+      // Verify password first
       console.log(`Disabling MFA for user ${userId} with password verification`);
-      // TODO: Add password verification logic
-      if (!password) throw new Error('Password required for MFA disable');
+      
+      if (!password) {
+        await audit.logFailure('MFA_DISABLE', 'User', 'Password required for MFA disable', userId);
+        throw new Error('Password required for MFA disable');
+      }
+
+      // Fetch user with password hash for verification
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          password: true,
+          status: true,
+          lockedUntil: true,
+          mfaEnabled: true
+        }
+      });
+
+      if (!user) {
+        await audit.logFailure('MFA_DISABLE', 'User', 'User not found', userId);
+        throw new Error('User not found');
+      }
+
+      if (!user.password) {
+        await audit.logFailure('MFA_DISABLE', 'User', 'No password set for user', userId);
+        throw new Error('Password verification not available for this account');
+      }
+
+      // Check if account is locked
+      if (user.lockedUntil && user.lockedUntil > new Date()) {
+        await audit.logFailure('MFA_DISABLE', 'User', 'Account locked', userId);
+        throw new Error('Account is locked. Please try again later.');
+      }
+
+      // Check if account is active
+      if (user.status !== 'ACTIVE') {
+        await audit.logFailure('MFA_DISABLE', 'User', `Account status: ${user.status}`, userId);
+        throw new Error('Account is not active');
+      }
+
+      // Check if MFA is actually enabled
+      if (!user.mfaEnabled) {
+        await audit.logFailure('MFA_DISABLE', 'User', 'MFA not enabled', userId);
+        throw new Error('MFA is not currently enabled for this account');
+      }
+
+      // Verify password
+      const isValidPassword = await compare(password, user.password);
+      
+      if (!isValidPassword) {
+        await audit.logFailure('MFA_DISABLE', 'User', 'Invalid password provided', userId);
+        throw new Error('Invalid password');
+      }
 
       await prisma.user.update({
         where: { id: userId },

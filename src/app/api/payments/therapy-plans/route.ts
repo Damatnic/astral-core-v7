@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
 
     // Create therapy plan
     const result = await SubscriptionService.createTherapyPlan(planData);
-    const therapyPlan = (result as any).therapyPlan || result;
+    const therapyPlan = (result as { therapyPlan?: typeof result }).therapyPlan || result;
     const { product, price } = result;
 
     await auditLog({
@@ -236,10 +236,15 @@ export async function PUT(request: NextRequest) {
     const { id, ...restData } = validationResult.data;
 
     // Filter out undefined values for exactOptionalPropertyTypes
-    const updateData: any = {};
+    const updateData: Partial<{
+      name?: string;
+      description?: string;
+      features?: string[];
+      isActive?: boolean;
+    }> = {};
     for (const [key, value] of Object.entries(restData)) {
       if (value !== undefined) {
-        updateData[key] = value;
+        updateData[key as keyof typeof updateData] = value as never;
       }
     }
 

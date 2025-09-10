@@ -57,10 +57,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div 
+    <div
       className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4'
-      role="main"
-      aria-label="Login page"
+      role='main'
+      aria-label='Login page'
     >
       <div className='max-w-md w-full space-y-8'>
         <div className='text-center'>
@@ -70,17 +70,17 @@ export default function LoginPage() {
 
         <div className='bg-white dark:bg-gray-800 py-8 px-6 shadow-lg rounded-lg'>
           {error && (
-            <div 
+            <div
               className='mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 rounded'
-              role="alert"
-              aria-live="polite"
-              aria-describedby="error-description"
+              role='alert'
+              aria-live='polite'
+              aria-describedby='error-description'
             >
-              <span id="error-description">{error}</span>
+              <span id='error-description'>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className='space-y-6' role="form" aria-label="Login form">
+          <form onSubmit={handleSubmit} className='space-y-6' role='form' aria-label='Login form'>
             <div>
               <label
                 htmlFor='email'
@@ -147,7 +147,7 @@ export default function LoginPage() {
               <Link
                 href='/auth/forgot-password'
                 className='text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded'
-                aria-label="Forgot your password? Reset it here"
+                aria-label='Forgot your password? Reset it here'
               >
                 Forgot password?
               </Link>
@@ -182,7 +182,7 @@ export default function LoginPage() {
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={isLoading}
                 className='w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
-                aria-label="Sign in with Google"
+                aria-label='Sign in with Google'
               >
                 <svg className='w-5 h-5' viewBox='0 0 24 24'>
                   <path
@@ -209,7 +209,7 @@ export default function LoginPage() {
                 onClick={() => handleOAuthSignIn('github')}
                 disabled={isLoading}
                 className='w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
-                aria-label="Sign in with GitHub"
+                aria-label='Sign in with GitHub'
               >
                 <svg className='w-5 h-5' fill='currentColor' viewBox='0 0 20 20'>
                   <path
@@ -228,7 +228,7 @@ export default function LoginPage() {
             <Link
               href='/auth/register'
               className='font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded'
-              aria-label="Create a new account"
+              aria-label='Create a new account'
             >
               Sign up
             </Link>

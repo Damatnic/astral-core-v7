@@ -187,7 +187,9 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           name: 'John Doe'
         };
 
-        await expect(StripeService.createCustomer(customerData)).rejects.toThrow('Stripe API error');
+        await expect(StripeService.createCustomer(customerData)).rejects.toThrow(
+          'Stripe API error'
+        );
 
         expect(auditLog).toHaveBeenCalledWith({
           userId: 'user_123',
@@ -236,7 +238,11 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
 
         prisma.customer.findUnique.mockResolvedValue(existingCustomer);
 
-        const result = await StripeService.getOrCreateCustomer('user_123', 'test@example.com', 'John Doe');
+        const result = await StripeService.getOrCreateCustomer(
+          'user_123',
+          'test@example.com',
+          'John Doe'
+        );
 
         expect(result).toEqual(existingCustomer);
         expect(prisma.customer.findUnique).toHaveBeenCalledWith({
@@ -262,7 +268,11 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
         prisma.customer.create.mockResolvedValue(mockDatabaseCustomer);
         encryption.encrypt.mockReturnValue('encrypted_email');
 
-        const result = await StripeService.getOrCreateCustomer('user_123', 'test@example.com', 'John Doe');
+        const result = await StripeService.getOrCreateCustomer(
+          'user_123',
+          'test@example.com',
+          'John Doe'
+        );
 
         expect(result).toEqual(mockDatabaseCustomer);
         expect(mockStripe.customers.create).toHaveBeenCalled();
@@ -376,7 +386,9 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           priceId: 'price_test123'
         };
 
-        await expect(StripeService.createSubscription(subscriptionData)).rejects.toThrow('Customer not found');
+        await expect(StripeService.createSubscription(subscriptionData)).rejects.toThrow(
+          'Customer not found'
+        );
       });
 
       it('should handle Stripe subscription creation failure', async () => {
@@ -394,7 +406,9 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           priceId: 'price_test123'
         };
 
-        await expect(StripeService.createSubscription(subscriptionData)).rejects.toThrow('Payment method required');
+        await expect(StripeService.createSubscription(subscriptionData)).rejects.toThrow(
+          'Payment method required'
+        );
 
         expect(auditLog).toHaveBeenCalledWith({
           userId: 'user_123',
@@ -451,11 +465,13 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
 
         expect(mockStripe.subscriptions.update).toHaveBeenCalledWith('sub_test123', {
           proration_behavior: 'create_prorations',
-          items: [{
-            id: 'si_test123',
-            price: 'price_new123',
-            quantity: 1
-          }]
+          items: [
+            {
+              id: 'si_test123',
+              price: 'price_new123',
+              quantity: 1
+            }
+          ]
         });
 
         expect(auditLog).toHaveBeenCalledWith({
@@ -567,7 +583,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           id: 'db_payment_123',
           customerId: 'db_customer_123',
           stripePaymentIntentId: 'pi_test123',
-          amount: 150.00,
+          amount: 150.0,
           status: 'requires_payment_method'
         };
 
@@ -577,7 +593,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
 
         const paymentData = {
           customerId: 'db_customer_123',
-          amount: 150.00,
+          amount: 150.0,
           currency: 'usd',
           description: 'Therapy session fee',
           appointmentId: 'appt_123',
@@ -607,7 +623,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
             customerId: 'db_customer_123',
             appointmentId: 'appt_123',
             stripePaymentIntentId: 'pi_test123',
-            amount: 150.00,
+            amount: 150.0,
             currency: 'usd',
             status: 'requires_payment_method',
             type: 'SESSION_PAYMENT',
@@ -623,7 +639,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           entityId: 'db_payment_123',
           details: {
             stripePaymentIntentId: 'pi_test123',
-            amount: 150.00,
+            amount: 150.0,
             appointmentId: 'appt_123'
           },
           outcome: 'SUCCESS'
@@ -651,7 +667,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
 
         const paymentData = {
           customerId: 'db_customer_123',
-          amount: 100.00
+          amount: 100.0
         };
 
         await StripeService.createPaymentIntent(paymentData);
@@ -677,7 +693,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
         const mockPayment = {
           id: 'db_payment_123',
           stripePaymentIntentId: 'pi_test123',
-          amount: 150.00,
+          amount: 150.0,
           customer: { userId: 'user_123' }
         };
 
@@ -694,7 +710,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           id: 'db_refund_123',
           paymentId: 'db_payment_123',
           stripeRefundId: 're_test123',
-          amount: 150.00
+          amount: 150.0
         };
 
         prisma.payment.findUnique.mockResolvedValue(mockPayment);
@@ -712,7 +728,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           data: {
             paymentId: 'db_payment_123',
             stripeRefundId: 're_test123',
-            amount: 150.00,
+            amount: 150.0,
             currency: 'usd',
             reason: 'REQUESTED_BY_CUSTOMER',
             status: 'SUCCEEDED',
@@ -724,7 +740,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
           where: { id: 'db_payment_123' },
           data: {
             refunded: true,
-            refundedAmount: 150.00
+            refundedAmount: 150.0
           }
         });
 
@@ -750,7 +766,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
         prisma.refund.create.mockResolvedValue({});
         prisma.payment.update.mockResolvedValue({});
 
-        await StripeService.createRefund('pi_test123', 50.00, 'duplicate');
+        await StripeService.createRefund('pi_test123', 50.0, 'duplicate');
 
         expect(mockStripe.refunds.create).toHaveBeenCalledWith({
           payment_intent: 'pi_test123',
@@ -884,8 +900,9 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
     describe('determinePlanType', () => {
       it('should correctly determine plan types', () => {
         // Access the private method via bracket notation for testing
-        const determinePlanType = (StripeService as { determinePlanType: (name: string) => string }).determinePlanType;
-        
+        const determinePlanType = (StripeService as { determinePlanType: (name: string) => string })
+          .determinePlanType;
+
         expect(determinePlanType('Basic Therapy Plan')).toBe('BASIC');
         expect(determinePlanType('Premium Mental Health Package')).toBe('PREMIUM');
         expect(determinePlanType('Family Counseling Plan')).toBe('FAMILY');
@@ -938,7 +955,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
     it('should handle network errors gracefully', async () => {
       const networkError = new Error('Network timeout');
       networkError.name = 'NetworkError';
-      
+
       mockStripe.customers.create.mockRejectedValue(networkError);
 
       const customerData = {
@@ -947,7 +964,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
       };
 
       await expect(StripeService.createCustomer(customerData)).rejects.toThrow('Network timeout');
-      
+
       expect(auditLog).toHaveBeenCalledWith({
         userId: 'user_123',
         action: 'CUSTOMER_CREATE_FAILED',
@@ -960,7 +977,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
     it('should handle validation errors from Stripe', async () => {
       const validationError = new Error('Invalid email format');
       validationError.name = 'StripeInvalidRequestError';
-      
+
       mockStripe.customers.create.mockRejectedValue(validationError);
 
       const customerData = {
@@ -968,12 +985,14 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
         email: 'invalid-email'
       };
 
-      await expect(StripeService.createCustomer(customerData)).rejects.toThrow('Invalid email format');
+      await expect(StripeService.createCustomer(customerData)).rejects.toThrow(
+        'Invalid email format'
+      );
     });
 
     it('should handle missing environment variables', () => {
       delete process.env.STRIPE_SECRET_KEY;
-      
+
       // Test would require reloading the module to see the effect
       expect(() => {
         StripeService.constructWebhookEvent('body', 'sig');
@@ -1007,7 +1026,7 @@ describe('StripeService - Enhanced Payment Processing Tests', () => {
         current_period_start: Math.floor(Date.now() / 1000),
         current_period_end: Math.floor(Date.now() / 1000) + 2592000
       });
-      
+
       mockStripe.prices.retrieve.mockResolvedValue({
         id: 'price_test123',
         unit_amount: 2999,

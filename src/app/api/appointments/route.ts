@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import prisma from '@/lib/db/prisma';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 import { AppointmentStatus } from '@prisma/client';
+import { logError } from '@/lib/logger';
 
 // GET /api/appointments - Get user's appointments
 export async function GET(request: NextRequest) {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching appointments:', error);
+    logError('Error fetching appointments', error, 'API:appointments:GET');
 
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },

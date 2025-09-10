@@ -50,27 +50,29 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <div className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${severityColors[severity]}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
+    <div
+      className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${severityColors[severity]}`}
+    >
+      <div className='flex items-center justify-between mb-2'>
+        <div className='flex items-center space-x-2'>
           {icon}
-          <h3 className="font-semibold text-sm text-gray-700">{title}</h3>
+          <h3 className='font-semibold text-sm text-gray-700'>{title}</h3>
         </div>
         {trend !== 'neutral' && (
-          <TrendingUp className={`w-4 h-4 ${trend === 'down' ? 'rotate-180' : ''} ${trendColors[trend]}`} />
+          <TrendingUp
+            className={`w-4 h-4 ${trend === 'down' ? 'rotate-180' : ''} ${trendColors[trend]}`}
+          />
         )}
       </div>
-      
-      <div className="flex items-baseline space-x-1">
-        <span className="text-2xl font-bold text-gray-900">
+
+      <div className='flex items-baseline space-x-1'>
+        <span className='text-2xl font-bold text-gray-900'>
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
-        {unit && <span className="text-sm text-gray-500">{unit}</span>}
+        {unit && <span className='text-sm text-gray-500'>{unit}</span>}
       </div>
-      
-      {subtitle && (
-        <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
-      )}
+
+      {subtitle && <p className='text-xs text-gray-500 mt-1'>{subtitle}</p>}
     </div>
   );
 };
@@ -83,23 +85,21 @@ interface ChartProps {
 
 const SimpleBarChart: React.FC<ChartProps> = ({ data, title, height = 200 }) => {
   const maxValue = Math.max(...data.map(d => d.value));
-  
+
   return (
-    <div className="bg-white p-4 rounded-lg border">
-      <h3 className="font-semibold text-gray-900 mb-4">{title}</h3>
-      <div className="space-y-2" style={{ height }}>
+    <div className='bg-white p-4 rounded-lg border'>
+      <h3 className='font-semibold text-gray-900 mb-4'>{title}</h3>
+      <div className='space-y-2' style={{ height }}>
         {data.map((item, index) => (
-          <div key={index} className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-gray-600 w-20 truncate">
-              {item.name}
-            </span>
-            <div className="flex-1 bg-gray-200 rounded-full h-2">
+          <div key={index} className='flex items-center space-x-3'>
+            <span className='text-sm font-medium text-gray-600 w-20 truncate'>{item.name}</span>
+            <div className='flex-1 bg-gray-200 rounded-full h-2'>
               <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className='bg-blue-500 h-2 rounded-full transition-all duration-300'
                 style={{ width: `${(item.value / maxValue) * 100}%` }}
               />
             </div>
-            <span className="text-sm font-semibold text-gray-900 w-12 text-right">
+            <span className='text-sm font-semibold text-gray-900 w-12 text-right'>
               {item.value}
             </span>
           </div>
@@ -143,8 +143,6 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
     };
   }, [autoRefresh, refreshInterval]);
 
-
-
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -176,48 +174,72 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
 
   if (compact) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Performance Overview</h2>
+      <div className='space-y-4'>
+        <div className='flex items-center justify-between'>
+          <h2 className='text-lg font-semibold text-gray-900'>Performance Overview</h2>
           <button
             onClick={handleRefresh}
-            className="p-2 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors"
-            title="Refresh metrics"
+            className='p-2 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors'
+            title='Refresh metrics'
           >
-            <RefreshCw className="w-4 h-4 text-blue-600" />
+            <RefreshCw className='w-4 h-4 text-blue-600' />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
           <MetricCard
-            title="Web Vitals"
+            title='Web Vitals'
             value={webVitalsScore.overall}
             unit={`/100 (${webVitalsScore.grade})`}
-            severity={webVitalsScore.overall >= 90 ? 'good' : webVitalsScore.overall >= 70 ? 'warning' : 'critical'}
-            icon={<Globe className="w-4 h-4" />}
+            severity={
+              webVitalsScore.overall >= 90
+                ? 'good'
+                : webVitalsScore.overall >= 70
+                  ? 'warning'
+                  : 'critical'
+            }
+            icon={<Globe className='w-4 h-4' />}
           />
-          
+
           <MetricCard
-            title="API Response"
+            title='API Response'
             value={Math.round(apiSummary.averageResponseTime)}
-            unit="ms"
-            severity={apiSummary.averageResponseTime <= 200 ? 'good' : apiSummary.averageResponseTime <= 500 ? 'warning' : 'critical'}
-            icon={<Activity className="w-4 h-4" />}
+            unit='ms'
+            severity={
+              apiSummary.averageResponseTime <= 200
+                ? 'good'
+                : apiSummary.averageResponseTime <= 500
+                  ? 'warning'
+                  : 'critical'
+            }
+            icon={<Activity className='w-4 h-4' />}
           />
-          
+
           <MetricCard
-            title="Errors (24h)"
+            title='Errors (24h)'
             value={errorStats.last24Hours}
-            severity={errorStats.last24Hours === 0 ? 'good' : errorStats.last24Hours <= 5 ? 'warning' : 'critical'}
-            icon={<AlertTriangle className="w-4 h-4" />}
+            severity={
+              errorStats.last24Hours === 0
+                ? 'good'
+                : errorStats.last24Hours <= 5
+                  ? 'warning'
+                  : 'critical'
+            }
+            icon={<AlertTriangle className='w-4 h-4' />}
           />
-          
+
           <MetricCard
-            title="DB Queries"
+            title='DB Queries'
             value={Math.round(dbStats.averageDuration)}
-            unit="ms avg"
-            severity={dbStats.averageDuration <= 100 ? 'good' : dbStats.averageDuration <= 500 ? 'warning' : 'critical'}
-            icon={<Database className="w-4 h-4" />}
+            unit='ms avg'
+            severity={
+              dbStats.averageDuration <= 100
+                ? 'good'
+                : dbStats.averageDuration <= 500
+                  ? 'warning'
+                  : 'critical'
+            }
+            icon={<Database className='w-4 h-4' />}
           />
         </div>
       </div>
@@ -225,112 +247,136 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className='flex items-center justify-between'>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Performance Dashboard</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className='text-2xl font-bold text-gray-900'>Performance Dashboard</h1>
+          <p className='text-sm text-gray-500'>
             Last updated: {new Date(lastRefresh).toLocaleTimeString()}
           </p>
         </div>
-        
-        <div className="flex items-center space-x-3">
-          <label className="flex items-center space-x-2">
+
+        <div className='flex items-center space-x-3'>
+          <label className='flex items-center space-x-2'>
             <input
-              type="checkbox"
+              type='checkbox'
               checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded border-gray-300"
+              onChange={e => setAutoRefresh(e.target.checked)}
+              className='rounded border-gray-300'
             />
-            <span className="text-sm text-gray-600">Auto-refresh</span>
+            <span className='text-sm text-gray-600'>Auto-refresh</span>
           </label>
-          
+
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2'
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className='w-4 h-4' />
             <span>Refresh</span>
           </button>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
         <MetricCard
-          title="Web Vitals Score"
+          title='Web Vitals Score'
           value={webVitalsScore.overall}
           unit={`/100 (${webVitalsScore.grade})`}
-          severity={webVitalsScore.overall >= 90 ? 'good' : webVitalsScore.overall >= 70 ? 'warning' : 'critical'}
-          icon={<Globe className="w-5 h-5" />}
+          severity={
+            webVitalsScore.overall >= 90
+              ? 'good'
+              : webVitalsScore.overall >= 70
+                ? 'warning'
+                : 'critical'
+          }
+          icon={<Globe className='w-5 h-5' />}
           subtitle={`${Object.keys(webVitals.vitals).length} metrics tracked`}
         />
-        
+
         <MetricCard
-          title="API Performance"
+          title='API Performance'
           value={Math.round(apiSummary.averageResponseTime)}
-          unit="ms avg"
-          severity={apiSummary.averageResponseTime <= 200 ? 'good' : apiSummary.averageResponseTime <= 500 ? 'warning' : 'critical'}
-          icon={<Activity className="w-5 h-5" />}
+          unit='ms avg'
+          severity={
+            apiSummary.averageResponseTime <= 200
+              ? 'good'
+              : apiSummary.averageResponseTime <= 500
+                ? 'warning'
+                : 'critical'
+          }
+          icon={<Activity className='w-5 h-5' />}
           subtitle={`${apiSummary.totalRequests} total requests`}
         />
-        
+
         <MetricCard
-          title="Error Rate"
+          title='Error Rate'
           value={errorStats.last24Hours}
-          unit="errors (24h)"
-          severity={errorStats.last24Hours === 0 ? 'good' : errorStats.last24Hours <= 5 ? 'warning' : 'critical'}
-          icon={<AlertTriangle className="w-5 h-5" />}
+          unit='errors (24h)'
+          severity={
+            errorStats.last24Hours === 0
+              ? 'good'
+              : errorStats.last24Hours <= 5
+                ? 'warning'
+                : 'critical'
+          }
+          icon={<AlertTriangle className='w-5 h-5' />}
           subtitle={`${errorStats.total} total errors`}
         />
-        
+
         <MetricCard
-          title="Database"
+          title='Database'
           value={Math.round(dbStats.averageDuration)}
-          unit="ms avg"
-          severity={dbStats.averageDuration <= 100 ? 'good' : dbStats.averageDuration <= 500 ? 'warning' : 'critical'}
-          icon={<Database className="w-5 h-5" />}
+          unit='ms avg'
+          severity={
+            dbStats.averageDuration <= 100
+              ? 'good'
+              : dbStats.averageDuration <= 500
+                ? 'warning'
+                : 'critical'
+          }
+          icon={<Database className='w-5 h-5' />}
           subtitle={`${dbStats.totalQueries} total queries`}
         />
       </div>
 
       {/* Memory Usage */}
       {memoryUsage && (
-        <div className="bg-white p-6 rounded-lg border">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-            <Cpu className="w-5 h-5" />
+        <div className='bg-white p-6 rounded-lg border'>
+          <h3 className='text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2'>
+            <Cpu className='w-5 h-5' />
             <span>Memory Usage</span>
           </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div className='text-center'>
+              <div className='text-2xl font-bold text-blue-600'>
                 {formatBytes(memoryUsage.usedJSHeapSize)}
               </div>
-              <div className="text-sm text-gray-500">Used Heap</div>
+              <div className='text-sm text-gray-500'>Used Heap</div>
             </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+
+            <div className='text-center'>
+              <div className='text-2xl font-bold text-green-600'>
                 {formatBytes(memoryUsage.totalJSHeapSize)}
               </div>
-              <div className="text-sm text-gray-500">Total Heap</div>
+              <div className='text-sm text-gray-500'>Total Heap</div>
             </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">
+
+            <div className='text-center'>
+              <div className='text-2xl font-bold text-gray-600'>
                 {formatBytes(memoryUsage.jsHeapSizeLimit)}
               </div>
-              <div className="text-sm text-gray-500">Heap Limit</div>
+              <div className='text-sm text-gray-500'>Heap Limit</div>
             </div>
           </div>
-          
-          <div className="mt-4 bg-gray-200 rounded-full h-2">
+
+          <div className='mt-4 bg-gray-200 rounded-full h-2'>
             <div
-              className="bg-blue-500 h-2 rounded-full"
-              style={{ 
-                width: `${(memoryUsage.usedJSHeapSize / memoryUsage.jsHeapSizeLimit) * 100}%` 
+              className='bg-blue-500 h-2 rounded-full'
+              style={{
+                width: `${(memoryUsage.usedJSHeapSize / memoryUsage.jsHeapSizeLimit) * 100}%`
               }}
             />
           </div>
@@ -338,49 +384,42 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {vitalsData.length > 0 && (
-          <SimpleBarChart
-            data={vitalsData}
-            title="Core Web Vitals (ms)"
-          />
-        )}
-        
+      <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'>
+        {vitalsData.length > 0 && <SimpleBarChart data={vitalsData} title='Core Web Vitals (ms)' />}
+
         {errorDistribution.length > 0 && (
-          <SimpleBarChart
-            data={errorDistribution}
-            title="Error Distribution by Severity"
-          />
+          <SimpleBarChart data={errorDistribution} title='Error Distribution by Severity' />
         )}
-        
+
         {queryDistribution.length > 0 && (
-          <SimpleBarChart
-            data={queryDistribution}
-            title="Database Query Distribution"
-          />
+          <SimpleBarChart data={queryDistribution} title='Database Query Distribution' />
         )}
       </div>
 
       {/* Advanced Metrics */}
       {showAdvanced && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">Advanced Metrics</h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className='space-y-6'>
+          <h2 className='text-xl font-semibold text-gray-900'>Advanced Metrics</h2>
+
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
             {/* Web Vitals Details */}
-            <div className="bg-white p-6 rounded-lg border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Web Vitals Details</h3>
-              <div className="space-y-3">
+            <div className='bg-white p-6 rounded-lg border'>
+              <h3 className='text-lg font-semibold text-gray-900 mb-4'>Web Vitals Details</h3>
+              <div className='space-y-3'>
                 {Object.entries(webVitalsScore.details).map(([metric, data]) => (
-                  <div key={metric} className="flex items-center justify-between">
-                    <span className="font-medium text-gray-700">{metric.toUpperCase()}</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">{data.score}/100</span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        data.rating === 'good' ? 'bg-green-100 text-green-800' :
-                        data.rating === 'needs-improvement' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                  <div key={metric} className='flex items-center justify-between'>
+                    <span className='font-medium text-gray-700'>{metric.toUpperCase()}</span>
+                    <div className='flex items-center space-x-2'>
+                      <span className='text-sm text-gray-600'>{data.score}/100</span>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          data.rating === 'good'
+                            ? 'bg-green-100 text-green-800'
+                            : data.rating === 'needs-improvement'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                        }`}
+                      >
                         {data.rating}
                       </span>
                     </div>
@@ -390,15 +429,17 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Database Performance Trends */}
-            <div className="bg-white p-6 rounded-lg border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Database Performance Trends</h3>
-              <div className="space-y-2">
+            <div className='bg-white p-6 rounded-lg border'>
+              <h3 className='text-lg font-semibold text-gray-900 mb-4'>
+                Database Performance Trends
+              </h3>
+              <div className='space-y-2'>
                 {dbStats.performanceTrends.slice(-10).map((trend, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{trend.timeframe}</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{trend.averageDuration}ms</span>
-                      <span className="text-gray-500">({trend.queryCount} queries)</span>
+                  <div key={index} className='flex items-center justify-between text-sm'>
+                    <span className='text-gray-600'>{trend.timeframe}</span>
+                    <div className='flex items-center space-x-2'>
+                      <span className='font-medium'>{trend.averageDuration}ms</span>
+                      <span className='text-gray-500'>({trend.queryCount} queries)</span>
                     </div>
                   </div>
                 ))}
@@ -408,16 +449,20 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
 
           {/* API Performance */}
           {apiSummary.slowestEndpoints.length > 0 && (
-            <div className="bg-white p-6 rounded-lg border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Slowest API Endpoints</h3>
-              <div className="space-y-3">
+            <div className='bg-white p-6 rounded-lg border'>
+              <h3 className='text-lg font-semibold text-gray-900 mb-4'>Slowest API Endpoints</h3>
+              <div className='space-y-3'>
                 {apiSummary.slowestEndpoints.map((endpoint, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="font-medium text-gray-700">{endpoint.endpoint}</span>
-                    <div className="flex items-center space-x-4 text-sm">
-                      <span className="text-gray-600">Avg: {Math.round(endpoint.averageTime)}ms</span>
-                      <span className="text-red-600">Max: {Math.round(endpoint.slowestTime)}ms</span>
-                      <span className="text-blue-600">{endpoint.requests} requests</span>
+                  <div key={index} className='flex items-center justify-between'>
+                    <span className='font-medium text-gray-700'>{endpoint.endpoint}</span>
+                    <div className='flex items-center space-x-4 text-sm'>
+                      <span className='text-gray-600'>
+                        Avg: {Math.round(endpoint.averageTime)}ms
+                      </span>
+                      <span className='text-red-600'>
+                        Max: {Math.round(endpoint.slowestTime)}ms
+                      </span>
+                      <span className='text-blue-600'>{endpoint.requests} requests</span>
                     </div>
                   </div>
                 ))}
@@ -427,24 +472,30 @@ const PerformanceDashboard: React.FC<DashboardProps> = ({
 
           {/* Cache Hit Rate */}
           {dbStats.cacheHitRate > 0 && (
-            <div className="bg-white p-6 rounded-lg border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Cache Performance</h3>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-medium">Cache Hit Rate</span>
-                <span className={`text-2xl font-bold ${
-                  dbStats.cacheHitRate >= 0.8 ? 'text-green-600' :
-                  dbStats.cacheHitRate >= 0.6 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>
+            <div className='bg-white p-6 rounded-lg border'>
+              <h3 className='text-lg font-semibold text-gray-900 mb-4'>Cache Performance</h3>
+              <div className='flex items-center justify-between'>
+                <span className='text-lg font-medium'>Cache Hit Rate</span>
+                <span
+                  className={`text-2xl font-bold ${
+                    dbStats.cacheHitRate >= 0.8
+                      ? 'text-green-600'
+                      : dbStats.cacheHitRate >= 0.6
+                        ? 'text-yellow-600'
+                        : 'text-red-600'
+                  }`}
+                >
                   {(dbStats.cacheHitRate * 100).toFixed(1)}%
                 </span>
               </div>
-              <div className="mt-2 bg-gray-200 rounded-full h-2">
+              <div className='mt-2 bg-gray-200 rounded-full h-2'>
                 <div
                   className={`h-2 rounded-full ${
-                    dbStats.cacheHitRate >= 0.8 ? 'bg-green-500' :
-                    dbStats.cacheHitRate >= 0.6 ? 'bg-yellow-500' :
-                    'bg-red-500'
+                    dbStats.cacheHitRate >= 0.8
+                      ? 'bg-green-500'
+                      : dbStats.cacheHitRate >= 0.6
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
                   }`}
                   style={{ width: `${dbStats.cacheHitRate * 100}%` }}
                 />

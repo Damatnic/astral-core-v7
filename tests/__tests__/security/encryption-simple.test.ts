@@ -28,11 +28,11 @@ describe('EncryptionService - Simplified Tests', () => {
 
   it('should handle constructor errors correctly', () => {
     expect(() => new EncryptionService('')).toThrow('Encryption key is required');
-    
+
     // Test with invalid environment
     delete process.env.ENCRYPTION_KEY;
     expect(() => new EncryptionService()).toThrow('Encryption key is required');
-    
+
     // Restore environment
     process.env.ENCRYPTION_KEY = mockKey;
   });
@@ -40,11 +40,11 @@ describe('EncryptionService - Simplified Tests', () => {
   it('should validate password strength requirements', () => {
     // These are static methods that don't rely on crypto mocking
     const service = new EncryptionService(mockKey);
-    
+
     // Test token generation (this should work with crypto mocks)
     const token = service.generateToken(16);
     expect(typeof token).toBe('string');
-    
+
     const secureString = service.generateSecureRandomString(8);
     expect(typeof secureString).toBe('string');
     expect(secureString.length).toBe(8);
@@ -52,7 +52,7 @@ describe('EncryptionService - Simplified Tests', () => {
 
   it('should handle null and undefined inputs safely', () => {
     const service = new EncryptionService(mockKey);
-    
+
     const testObj = {
       field1: null,
       field2: undefined,

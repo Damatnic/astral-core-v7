@@ -113,6 +113,7 @@ GITHUB_SECRET="staging-github-app-secret"
 #### 1. Create Docker Configuration
 
 **docker-compose.staging.yml:**
+
 ```yaml
 version: '3.8'
 
@@ -124,7 +125,7 @@ services:
     container_name: astral-core-staging
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env.staging
     depends_on:
@@ -144,7 +145,7 @@ services:
       - postgres_staging_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     ports:
-      - "5432:5432"
+      - '5432:5432'
     networks:
       - astral-network
 
@@ -153,8 +154,8 @@ services:
     container_name: astral-core-nginx-staging
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./nginx/staging.conf:/etc/nginx/nginx.conf
       - /etc/letsencrypt:/etc/letsencrypt
@@ -225,37 +226,41 @@ pm2 start ecosystem.staging.config.js
 ```
 
 **ecosystem.staging.config.js:**
+
 ```javascript
 module.exports = {
-  apps: [{
-    name: 'astral-core-staging',
-    script: 'npm',
-    args: 'start',
-    instances: 2,
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'staging',
-      PORT: 3000
-    },
-    env_file: '.env.staging',
-    error_file: './logs/err.log',
-    out_file: './logs/out.log',
-    log_file: './logs/combined.log',
-    time: true,
-    max_memory_restart: '1G',
-    node_args: '--max-old-space-size=2048'
-  }]
+  apps: [
+    {
+      name: 'astral-core-staging',
+      script: 'npm',
+      args: 'start',
+      instances: 2,
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'staging',
+        PORT: 3000
+      },
+      env_file: '.env.staging',
+      error_file: './logs/err.log',
+      out_file: './logs/out.log',
+      log_file: './logs/combined.log',
+      time: true,
+      max_memory_restart: '1G',
+      node_args: '--max-old-space-size=2048'
+    }
+  ]
 };
 ```
 
 #### 3. Nginx Configuration
 
 **/etc/nginx/sites-available/astral-core-staging:**
+
 ```nginx
 server {
     listen 80;
     server_name staging.astral-core.app;
-    
+
     # Redirect to HTTPS
     return 301 https://$server_name$request_uri;
 }
@@ -267,19 +272,19 @@ server {
     # SSL Configuration
     ssl_certificate /etc/letsencrypt/live/staging.astral-core.app/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/staging.astral-core.app/privkey.pem;
-    
+
     # SSL Security
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
     ssl_prefer_server_ciphers off;
-    
+
     # Security Headers
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    
+
     # Proxy to Next.js app
     location / {
         proxy_pass http://localhost:3000;
@@ -292,7 +297,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
-    
+
     # Health check endpoint
     location /health {
         proxy_pass http://localhost:3000/api/health;
@@ -367,9 +372,9 @@ free -h
 SELECT count(*) as active_connections FROM pg_stat_activity;
 
 -- Check slow queries
-SELECT query, mean_exec_time, calls 
-FROM pg_stat_statements 
-ORDER BY mean_exec_time DESC 
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
 LIMIT 10;
 
 -- Database size
@@ -406,6 +411,7 @@ artillery run tests/load/staging.yml
 ### Manual Testing Checklist
 
 #### Authentication
+
 - [ ] User registration works
 - [ ] Email verification works
 - [ ] Login with email/password
@@ -415,6 +421,7 @@ artillery run tests/load/staging.yml
 - [ ] Account lockout after failed attempts
 
 #### Core Features
+
 - [ ] Wellness data entry and retrieval
 - [ ] Crisis assessment flow
 - [ ] Appointment scheduling
@@ -423,6 +430,7 @@ artillery run tests/load/staging.yml
 - [ ] Real-time updates (WebSocket)
 
 #### Payment Testing
+
 - [ ] Subscription creation
 - [ ] Payment method setup
 - [ ] Webhook handling
@@ -430,6 +438,7 @@ artillery run tests/load/staging.yml
 - [ ] Subscription cancellation
 
 #### Security Testing
+
 - [ ] Rate limiting works
 - [ ] Data encryption/decryption
 - [ ] Audit logging
@@ -441,6 +450,7 @@ artillery run tests/load/staging.yml
 ### CI/CD Pipeline
 
 **GitHub Actions (.github/workflows/staging.yml):**
+
 ```yaml
 name: Deploy to Staging
 
@@ -451,38 +461,38 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run tests
-      run: npm run test:ci
-    
-    - name: Build application
-      run: npm run build
-    
-    - name: Deploy to staging
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.STAGING_HOST }}
-        username: ${{ secrets.STAGING_USER }}
-        key: ${{ secrets.STAGING_SSH_KEY }}
-        script: |
-          cd /opt/astral-core-staging
-          git pull origin develop
-          npm ci
-          npm run build
-          npm run db:migrate:prod
-          pm2 reload astral-core-staging
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to staging
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/astral-core-staging
+            git pull origin develop
+            npm ci
+            npm run build
+            npm run db:migrate:prod
+            pm2 reload astral-core-staging
 ```
 
 ### Database Migrations
@@ -553,6 +563,7 @@ aws s3 sync s3://astral-core-staging-files /backups/staging-files/
 ### Common Issues
 
 #### Application Won't Start
+
 ```bash
 # Check logs
 pm2 logs astral-core-staging
@@ -565,6 +576,7 @@ pm2 restart astral-core-staging
 ```
 
 #### Database Connection Issues
+
 ```bash
 # Test connection
 psql -h localhost -U astral_staging -d astralcore_staging
@@ -577,6 +589,7 @@ openssl s_client -connect localhost:5432 -starttls postgres
 ```
 
 #### SSL Issues
+
 ```bash
 # Check certificate status
 sudo certbot certificates
@@ -641,6 +654,7 @@ sudo certbot renew --quiet
 ### Monitoring Alerts
 
 Set up alerts for:
+
 - Application downtime
 - High memory usage (>80%)
 - High CPU usage (>80%)
@@ -654,7 +668,7 @@ After staging deployment:
 
 1. **Run comprehensive tests** using the checklist above
 2. **Performance testing** with realistic load
-3. **Security audit** of the staging environment  
+3. **Security audit** of the staging environment
 4. **Stakeholder review** of new features
 5. **Production deployment** after approval
 

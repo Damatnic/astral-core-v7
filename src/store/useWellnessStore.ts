@@ -24,7 +24,7 @@ interface WellnessState {
 
 export const useWellnessStore = create<WellnessState>()(
   persist(
-    (set) => ({
+    set => ({
       todayData: null,
       weeklyData: [],
       stats: null,

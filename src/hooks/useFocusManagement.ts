@@ -13,7 +13,7 @@ interface UseFocusManagementOptions {
 
 export function useFocusManagement(options: UseFocusManagementOptions = {}) {
   const { trapFocus = false, restoreFocus = true, autoFocus = false } = options;
-  
+
   const containerRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const firstFocusableRef = useRef<HTMLElement | null>(null);
@@ -37,43 +37,49 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
   // Update focusable element references
   const updateFocusableElements = useCallback(() => {
     if (!containerRef.current) return;
-    
+
     const focusableElements = getFocusableElements(containerRef.current);
     firstFocusableRef.current = focusableElements[0] || null;
     lastFocusableRef.current = focusableElements[focusableElements.length - 1] || null;
   }, [getFocusableElements]);
 
   // Handle tab key for focus trapping
-  const handleTabKey = useCallback((event: KeyboardEvent) => {
-    if (event.key !== 'Tab' || !trapFocus) return;
+  const handleTabKey = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || !trapFocus) return;
 
-    const { shiftKey } = event;
-    const { activeElement } = document;
+      const { shiftKey } = event;
+      const { activeElement } = document;
 
-    if (shiftKey) {
-      // Shift + Tab
-      if (activeElement === firstFocusableRef.current && lastFocusableRef.current) {
-        event.preventDefault();
-        lastFocusableRef.current.focus();
+      if (shiftKey) {
+        // Shift + Tab
+        if (activeElement === firstFocusableRef.current && lastFocusableRef.current) {
+          event.preventDefault();
+          lastFocusableRef.current.focus();
+        }
+      } else {
+        // Tab
+        if (activeElement === lastFocusableRef.current && firstFocusableRef.current) {
+          event.preventDefault();
+          firstFocusableRef.current.focus();
+        }
       }
-    } else {
-      // Tab
-      if (activeElement === lastFocusableRef.current && firstFocusableRef.current) {
-        event.preventDefault();
-        firstFocusableRef.current.focus();
-      }
-    }
-  }, [trapFocus]);
+    },
+    [trapFocus]
+  );
 
   // Handle escape key
-  const handleEscapeKey = useCallback((event: KeyboardEvent, onEscape?: () => void) => {
-    if (event.key === 'Escape') {
-      onEscape?.();
-      if (restoreFocus && previousFocusRef.current) {
-        previousFocusRef.current.focus();
+  const handleEscapeKey = useCallback(
+    (event: KeyboardEvent, onEscape?: () => void) => {
+      if (event.key === 'Escape') {
+        onEscape?.();
+        if (restoreFocus && previousFocusRef.current) {
+          previousFocusRef.current.focus();
+        }
       }
-    }
-  }, [restoreFocus]);
+    },
+    [restoreFocus]
+  );
 
   // Focus the first focusable element
   const focusFirst = useCallback(() => {
@@ -91,9 +97,10 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
   const focusElement = useCallback((target: string | HTMLElement) => {
     if (!containerRef.current) return false;
 
-    const element = typeof target === 'string' 
-      ? containerRef.current.querySelector(target) as HTMLElement
-      : target;
+    const element =
+      typeof target === 'string'
+        ? (containerRef.current.querySelector(target) as HTMLElement)
+        : target;
 
     if (element && typeof element.focus === 'function') {
       element.focus();
@@ -169,7 +176,8 @@ export function useFocusManagement(options: UseFocusManagementOptions = {}) {
     focusLast,
     focusElement,
     handleEscapeKey,
-    getFocusableElements: () => containerRef.current ? getFocusableElements(containerRef.current) : []
+    getFocusableElements: () =>
+      containerRef.current ? getFocusableElements(containerRef.current) : []
   };
 }
 
@@ -180,7 +188,7 @@ export function useFocusAnnouncement() {
   const announce = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
     // Find existing announcement container or create one
     let announcer = document.getElementById('announcements');
-    
+
     if (!announcer) {
       announcer = document.createElement('div');
       announcer.id = 'announcements';
@@ -192,7 +200,7 @@ export function useFocusAnnouncement() {
 
     // Clear previous announcement
     announcer.textContent = '';
-    
+
     // Add new announcement after a brief delay to ensure screen readers pick it up
     setTimeout(() => {
       announcer!.textContent = message;
@@ -204,17 +212,26 @@ export function useFocusAnnouncement() {
     }, 5000);
   }, []);
 
-  const announceNavigation = useCallback((pageName: string) => {
-    announce(`Navigated to ${pageName}`, 'polite');
-  }, [announce]);
+  const announceNavigation = useCallback(
+    (pageName: string) => {
+      announce(`Navigated to ${pageName}`, 'polite');
+    },
+    [announce]
+  );
 
-  const announceError = useCallback((error: string) => {
-    announce(`Error: ${error}`, 'assertive');
-  }, [announce]);
+  const announceError = useCallback(
+    (error: string) => {
+      announce(`Error: ${error}`, 'assertive');
+    },
+    [announce]
+  );
 
-  const announceSuccess = useCallback((message: string) => {
-    announce(`Success: ${message}`, 'polite');
-  }, [announce]);
+  const announceSuccess = useCallback(
+    (message: string) => {
+      announce(`Success: ${message}`, 'polite');
+    },
+    [announce]
+  );
 
   return {
     announce,
@@ -228,46 +245,49 @@ export function useFocusAnnouncement() {
  * Hook for keyboard navigation management
  */
 export function useKeyboardNavigation() {
-  const handleArrowKeys = useCallback((
-    event: KeyboardEvent, 
-    items: HTMLElement[], 
-    currentIndex: number,
-    onIndexChange: (newIndex: number) => void,
-    loop = true
-  ) => {
-    const { key } = event;
-    
-    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
-      return;
-    }
+  const handleArrowKeys = useCallback(
+    (
+      event: KeyboardEvent,
+      items: HTMLElement[],
+      currentIndex: number,
+      onIndexChange: (newIndex: number) => void,
+      loop = true
+    ) => {
+      const { key } = event;
 
-    event.preventDefault();
-    
-    let newIndex = currentIndex;
-    
-    switch (key) {
-      case 'ArrowUp':
-      case 'ArrowLeft':
-        newIndex = currentIndex - 1;
-        if (newIndex < 0) {
-          newIndex = loop ? items.length - 1 : 0;
-        }
-        break;
-        
-      case 'ArrowDown':
-      case 'ArrowRight':
-        newIndex = currentIndex + 1;
-        if (newIndex >= items.length) {
-          newIndex = loop ? 0 : items.length - 1;
-        }
-        break;
-    }
-    
-    if (newIndex !== currentIndex && items[newIndex]) {
-      onIndexChange(newIndex);
-      items[newIndex]?.focus();
-    }
-  }, []);
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      let newIndex = currentIndex;
+
+      switch (key) {
+        case 'ArrowUp':
+        case 'ArrowLeft':
+          newIndex = currentIndex - 1;
+          if (newIndex < 0) {
+            newIndex = loop ? items.length - 1 : 0;
+          }
+          break;
+
+        case 'ArrowDown':
+        case 'ArrowRight':
+          newIndex = currentIndex + 1;
+          if (newIndex >= items.length) {
+            newIndex = loop ? 0 : items.length - 1;
+          }
+          break;
+      }
+
+      if (newIndex !== currentIndex && items[newIndex]) {
+        onIndexChange(newIndex);
+        items[newIndex]?.focus();
+      }
+    },
+    []
+  );
 
   const handleEnterSpace = useCallback((event: KeyboardEvent, callback: () => void) => {
     if (event.key === 'Enter' || event.key === ' ') {

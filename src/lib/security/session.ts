@@ -412,10 +412,10 @@ export class SessionManager {
  * @example
  * ```typescript
  * import { sessionManager } from '@/lib/security/session';
- * 
+ *
  * // Create session
  * const sessionId = sessionManager.createSession('user_123', 'patient');
- * 
+ *
  * // Validate session
  * const session = sessionManager.getSession(sessionId);
  * ```

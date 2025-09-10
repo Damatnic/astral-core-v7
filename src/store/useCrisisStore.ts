@@ -33,7 +33,7 @@ interface CrisisState {
   endIntervention: () => void;
 }
 
-export const useCrisisStore = create<CrisisState>((set) => ({
+export const useCrisisStore = create<CrisisState>(set => ({
   isInCrisis: false,
   currentIntervention: null,
   assessmentInProgress: false,

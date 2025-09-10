@@ -440,7 +440,7 @@ export class WebSocketServer {
     try {
       const { severity, triggerEvent, location } = data;
 
-      // Create crisis intervention record  
+      // Create crisis intervention record
       const intervention = await prisma.crisisIntervention.create({
         data: {
           userId: socket.userId,
@@ -650,8 +650,10 @@ export class WebSocketServer {
   }
 
   private async sendPushNotifications(conversationId: string, senderId: string, content: string) {
-    // Implement push notification logic 
-    console.log(`Push notification for conversation ${conversationId} from sender ${senderId}: ${content.substring(0, 50)}...`);
+    // Implement push notification logic
+    console.log(
+      `Push notification for conversation ${conversationId} from sender ${senderId}: ${content.substring(0, 50)}...`
+    );
     // This would integrate with FCM, APNS, or web push
   }
 

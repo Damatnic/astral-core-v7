@@ -13,18 +13,16 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 const AnalyticsDashboard = React.lazy(() => import('@/components/AnalyticsDashboard'));
 
 // Higher-order component for analytics loading
-const withAnalyticsLoading = <P extends object>(
-  Component: React.ComponentType<P>
-) => {
+const withAnalyticsLoading = <P extends object>(Component: React.ComponentType<P>) => {
   const LazyAnalytics = (props: P) => (
     <ErrorBoundary>
-      <Suspense 
+      <Suspense
         fallback={
-          <LoadingFallback 
-            variant="skeleton" 
-            size="lg" 
-            message="Loading analytics dashboard..."
-            className="min-h-[500px]"
+          <LoadingFallback
+            variant='skeleton'
+            size='lg'
+            message='Loading analytics dashboard...'
+            className='min-h-[500px]'
           />
         }
       >
@@ -34,7 +32,7 @@ const withAnalyticsLoading = <P extends object>(
   );
 
   LazyAnalytics.displayName = `LazyAnalytics(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return LazyAnalytics;
 };
 

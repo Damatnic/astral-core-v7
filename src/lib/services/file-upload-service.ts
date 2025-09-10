@@ -554,8 +554,8 @@ export class FileUploadService {
 
       return `/api/files/${fileId}/thumbnail`;
     } catch (error) {
-      logWarning('Thumbnail generation failed', 'file-upload-service', { 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logWarning('Thumbnail generation failed', 'file-upload-service', {
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
       return '';
     }

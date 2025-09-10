@@ -5,12 +5,14 @@ This comprehensive guide covers common issues and solutions for Astral Core v7 a
 ## Quick Reference
 
 ### Emergency Contacts
+
 - **Crisis Support**: Always available at 988 or 911
 - **Technical Support**: tech-support@astral-core.com
 - **Security Issues**: security@astral-core.com
 - **HIPAA Compliance**: compliance@astral-core.com
 
 ### Health Check URLs
+
 - **Development**: http://localhost:3000/api/health
 - **Staging**: https://staging.astral-core.app/api/health
 - **Production**: https://app.astral-core.com/api/health
@@ -20,11 +22,13 @@ This comprehensive guide covers common issues and solutions for Astral Core v7 a
 ### Node.js Version Issues
 
 #### Problem: Node.js version incompatibility
+
 ```bash
 Error: The engine "node" is incompatible with this module.
 ```
 
 **Solution**:
+
 ```bash
 # Check current version
 node --version
@@ -44,11 +48,13 @@ npm --version   # Should show 9.0.0 or higher
 ### Package Installation Issues
 
 #### Problem: npm install fails
+
 ```bash
 npm ERR! peer dep missing
 ```
 
 **Solution**:
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -64,11 +70,13 @@ npm ci
 ```
 
 #### Problem: Sharp installation fails on M1 Mac
+
 ```bash
 Error: Cannot find module '@img/sharp-darwin-arm64'
 ```
 
 **Solution**:
+
 ```bash
 # Reinstall Sharp with correct architecture
 npm uninstall sharp
@@ -83,50 +91,57 @@ arch -x86_64 npm install sharp
 ### Connection Problems
 
 #### Problem: Cannot connect to PostgreSQL
+
 ```bash
 Error: P1001: Can't reach database server at `localhost:5432`
 ```
 
 **Solutions**:
+
 1. **Check PostgreSQL is running**:
+
    ```bash
    # macOS
    brew services list | grep postgresql
    brew services start postgresql@14
-   
+
    # Ubuntu/Debian
    sudo systemctl status postgresql
    sudo systemctl start postgresql
-   
+
    # Windows
    net start postgresql-x64-14
    ```
 
 2. **Verify connection string**:
+
    ```bash
    # Test connection manually
    psql -h localhost -U your_user -d astralcore_v7
-   
+
    # Check DATABASE_URL format
    echo $DATABASE_URL
    ```
 
 3. **Check firewall settings**:
+
    ```bash
    # Allow PostgreSQL port
    sudo ufw allow 5432
-   
+
    # Check if port is listening
    netstat -an | grep 5432
    lsof -i :5432
    ```
 
 #### Problem: Authentication failed
+
 ```bash
 Error: P1001: Authentication failed against database server
 ```
 
 **Solution**:
+
 ```bash
 # Reset user password
 sudo -u postgres psql
@@ -144,11 +159,13 @@ sudo systemctl restart postgresql
 ### Migration Issues
 
 #### Problem: Migration fails with "relation already exists"
+
 ```bash
 Error: P3005: The database schema is not empty
 ```
 
 **Solution**:
+
 ```bash
 # Option 1: Reset database (DEVELOPMENT ONLY)
 npm run db:push --force-reset
@@ -162,11 +179,13 @@ npx prisma generate
 ```
 
 #### Problem: Migration fails due to data
+
 ```bash
 Error: Migration cannot be applied because data would be lost
 ```
 
 **Solution**:
+
 ```bash
 # Create custom migration
 npx prisma migrate dev --create-only
@@ -181,15 +200,17 @@ npx prisma migrate dev
 ### Performance Issues
 
 #### Problem: Slow database queries
+
 ```bash
 # Monitor slow queries
-SELECT query, mean_exec_time, calls 
-FROM pg_stat_statements 
-ORDER BY mean_exec_time DESC 
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
 LIMIT 10;
 ```
 
 **Solution**:
+
 ```bash
 # Add missing indexes
 CREATE INDEX CONCURRENTLY idx_user_email ON "User"(email);
@@ -207,24 +228,28 @@ ANALYZE;
 ### NextAuth.js Problems
 
 #### Problem: Session not persisting
+
 ```bash
 Error: No session found
 ```
 
 **Solutions**:
+
 1. **Check NEXTAUTH_SECRET**:
+
    ```bash
    # Generate new secret
    openssl rand -base64 32
-   
+
    # Add to .env
    NEXTAUTH_SECRET="generated_secret_here"
-   
+
    # Restart development server
    npm run dev
    ```
 
 2. **Check NEXTAUTH_URL**:
+
    ```bash
    # Must match your domain
    NEXTAUTH_URL="http://localhost:3000"  # Development
@@ -236,26 +261,30 @@ Error: No session found
    - Delete `next-auth.session-token` and related cookies
 
 #### Problem: OAuth provider errors
+
 ```bash
 Error: OAuthCallback error
 ```
 
 **Solutions**:
+
 1. **Google OAuth setup**:
+
    ```bash
    # Verify redirect URI in Google Console
    # Must be: http://localhost:3000/api/auth/callback/google
-   
+
    # Check credentials
    GOOGLE_CLIENT_ID="your-google-client-id"
    GOOGLE_CLIENT_SECRET="your-google-client-secret"
    ```
 
 2. **GitHub OAuth setup**:
+
    ```bash
    # Verify callback URL in GitHub App settings
    # Must be: http://localhost:3000/api/auth/callback/github
-   
+
    # Check credentials
    GITHUB_ID="your-github-app-id"
    GITHUB_SECRET="your-github-app-secret"
@@ -264,12 +293,15 @@ Error: OAuthCallback error
 ### MFA Issues
 
 #### Problem: TOTP codes not working
+
 ```bash
 Error: Invalid TOTP token
 ```
 
 **Solutions**:
+
 1. **Check time synchronization**:
+
    ```bash
    # Sync system time
    sudo ntpdate -s time.nist.gov  # Linux/Mac
@@ -293,15 +325,18 @@ Error: Invalid TOTP token
 ### Next.js Build Problems
 
 #### Problem: Type errors during build
+
 ```bash
 Error: Type 'string | undefined' is not assignable to type 'string'
 ```
 
 **Solutions**:
+
 1. **Run type checking**:
+
    ```bash
    npm run typecheck
-   
+
    # Fix specific errors
    # Add type guards or default values
    const value = process.env.SOME_VAR || 'default';
@@ -320,11 +355,13 @@ Error: Type 'string | undefined' is not assignable to type 'string'
    ```
 
 #### Problem: Out of memory during build
+
 ```bash
 Error: JavaScript heap out of memory
 ```
 
 **Solution**:
+
 ```bash
 # Increase Node.js memory limit
 export NODE_OPTIONS="--max-old-space-size=8192"
@@ -339,11 +376,13 @@ npm run build
 ### Docker Issues
 
 #### Problem: Docker build fails
+
 ```bash
 Error: COPY failed: no source files were specified
 ```
 
 **Solution**:
+
 ```dockerfile
 # Check Dockerfile syntax
 # Ensure .dockerignore doesn't exclude necessary files
@@ -354,11 +393,13 @@ docker build -t astral-core --progress=plain .
 ```
 
 #### Problem: Container exits immediately
+
 ```bash
 Error: Container exits with code 0
 ```
 
 **Solution**:
+
 ```bash
 # Check container logs
 docker logs container_id
@@ -375,11 +416,13 @@ docker run astral-core env
 ### Application Crashes
 
 #### Problem: Unhandled promise rejection
+
 ```bash
 UnhandledPromiseRejectionWarning: Error: Connection lost
 ```
 
 **Solution**:
+
 ```typescript
 // Add proper error handling
 try {
@@ -394,13 +437,14 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
 });
 
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 ```
 
 #### Problem: Memory leaks
+
 ```bash
 # Monitor memory usage
 node --inspect server.js
@@ -408,6 +452,7 @@ node --inspect server.js
 ```
 
 **Solution**:
+
 ```bash
 # Use clinic.js for diagnosis
 npm install -g clinic
@@ -423,6 +468,7 @@ clinic doctor -- npm start
 ### Performance Issues
 
 #### Problem: Slow API responses
+
 ```bash
 # Add performance monitoring
 const start = Date.now();
@@ -431,29 +477,33 @@ console.log(`Operation took ${Date.now() - start}ms`);
 ```
 
 **Solutions**:
+
 1. **Database query optimization**:
+
    ```typescript
    // Use select to limit fields
    const user = await prisma.user.findUnique({
      where: { id },
      select: { id: true, email: true, name: true }
    });
-   
+
    // Add indexes for frequent queries
    // Use database query analysis
    ```
 
 2. **Enable caching**:
+
    ```typescript
    // Add Redis caching
    const cached = await redis.get(key);
    if (cached) return JSON.parse(cached);
-   
+
    const result = await expensiveOperation();
    await redis.setex(key, 300, JSON.stringify(result));
    ```
 
 #### Problem: High CPU usage
+
 ```bash
 # Profile CPU usage
 node --prof app.js
@@ -462,6 +512,7 @@ node --prof-process isolate-0x103800000-v8.log > processed.txt
 ```
 
 **Solution**:
+
 ```bash
 # Common causes and fixes
 # - Synchronous operations (use async)
@@ -475,25 +526,29 @@ node --prof-process isolate-0x103800000-v8.log > processed.txt
 ### SSL/TLS Problems
 
 #### Problem: SSL certificate errors
+
 ```bash
 Error: UNABLE_TO_VERIFY_LEAF_SIGNATURE
 ```
 
 **Solutions**:
+
 1. **Check certificate chain**:
+
    ```bash
    # Test SSL configuration
    openssl s_client -connect your-domain.com:443 -servername your-domain.com
-   
+
    # Check certificate expiration
    echo | openssl s_client -servername your-domain.com -connect your-domain.com:443 2>/dev/null | openssl x509 -noout -dates
    ```
 
 2. **Renew certificates**:
+
    ```bash
    # Using Certbot
    sudo certbot renew
-   
+
    # Manual certificate update
    sudo certbot certonly --nginx -d your-domain.com
    ```
@@ -501,12 +556,15 @@ Error: UNABLE_TO_VERIFY_LEAF_SIGNATURE
 ### Rate Limiting Issues
 
 #### Problem: Rate limit false positives
+
 ```bash
 Error: Too many requests from this IP
 ```
 
 **Solutions**:
+
 1. **Check rate limiting configuration**:
+
    ```typescript
    // Adjust limits in production
    const rateLimiter = rateLimit({
@@ -520,7 +578,7 @@ Error: Too many requests from this IP
 2. **Whitelist known IPs**:
    ```typescript
    const rateLimiter = rateLimit({
-     skip: (req) => {
+     skip: req => {
        const allowedIPs = ['192.168.1.100', '10.0.0.5'];
        return allowedIPs.includes(req.ip);
      }
@@ -532,11 +590,13 @@ Error: Too many requests from this IP
 ### Development Environment
 
 #### Problem: Hot reload not working
+
 ```bash
 # Next.js not detecting file changes
 ```
 
 **Solution**:
+
 ```bash
 # Increase file watchers limit (Linux)
 echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
@@ -558,11 +618,13 @@ module.exports = {
 ### Staging Environment
 
 #### Problem: Different behavior than development
+
 ```bash
 # Environment-specific issues
 ```
 
 **Solution**:
+
 ```bash
 # Check environment variables
 printenv | grep -i astral
@@ -578,25 +640,29 @@ NODE_ENV=production npm run build
 ### Production Environment
 
 #### Problem: Application not starting after deployment
+
 ```bash
 Error: Cannot find module 'next'
 ```
 
 **Solutions**:
+
 1. **Check dependencies**:
+
    ```bash
    # Install production dependencies
    npm ci --only=production
-   
+
    # Check for missing peer dependencies
    npm ls
    ```
 
 2. **Verify build artifacts**:
+
    ```bash
    # Ensure .next directory exists and is not empty
    ls -la .next/
-   
+
    # Check build logs
    npm run build 2>&1 | tee build.log
    ```
@@ -606,20 +672,24 @@ Error: Cannot find module 'next'
 ### Crisis Assessment Problems
 
 #### Problem: Crisis assessment not triggering alerts
+
 ```bash
 # No crisis response generated
 ```
 
 **Solutions**:
+
 1. **Check crisis configuration**:
+
    ```bash
    # Verify feature flag
    ENABLE_CRISIS_INTERVENTION="true"
-   
+
    # Check crisis thresholds in code
    ```
 
 2. **Verify notification system**:
+
    ```typescript
    // Test crisis alert system
    await notificationService.sendCrisisAlert({
@@ -640,16 +710,19 @@ Error: Cannot find module 'next'
 ### Stripe Integration Problems
 
 #### Problem: Webhook verification fails
+
 ```bash
 Error: Webhook signature verification failed
 ```
 
 **Solutions**:
+
 1. **Check webhook secret**:
+
    ```bash
    # Verify STRIPE_WEBHOOK_SECRET
    echo $STRIPE_WEBHOOK_SECRET
-   
+
    # Test webhook endpoint
    curl -X POST http://localhost:3000/api/webhooks/stripe \
      -H "Content-Type: application/json" \
@@ -663,30 +736,34 @@ Error: Webhook signature verification failed
    ```
 
 #### Problem: Payment methods not saving
+
 ```bash
 Error: Payment intent creation failed
 ```
 
 **Solutions**:
+
 1. **Check Stripe keys**:
+
    ```bash
    # Use test keys in development/staging
    STRIPE_PUBLISHABLE_KEY="pk_test_..."
    STRIPE_SECRET_KEY="sk_test_..."
-   
+
    # Use live keys only in production
    STRIPE_PUBLISHABLE_KEY="pk_live_..."
    STRIPE_SECRET_KEY="sk_live_..."
    ```
 
 2. **Test with Stripe CLI**:
+
    ```bash
    # Install Stripe CLI
    stripe login
-   
+
    # Test webhook locally
    stripe listen --forward-to localhost:3000/api/webhooks/stripe
-   
+
    # Trigger test events
    stripe trigger payment_intent.succeeded
    ```
@@ -696,18 +773,21 @@ Error: Payment intent creation failed
 ### Logging Issues
 
 #### Problem: Logs not appearing
+
 ```bash
 # No application logs visible
 ```
 
 **Solutions**:
+
 1. **Check log configuration**:
+
    ```typescript
    // Ensure console.log/error are not suppressed
    if (process.env.NODE_ENV !== 'production') {
      console.log('Debug info:', debugData);
    }
-   
+
    // Use proper logging library
    import winston from 'winston';
    const logger = winston.createLogger({
@@ -715,16 +795,17 @@ Error: Payment intent creation failed
      format: winston.format.json(),
      transports: [
        new winston.transports.File({ filename: 'error.log', level: 'error' }),
-       new winston.transports.File({ filename: 'combined.log' }),
-     ],
+       new winston.transports.File({ filename: 'combined.log' })
+     ]
    });
    ```
 
 2. **Check log rotation**:
+
    ```bash
    # Ensure logs aren't being truncated
    tail -f /var/log/astral-core/app.log
-   
+
    # Check disk space
    df -h
    ```
@@ -732,12 +813,15 @@ Error: Payment intent creation failed
 ### Performance Monitoring
 
 #### Problem: High response times
+
 ```bash
 # API endpoints responding slowly
 ```
 
 **Solutions**:
+
 1. **Add performance monitoring**:
+
    ```typescript
    // Add timing middleware
    app.use((req, res, next) => {
@@ -751,15 +835,16 @@ Error: Payment intent creation failed
    ```
 
 2. **Monitor database performance**:
+
    ```sql
    -- Enable query logging
    ALTER SYSTEM SET log_min_duration_statement = 1000;
    SELECT pg_reload_conf();
-   
+
    -- Check slow queries
-   SELECT query, mean_exec_time, calls 
-   FROM pg_stat_statements 
-   ORDER BY mean_exec_time DESC 
+   SELECT query, mean_exec_time, calls
+   FROM pg_stat_statements
+   ORDER BY mean_exec_time DESC
    LIMIT 10;
    ```
 
@@ -768,25 +853,27 @@ Error: Payment intent creation failed
 ### System Down
 
 1. **Immediate Response**:
+
    ```bash
    # Check system status
    curl -f https://app.astral-core.com/api/health
-   
+
    # Check server status
    systemctl status astral-core
-   
+
    # Check database
    pg_isready -h localhost -p 5432
    ```
 
 2. **Emergency Restart**:
+
    ```bash
    # Restart application
    pm2 restart astral-core-prod
-   
+
    # Restart database (if necessary)
    sudo systemctl restart postgresql
-   
+
    # Check logs
    pm2 logs astral-core-prod --lines 100
    ```
@@ -794,6 +881,7 @@ Error: Payment intent creation failed
 ### Data Recovery
 
 1. **Database Recovery**:
+
    ```bash
    # Restore from backup
    pg_restore --clean --if-exists --verbose \
@@ -818,13 +906,14 @@ Error: Payment intent creation failed
    - Code Examples: `/docs/examples/`
 
 2. **Logs and Monitoring**:
+
    ```bash
    # Application logs
    tail -f /var/log/astral-core/app.log
-   
+
    # Database logs
    tail -f /var/log/postgresql/postgresql-14-main.log
-   
+
    # System logs
    journalctl -u astral-core -f
    ```
@@ -832,7 +921,7 @@ Error: Payment intent creation failed
 ### External Support
 
 1. **Technical Support**: tech-support@astral-core.com
-2. **Security Issues**: security@astral-core.com  
+2. **Security Issues**: security@astral-core.com
 3. **HIPAA Compliance**: compliance@astral-core.com
 4. **Emergency Hotline**: +1-XXX-XXX-XXXX
 
@@ -878,11 +967,11 @@ Error: Payment intent creation failed
 **If you are in crisis or having thoughts of self-harm:**
 
 - **Call 911** for immediate emergency assistance
-- **Call 988** for the Suicide & Crisis Lifeline (24/7)  
+- **Call 988** for the Suicide & Crisis Lifeline (24/7)
 - **Text HOME to 741741** for Crisis Text Line
 
 **Help is always available. You matter, and your life has value.**
 
 ---
 
-*Last updated: January 2024*
+_Last updated: January 2024_

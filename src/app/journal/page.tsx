@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import { logError } from '@/lib/logger';
 
 interface JournalEntry {
   id: string;
@@ -52,7 +53,7 @@ export default function JournalPage() {
         setEntries(data.data?.items || []);
       }
     } catch (error) {
-      console.error('Error fetching entries:', error);
+      logError('Error fetching journal entries', error, 'JournalPage');
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +80,7 @@ export default function JournalPage() {
         resetForm();
       }
     } catch (error) {
-      console.error('Error saving entry:', error);
+      logError('Error saving journal entry', error, 'JournalPage');
     }
   };
 
@@ -95,7 +96,7 @@ export default function JournalPage() {
         await fetchEntries();
       }
     } catch (error) {
-      console.error('Error deleting entry:', error);
+      logError('Error deleting journal entry', error, 'JournalPage');
     }
   };
 

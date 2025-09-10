@@ -128,7 +128,7 @@ export class MessagingService {
           senderId: data.senderId,
           content: encryptedContent,
           type: data.type || 'text',
-          attachments: data.attachments || [],
+          attachments: data.attachments || []
           // metadata: data.metadata // Skip metadata for now to avoid type issues
         },
         include: {
@@ -167,7 +167,7 @@ export class MessagingService {
 
       // Send real-time notification to all participants
       participants.forEach(p => {
-        const messageData = { 
+        const messageData = {
           type: 'data',
           data: { ...message, unencryptedContent: data.content },
           timestamp: Date.now()

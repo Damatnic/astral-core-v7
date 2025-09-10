@@ -9,7 +9,7 @@ import { POST as MfaVerifyPOST } from '@/app/api/auth/mfa/verify/route';
 import { POST as MfaEnablePOST } from '@/app/api/auth/mfa/enable/route';
 import { getServerSession } from 'next-auth';
 import { compare, hash } from 'bcryptjs';
-import { 
+import {
   createAPIRequest,
   createAuthenticatedSession,
   createDatabaseMock,
@@ -81,12 +81,12 @@ const mockedCompare = compare as jest.MockedFunction<typeof compare>;
 describe('Authentication Flow Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Default mocks
     mockedHash.mockResolvedValue('$2b$12$hashedpassword');
     mockedCompare.mockResolvedValue(true);
     encryption.generateToken.mockReturnValue('verification_token_123');
-    
+
     // Reset rate limiting
     rateLimiters.auth.check.mockResolvedValue({ allowed: true });
     rateLimiters.mfa.check.mockResolvedValue({ allowed: true });
@@ -243,11 +243,13 @@ describe('Authentication Flow Integration Tests', () => {
   describe('Multi-Factor Authentication Flow', () => {
     beforeEach(() => {
       // Set up authenticated session
-      mockedGetServerSession.mockResolvedValue(createAuthenticatedSession({
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'CLIENT'
-      }));
+      mockedGetServerSession.mockResolvedValue(
+        createAuthenticatedSession({
+          id: 'user-123',
+          email: 'test@example.com',
+          role: 'CLIENT'
+        })
+      );
     });
 
     describe('TOTP Setup Flow', () => {
@@ -437,11 +439,13 @@ describe('Authentication Flow Integration Tests', () => {
       expect(registerResponse.status).toBe(201);
 
       // Step 2: User logs in (mocked as successful)
-      mockedGetServerSession.mockResolvedValue(createAuthenticatedSession({
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'CLIENT'
-      }));
+      mockedGetServerSession.mockResolvedValue(
+        createAuthenticatedSession({
+          id: 'user-123',
+          email: 'test@example.com',
+          role: 'CLIENT'
+        })
+      );
 
       // Step 3: Set up TOTP MFA
       const mockTotpSetup = {
@@ -518,10 +522,10 @@ describe('Authentication Flow Integration Tests', () => {
       // This would be tested in the NextAuth configuration
       // Here we simulate the behavior
       expect(lockedUser.lockedUntil > new Date()).toBe(true);
-      
+
       // Verify that login would be rejected
       expect(audit.logFailure).not.toHaveBeenCalled();
-      
+
       // After lockout expires, login should work again
       lockedUser.lockedUntil = new Date(Date.now() - 1000); // 1 second ago
       expect(lockedUser.lockedUntil < new Date()).toBe(true);
@@ -533,12 +537,14 @@ describe('Authentication Flow Integration Tests', () => {
 
       for (const role of roles) {
         jest.clearAllMocks();
-        
-        mockedGetServerSession.mockResolvedValue(createAuthenticatedSession({
-          id: `user-${role}`,
-          email: `${role.toLowerCase()}@example.com`,
-          role: role as 'USER' | 'THERAPIST' | 'ADMIN'
-        }));
+
+        mockedGetServerSession.mockResolvedValue(
+          createAuthenticatedSession({
+            id: `user-${role}`,
+            email: `${role.toLowerCase()}@example.com`,
+            role: role as 'USER' | 'THERAPIST' | 'ADMIN'
+          })
+        );
 
         mfaService.setupTotp.mockResolvedValue({
           secret: 'test-secret',
@@ -644,7 +650,7 @@ describe('Authentication Flow Integration Tests', () => {
   describe('Performance and Load Testing Scenarios', () => {
     it('should handle multiple concurrent MFA setups', async () => {
       mockedGetServerSession.mockResolvedValue(createAuthenticatedSession());
-      
+
       const mockSetup = {
         secret: 'test-secret',
         qrCode: 'test-qr',
@@ -652,8 +658,8 @@ describe('Authentication Flow Integration Tests', () => {
       };
 
       // Simulate delay in service
-      mfaService.setupTotp.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockSetup), 100))
+      mfaService.setupTotp.mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve(mockSetup), 100))
       );
 
       const requests = Array.from({ length: 5 }, () =>

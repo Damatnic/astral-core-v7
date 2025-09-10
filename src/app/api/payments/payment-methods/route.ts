@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       const customerResult = await StripeService.createCustomer({
         userId: user.id,
         email: user.email,
-        ...((user.name) && { name: user.name })
+        ...(user.name && { name: user.name })
       });
       customer = customerResult.customer;
     }

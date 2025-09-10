@@ -10,6 +10,7 @@ import { getPerformanceMetricsCollector } from '@/lib/performance/metrics';
 import { getWebVitalsMonitor, sendVitalsToAnalytics } from '@/lib/performance/web-vitals';
 import { getErrorMonitor, requestNotificationPermission } from '@/lib/performance/error-monitoring';
 import { getDatabaseMonitor } from '@/lib/performance/db-monitoring';
+import { logDebug, logWarning } from '@/lib/logger';
 
 interface PerformanceContextType {
   metricsCollector: ReturnType<typeof getPerformanceMetricsCollector>;
@@ -57,7 +58,7 @@ export function PerformanceProvider({
 
     // Set up Web Vitals analytics
     if (enableAnalytics) {
-      const unsubscribe = webVitalsMonitor.subscribe((vitals) => {
+      const unsubscribe = webVitalsMonitor.subscribe(vitals => {
         // Send vitals to analytics after a delay to ensure all metrics are collected
         setTimeout(() => {
           sendVitalsToAnalytics(vitals, analyticsEndpoint);
@@ -78,16 +79,17 @@ export function PerformanceProvider({
     // Set up API monitoring interceptor
     if (typeof window !== 'undefined') {
       const originalFetch = window.fetch;
-      
-      window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
-        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+      window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
+        const url =
+          typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
         const method = init?.method || 'GET';
         const startTime = performance.now();
 
         try {
           const response = await originalFetch(input, init);
           const duration = performance.now() - startTime;
-          
+
           // Track API performance
           if (url.includes('/api/')) {
             metricsCollector.trackApiCall(
@@ -102,7 +104,7 @@ export function PerformanceProvider({
           return response;
         } catch (error) {
           const duration = performance.now() - startTime;
-          
+
           // Track failed API calls
           if (url.includes('/api/')) {
             metricsCollector.trackApiCall(
@@ -143,17 +145,17 @@ export function PerformanceProvider({
         const webVitalsData = webVitalsMonitor.exportData();
         const errorData = errorMonitor.exportData();
         const dbData = databaseMonitor.exportData();
-        
-        console.group('Performance Debug Report');
-        console.log('Web Vitals:', webVitalsData);
-        console.log('Errors:', errorData);
-        console.log('Database:', dbData);
-        console.groupEnd();
+
+        logDebug('Performance Debug Report', 'PerformanceProvider', {
+          webVitals: webVitalsData,
+          errors: errorData,
+          database: dbData
+        });
       };
 
       // Log performance data every 30 seconds in debug mode
       const debugInterval = setInterval(logPerformanceData, 30000);
-      
+
       return () => {
         clearInterval(debugInterval);
       };
@@ -170,11 +172,7 @@ export function PerformanceProvider({
     databaseMonitor: getDatabaseMonitor()
   };
 
-  return (
-    <PerformanceContext.Provider value={contextValue}>
-      {children}
-    </PerformanceContext.Provider>
-  );
+  return <PerformanceContext.Provider value={contextValue}>{children}</PerformanceContext.Provider>;
 }
 
 // Higher-order component for performance monitoring
@@ -182,22 +180,23 @@ export function withPerformanceMonitoring<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   componentName?: string
 ) {
-  const name = componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';
-  
+  const name =
+    componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';
+
   return function PerformanceMonitoredComponent(props: P) {
     const startTime = useRef(performance.now());
     const { errorMonitor } = usePerformanceContext();
 
     useEffect(() => {
       const loadTime = performance.now() - startTime.current;
-      
+
       if (process.env.NODE_ENV === 'development') {
-        console.log(`${name} rendered in ${loadTime.toFixed(2)}ms`);
+        logDebug(`Component rendered in ${loadTime.toFixed(2)}ms`, name);
       }
 
       // Track slow component renders
       if (loadTime > 100) {
-        console.warn(`Slow component render: ${name} took ${loadTime.toFixed(2)}ms`);
+        logWarning(`Slow component render: took ${loadTime.toFixed(2)}ms`, name);
       }
     });
 
@@ -237,9 +236,13 @@ export function withPerformanceMonitoring<P extends object>(
 export function usePerformanceTracking() {
   const { metricsCollector, errorMonitor, databaseMonitor } = usePerformanceContext();
 
-  const trackCustomEvent = (eventName: string, duration: number, metadata?: Record<string, unknown>) => {
+  const trackCustomEvent = (
+    eventName: string,
+    duration: number,
+    metadata?: Record<string, unknown>
+  ) => {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Custom event: ${eventName} took ${duration}ms`, metadata);
+      logDebug(`Custom event: ${eventName} took ${duration}ms`, 'usePerformanceTracking', metadata);
     }
 
     // Log slow custom events as potential performance issues
@@ -257,21 +260,21 @@ export function usePerformanceTracking() {
     }
   };
 
-  const trackAsyncOperation = async function<T>(
+  const trackAsyncOperation = async function <T>(
     operation: () => Promise<T>,
     operationName: string
   ): Promise<T> {
     const startTime = performance.now();
-    
+
     try {
       const result = await operation();
       const duration = performance.now() - startTime;
-      
+
       trackCustomEvent(operationName, duration, { success: true });
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       errorMonitor.captureError({
         message: `Async operation failed: ${operationName}`,
         type: 'custom',
@@ -306,9 +309,9 @@ export function useComponentPerformance(componentName: string) {
     // Track mount time
     mountTime.current = performance.now();
     const totalMountTime = mountTime.current - renderStartTime.current;
-    
+
     if (process.env.NODE_ENV === 'development') {
-      console.log(`${componentName} mounted in ${totalMountTime.toFixed(2)}ms`);
+      logDebug(`Component mounted in ${totalMountTime.toFixed(2)}ms`, componentName);
     }
 
     // Track slow mounts
@@ -329,9 +332,9 @@ export function useComponentPerformance(componentName: string) {
       if (mountTime.current) {
         const unmountTime = performance.now();
         const totalLifetime = unmountTime - mountTime.current;
-        
+
         if (process.env.NODE_ENV === 'development') {
-          console.log(`${componentName} was mounted for ${totalLifetime.toFixed(2)}ms`);
+          logDebug(`Component was mounted for ${totalLifetime.toFixed(2)}ms`, componentName);
         }
       }
     };
@@ -339,11 +342,11 @@ export function useComponentPerformance(componentName: string) {
 
   const trackRerender = () => {
     const rerenderTime = performance.now() - renderStartTime.current;
-    
+
     if (process.env.NODE_ENV === 'development' && rerenderTime > 50) {
-      console.warn(`${componentName} slow rerender: ${rerenderTime.toFixed(2)}ms`);
+      logWarning(`Slow rerender: ${rerenderTime.toFixed(2)}ms`, componentName);
     }
-    
+
     renderStartTime.current = performance.now();
   };
 

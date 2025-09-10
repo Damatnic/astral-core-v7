@@ -10,7 +10,18 @@ import { SubscriptionService } from '@/lib/services/subscription-service';
 import { prisma } from '@/lib/db';
 import { auditLog } from '@/lib/security/audit';
 import { notificationService } from '@/lib/services/notification-service';
+import { PaymentStatus, InvoiceStatus } from '@prisma/client';
 import Stripe from 'stripe';
+
+// Extended Stripe types for webhook events that include expanded properties
+interface ExpandedStripeInvoice extends Stripe.Invoice {
+  subscription?: string | Stripe.Subscription;
+  tax?: number;
+  payment_intent?: string | Stripe.PaymentIntent;
+}
+
+// Type definition for expanded payment intent with charges
+// Currently not used but kept for future reference when handling charge data
 
 // Retry configuration
 interface RetryConfig {
@@ -79,11 +90,11 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'invoice.payment_succeeded':
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        await handleInvoicePaymentSucceeded(event.data.object as ExpandedStripeInvoice);
         break;
 
       case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        await handleInvoicePaymentFailed(event.data.object as ExpandedStripeInvoice);
         break;
 
       case 'payment_intent.succeeded':
@@ -223,7 +234,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 /**
  * Handle successful invoice payment
  */
-async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentSucceeded(invoice: ExpandedStripeInvoice) {
   try {
     // Find customer in our database
     const customer = await prisma.customer.findUnique({
@@ -239,15 +250,15 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     if (!invoice.id) {
       throw new Error('Invoice ID is required');
     }
-    
-    const stripeInvoice = invoice as any; // Cast to access Stripe properties
+
+    const stripeInvoice = invoice; // Stripe.Invoice has all needed properties
     const subscription = stripeInvoice.subscription;
-    const subscriptionRecord = subscription 
+    const subscriptionRecord = subscription
       ? await prisma.subscription.findUnique({
           where: { stripeSubscriptionId: subscription as string }
         })
       : null;
-    
+
     await prisma.invoice.upsert({
       where: { stripeInvoiceId: invoice.id },
       create: {
@@ -255,23 +266,25 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         ...(subscriptionRecord?.id && { subscriptionId: subscriptionRecord.id }),
         stripeInvoiceId: invoice.id,
         number: stripeInvoice.number,
-        status: 'PAID',
+        status: InvoiceStatus.PAID,
         total: stripeInvoice.total / 100,
         subtotal: stripeInvoice.subtotal / 100,
         tax: stripeInvoice.tax ? stripeInvoice.tax / 100 : 0,
         amountPaid: stripeInvoice.amount_paid / 100,
         amountDue: stripeInvoice.amount_due / 100,
         currency: stripeInvoice.currency,
-        description: stripeInvoice.description,
-        pdfUrl: stripeInvoice.invoice_pdf,
-        hostedInvoiceUrl: stripeInvoice.hosted_invoice_url,
-        ...(stripeInvoice.payment_intent && { paymentIntentId: stripeInvoice.payment_intent as string }),
+        description: stripeInvoice.description || null,
+        pdfUrl: stripeInvoice.invoice_pdf || null,
+        hostedInvoiceUrl: stripeInvoice.hosted_invoice_url || null,
+        ...(stripeInvoice.payment_intent && {
+          paymentIntentId: stripeInvoice.payment_intent as string
+        }),
         paidAt: stripeInvoice.status_transitions?.paid_at
           ? new Date(stripeInvoice.status_transitions.paid_at * 1000)
           : null
       },
       update: {
-        status: 'PAID',
+        status: InvoiceStatus.PAID,
         amountPaid: invoice.amount_paid / 100,
         amountDue: invoice.amount_due / 100,
         paidAt: invoice.status_transitions.paid_at
@@ -305,7 +318,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 /**
  * Handle failed invoice payment
  */
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentFailed(invoice: ExpandedStripeInvoice) {
   try {
     const customer = await prisma.customer.findUnique({
       where: { stripeCustomerId: invoice.customer as string }
@@ -320,15 +333,15 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     if (!invoice.id) {
       throw new Error('Invoice ID is required');
     }
-    
-    const stripeInvoice = invoice as any; // Cast to access Stripe properties
+
+    const stripeInvoice = invoice; // Stripe.Invoice has all needed properties
     const subscription = stripeInvoice.subscription;
-    const subscriptionRecord = subscription 
+    const subscriptionRecord = subscription
       ? await prisma.subscription.findUnique({
           where: { stripeSubscriptionId: subscription as string }
         })
       : null;
-    
+
     await prisma.invoice.upsert({
       where: { stripeInvoiceId: invoice.id },
       create: {
@@ -336,20 +349,22 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
         ...(subscriptionRecord?.id && { subscriptionId: subscriptionRecord.id }),
         stripeInvoiceId: invoice.id,
         number: stripeInvoice.number,
-        status: 'OPEN',
+        status: InvoiceStatus.OPEN,
         total: stripeInvoice.total / 100,
         subtotal: stripeInvoice.subtotal / 100,
         tax: stripeInvoice.tax ? stripeInvoice.tax / 100 : 0,
         amountPaid: stripeInvoice.amount_paid / 100,
         amountDue: stripeInvoice.amount_due / 100,
         currency: stripeInvoice.currency,
-        description: stripeInvoice.description,
-        pdfUrl: stripeInvoice.invoice_pdf,
-        hostedInvoiceUrl: stripeInvoice.hosted_invoice_url,
-        ...(stripeInvoice.payment_intent && { paymentIntentId: stripeInvoice.payment_intent as string })
+        description: stripeInvoice.description || null,
+        pdfUrl: stripeInvoice.invoice_pdf || null,
+        hostedInvoiceUrl: stripeInvoice.hosted_invoice_url || null,
+        ...(stripeInvoice.payment_intent && {
+          paymentIntentId: stripeInvoice.payment_intent as string
+        })
       },
       update: {
-        status: 'OPEN',
+        status: InvoiceStatus.OPEN,
         amountPaid: invoice.amount_paid / 100,
         amountDue: invoice.amount_due / 100
       }
@@ -362,7 +377,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       details: {
         invoiceId: invoice.id,
         amountDue: invoice.amount_due / 100,
-        subscriptionId: (invoice as any).subscription as string
+        subscriptionId: typeof invoice.subscription === 'string' ? invoice.subscription : (invoice.subscription as Stripe.Subscription)?.id || null
       },
       outcome: 'FAILURE'
     });
@@ -371,8 +386,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     if (!invoice.id) {
       throw new Error('Invoice ID is required');
     }
-    
-    const invoiceData = invoice as any;
+
+    const invoiceData = invoice;
     await sendPaymentFailureNotification(
       customer.userId,
       invoice.id,
@@ -412,9 +427,9 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     await prisma.payment.update({
       where: { id: payment.id },
       data: {
-        status: 'SUCCEEDED',
+        status: PaymentStatus.SUCCEEDED,
         processedAt: new Date(),
-        receiptUrl: (paymentIntent as any).charges?.data?.[0]?.receipt_url || null
+        receiptUrl: paymentIntent.latest_charge && typeof paymentIntent.latest_charge === 'object' && 'receipt_url' in paymentIntent.latest_charge ? (paymentIntent.latest_charge as Stripe.Charge).receipt_url : null
       }
     });
 
@@ -459,14 +474,18 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       return;
     }
 
-    const updateData: any = {
-      status: 'FAILED'
+    const updateData: {
+      status: PaymentStatus;
+      failureCode?: string;
+      failureMessage?: string;
+    } = {
+      status: PaymentStatus.FAILED
     };
-    
+
     if (paymentIntent.last_payment_error?.code) {
       updateData.failureCode = paymentIntent.last_payment_error.code;
     }
-    
+
     if (paymentIntent.last_payment_error?.message) {
       updateData.failureMessage = paymentIntent.last_payment_error.message;
     }
@@ -591,12 +610,17 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
     });
 
     if (!existingCustomer) {
-      const customerData: any = {
+      const customerData: {
+        userId: string;
+        stripeCustomerId: string;
+        email: string;
+        name?: string;
+      } = {
         userId,
         stripeCustomerId: customer.id,
         email: customer.email || ''
       };
-      
+
       if (customer.name) {
         customerData.name = customer.name;
       }
@@ -872,19 +896,27 @@ async function updatePendingSubscriptions(userId: string, paymentMethodId: strin
 
         // Update local database
         const statusMapping: Record<string, string> = {
-          'CANCELLED': 'CANCELED',
-          'ACTIVE': 'ACTIVE',
-          'PAST_DUE': 'PAST_DUE',
-          'INCOMPLETE': 'INCOMPLETE'
+          CANCELLED: 'CANCELED',
+          ACTIVE: 'ACTIVE',
+          PAST_DUE: 'PAST_DUE',
+          INCOMPLETE: 'INCOMPLETE'
         };
-        
+
         const statusUpper = updatedSubscription.status.toUpperCase();
         const mappedStatus = statusMapping[statusUpper] || statusUpper;
-        
+
         await prisma.subscription.update({
           where: { id: subscription.id },
           data: {
-            status: mappedStatus as 'INCOMPLETE' | 'INCOMPLETE_EXPIRED' | 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'PAUSED'
+            status: mappedStatus as
+              | 'INCOMPLETE'
+              | 'INCOMPLETE_EXPIRED'
+              | 'TRIALING'
+              | 'ACTIVE'
+              | 'PAST_DUE'
+              | 'CANCELED'
+              | 'UNPAID'
+              | 'PAUSED'
           }
         });
 

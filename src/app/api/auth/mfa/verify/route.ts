@@ -21,9 +21,7 @@ export async function POST(request: NextRequest) {
     const validated = verifySchema.parse(body);
 
     // Rate limiting per user
-    const allowed = await rateLimiter.check(
-      `mfa-verify:${validated.userId}`
-    );
+    const allowed = await rateLimiter.check(`mfa-verify:${validated.userId}`);
     if (!allowed) {
       return NextResponse.json(
         { error: 'Too many attempts. Please try again later.' },

@@ -23,7 +23,7 @@ const createSubscription = async (planId, paymentMethodId = null, couponCode = n
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
+        Authorization: `Bearer ${getAuthToken()}`
       },
       body: JSON.stringify({
         therapyPlanId: planId,
@@ -57,11 +57,7 @@ const createSubscription = async (planId, paymentMethodId = null, couponCode = n
 const subscriptionExamples = {
   // With existing payment method
   async withPaymentMethod() {
-    const result = await createSubscription(
-      'plan_therapy_basic',
-      'pm_1234567890',
-      'SAVE20'
-    );
+    const result = await createSubscription('plan_therapy_basic', 'pm_1234567890', 'SAVE20');
 
     if (result.success) {
       console.log('Subscription created:', result.subscription);
@@ -119,7 +115,7 @@ const PaymentSetupForm = ({ setupIntent, onComplete }) => {
     initializeStripe();
   }, [setupIntent]);
 
-  const handleSetupSubmit = async (event) => {
+  const handleSetupSubmit = async event => {
     event.preventDefault();
     setIsProcessing(true);
     setError(null);
@@ -134,7 +130,7 @@ const PaymentSetupForm = ({ setupIntent, onComplete }) => {
 
     try {
       // Confirm setup intent
-      const { error: confirmError, setupIntent: confirmedSetupIntent } = 
+      const { error: confirmError, setupIntent: confirmedSetupIntent } =
         await stripe.confirmCardSetup(setupIntent.clientSecret, {
           payment_method: {
             card: cardElement,
@@ -154,7 +150,7 @@ const PaymentSetupForm = ({ setupIntent, onComplete }) => {
       if (confirmedSetupIntent.status === 'succeeded') {
         // Payment method setup successful
         console.log('Payment method setup successful:', confirmedSetupIntent.payment_method);
-        
+
         // The webhook will handle updating the subscription
         onComplete?.({
           success: true,
@@ -175,11 +171,11 @@ const PaymentSetupForm = ({ setupIntent, onComplete }) => {
 
   return (
     <form onSubmit={handleSetupSubmit}>
-      <div className="payment-form">
+      <div className='payment-form'>
         <h3>Setup Payment Method</h3>
         <p>Complete your subscription by adding a payment method.</p>
-        
-        <div className="card-element-container">
+
+        <div className='card-element-container'>
           <CardElement
             options={{
               style: {
@@ -187,25 +183,17 @@ const PaymentSetupForm = ({ setupIntent, onComplete }) => {
                   fontSize: '16px',
                   color: '#424770',
                   '::placeholder': {
-                    color: '#aab7c4',
-                  },
-                },
-              },
+                    color: '#aab7c4'
+                  }
+                }
+              }
             }}
           />
         </div>
 
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        {error && <div className='error-message'>{error}</div>}
 
-        <button 
-          type="submit" 
-          disabled={isProcessing}
-          className="setup-button"
-        >
+        <button type='submit' disabled={isProcessing} className='setup-button'>
           {isProcessing ? 'Processing...' : 'Complete Setup'}
         </button>
       </div>
@@ -224,12 +212,12 @@ const SubscriptionManager = {
     try {
       const response = await fetch('/api/payments/subscriptions', {
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         }
       });
 
       const result = await response.json();
-      
+
       if (response.ok) {
         return {
           success: true,
@@ -257,7 +245,7 @@ const SubscriptionManager = {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify({
           newTherapyPlanId: newPlanId,
@@ -292,7 +280,7 @@ const SubscriptionManager = {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify({
           subscriptionId: subscriptionId,
@@ -329,7 +317,7 @@ const SubscriptionManager = {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify({
           action: 'reactivate',
@@ -371,7 +359,7 @@ const PaymentMethodManager = {
     try {
       const response = await fetch('/api/payments/payment-methods', {
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         }
       });
 
@@ -401,7 +389,7 @@ const PaymentMethodManager = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify({
           paymentMethodId: paymentMethodId,
@@ -434,7 +422,7 @@ const PaymentMethodManager = {
       const response = await fetch(`/api/payments/payment-methods/${paymentMethodId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         }
       });
 
@@ -463,7 +451,7 @@ const PaymentMethodManager = {
       const response = await fetch(`/api/payments/payment-methods/${paymentMethodId}/default`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         }
       });
 
@@ -500,23 +488,23 @@ const PaymentMethodsList = () => {
   const loadPaymentMethods = async () => {
     setLoading(true);
     const result = await PaymentMethodManager.getPaymentMethods();
-    
+
     if (result.success) {
       setPaymentMethods(result.paymentMethods);
       setError(null);
     } else {
       setError(result.error);
     }
-    
+
     setLoading(false);
   };
 
-  const handleRemovePaymentMethod = async (paymentMethodId) => {
+  const handleRemovePaymentMethod = async paymentMethodId => {
     const confirmRemove = window.confirm('Are you sure you want to remove this payment method?');
-    
+
     if (confirmRemove) {
       const result = await PaymentMethodManager.removePaymentMethod(paymentMethodId);
-      
+
       if (result.success) {
         await loadPaymentMethods(); // Reload list
         showSuccessMessage('Payment method removed successfully');
@@ -526,9 +514,9 @@ const PaymentMethodsList = () => {
     }
   };
 
-  const handleSetDefault = async (paymentMethodId) => {
+  const handleSetDefault = async paymentMethodId => {
     const result = await PaymentMethodManager.setDefaultPaymentMethod(paymentMethodId);
-    
+
     if (result.success) {
       await loadPaymentMethods(); // Reload list
       showSuccessMessage('Default payment method updated');
@@ -542,46 +530,43 @@ const PaymentMethodsList = () => {
   }
 
   if (error) {
-    return <div className="error">Error: {error}</div>;
+    return <div className='error'>Error: {error}</div>;
   }
 
   return (
-    <div className="payment-methods-list">
+    <div className='payment-methods-list'>
       <h3>Payment Methods</h3>
-      
+
       {paymentMethods.length === 0 ? (
-        <div className="no-payment-methods">
+        <div className='no-payment-methods'>
           <p>No payment methods found.</p>
-          <button onClick={() => setShowAddForm(true)}>
-            Add Payment Method
-          </button>
+          <button onClick={() => setShowAddForm(true)}>Add Payment Method</button>
         </div>
       ) : (
-        <div className="payment-methods">
-          {paymentMethods.map((pm) => (
+        <div className='payment-methods'>
+          {paymentMethods.map(pm => (
             <div key={pm.id} className={`payment-method ${pm.isDefault ? 'default' : ''}`}>
-              <div className="payment-method-info">
-                <div className="card-info">
-                  <span className="card-brand">{pm.card.brand.toUpperCase()}</span>
-                  <span className="card-last4">**** {pm.card.last4}</span>
-                  <span className="card-expiry">{pm.card.expMonth}/{pm.card.expYear}</span>
+              <div className='payment-method-info'>
+                <div className='card-info'>
+                  <span className='card-brand'>{pm.card.brand.toUpperCase()}</span>
+                  <span className='card-last4'>**** {pm.card.last4}</span>
+                  <span className='card-expiry'>
+                    {pm.card.expMonth}/{pm.card.expYear}
+                  </span>
                 </div>
-                {pm.isDefault && <span className="default-badge">Default</span>}
+                {pm.isDefault && <span className='default-badge'>Default</span>}
               </div>
-              
-              <div className="payment-method-actions">
+
+              <div className='payment-method-actions'>
                 {!pm.isDefault && (
-                  <button 
-                    onClick={() => handleSetDefault(pm.id)}
-                    className="set-default-btn"
-                  >
+                  <button onClick={() => handleSetDefault(pm.id)} className='set-default-btn'>
                     Set as Default
                   </button>
                 )}
-                
-                <button 
+
+                <button
                   onClick={() => handleRemovePaymentMethod(pm.id)}
-                  className="remove-btn"
+                  className='remove-btn'
                   disabled={pm.isDefault && paymentMethods.length === 1}
                 >
                   Remove
@@ -607,13 +592,13 @@ const WebhookEventHandler = {
   initialize() {
     // Listen for server-sent events from our webhook processor
     const eventSource = new EventSource('/api/payments/webhook/events');
-    
-    eventSource.onmessage = (event) => {
+
+    eventSource.onmessage = event => {
       const webhookEvent = JSON.parse(event.data);
       this.handleWebhookEvent(webhookEvent);
     };
 
-    eventSource.onerror = (error) => {
+    eventSource.onerror = error => {
       console.error('Webhook event stream error:', error);
     };
 
@@ -658,7 +643,7 @@ const WebhookEventHandler = {
   handleSubscriptionUpdated(subscription) {
     // Update UI to reflect subscription changes
     const subscriptionStatus = subscription.status;
-    
+
     switch (subscriptionStatus) {
       case 'active':
         showNotification('Your subscription is now active!', 'success');
@@ -685,7 +670,7 @@ const WebhookEventHandler = {
   // Handle subscription cancellation
   handleSubscriptionCanceled(subscription) {
     showNotification('Your subscription has been canceled.', 'info');
-    
+
     // Update UI to reflect cancellation
     updateSubscriptionUI({
       ...subscription,
@@ -703,10 +688,10 @@ const WebhookEventHandler = {
   handlePaymentSucceeded(invoice) {
     const amount = (invoice.amount_paid / 100).toFixed(2);
     showNotification(`Payment of $${amount} processed successfully!`, 'success');
-    
+
     // Update billing history
     updateBillingHistory(invoice);
-    
+
     // If this was a past due payment, update subscription status
     if (invoice.subscription) {
       refreshSubscriptionStatus();
@@ -717,7 +702,7 @@ const WebhookEventHandler = {
   handlePaymentFailed(invoice) {
     const amount = (invoice.amount_due / 100).toFixed(2);
     showNotification(`Payment of $${amount} failed. Please update your payment method.`, 'error');
-    
+
     // Show payment retry options
     showPaymentRetryOptions({
       invoiceId: invoice.id,
@@ -734,10 +719,10 @@ const WebhookEventHandler = {
   // Handle payment method added
   handlePaymentMethodAdded(paymentMethod) {
     showNotification('Payment method added successfully!', 'success');
-    
+
     // Refresh payment methods list
     refreshPaymentMethods();
-    
+
     // If this was for a pending subscription, check if we can activate it
     checkPendingSubscriptions();
   },
@@ -747,12 +732,12 @@ const WebhookEventHandler = {
     const daysLeft = Math.ceil(
       (new Date(subscription.trial_end * 1000) - new Date()) / (1000 * 60 * 60 * 24)
     );
-    
+
     showNotification(
       `Your trial ends in ${daysLeft} days. Add a payment method to continue.`,
       'warning'
     );
-    
+
     // Show payment method setup prompt
     showTrialEndingPrompt(subscription);
   }
@@ -769,11 +754,11 @@ const UIUpdateHelpers = {
 
   generateSubscriptionHTML(subscription) {
     const statusColor = {
-      'active': 'green',
-      'trialing': 'blue',
-      'past_due': 'orange',
-      'canceled': 'red',
-      'incomplete': 'yellow'
+      active: 'green',
+      trialing: 'blue',
+      past_due: 'orange',
+      canceled: 'red',
+      incomplete: 'yellow'
     };
 
     return `
@@ -785,13 +770,15 @@ const UIUpdateHelpers = {
         </h3>
         <p>Plan: ${subscription.planName}</p>
         <p>Amount: $${subscription.amount.toFixed(2)}/${subscription.interval}</p>
-        ${subscription.currentPeriodEnd ? 
-          `<p>Next billing: ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>` : 
-          ''
+        ${
+          subscription.currentPeriodEnd
+            ? `<p>Next billing: ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>`
+            : ''
         }
-        ${subscription.cancelAt ? 
-          `<p>Cancels on: ${new Date(subscription.cancelAt).toLocaleDateString()}</p>` : 
-          ''
+        ${
+          subscription.cancelAt
+            ? `<p>Cancels on: ${new Date(subscription.cancelAt).toLocaleDateString()}</p>`
+            : ''
         }
       </div>
     `;
@@ -821,7 +808,7 @@ const UIUpdateHelpers = {
         <button onclick="closeModal()" class="close-btn">×</button>
       </div>
     `;
-    
+
     document.body.appendChild(retryModal);
   },
 
@@ -849,7 +836,7 @@ const UIUpdateHelpers = {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(prompt);
   }
 };
@@ -876,9 +863,9 @@ const validateStripeWebhook = (req, res, next) => {
 };
 
 // Webhook processing with idempotency
-const processWebhookWithIdempotency = async (event) => {
+const processWebhookWithIdempotency = async event => {
   const eventId = event.id;
-  
+
   // Check if we've already processed this event
   const existingEvent = await WebhookEvent.findOne({ eventId });
   if (existingEvent) {
@@ -889,7 +876,7 @@ const processWebhookWithIdempotency = async (event) => {
   try {
     // Process the event
     const result = await processWebhookEvent(event);
-    
+
     // Mark event as processed
     await WebhookEvent.create({
       eventId: eventId,
@@ -901,7 +888,7 @@ const processWebhookWithIdempotency = async (event) => {
     return result;
   } catch (error) {
     console.error(`Error processing webhook event ${eventId}:`, error);
-    
+
     // Mark event as failed
     await WebhookEvent.create({
       eventId: eventId,
@@ -928,7 +915,7 @@ const InvoiceManager = {
     try {
       const response = await fetch(`/api/payments/invoices?limit=${limit}&offset=${offset}`, {
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         }
       });
 
@@ -958,7 +945,7 @@ const InvoiceManager = {
     try {
       const response = await fetch(`/api/payments/invoices/${invoiceId}`, {
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         }
       });
 
@@ -985,7 +972,7 @@ const InvoiceManager = {
   async downloadInvoicePDF(invoiceId) {
     try {
       const result = await this.getInvoice(invoiceId);
-      
+
       if (result.success && result.invoice.pdfUrl) {
         // Open PDF in new tab
         window.open(result.invoice.pdfUrl, '_blank');
@@ -1009,7 +996,7 @@ const InvoiceManager = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify({
           paymentMethodId: paymentMethodId
@@ -1052,9 +1039,9 @@ const InvoiceList = () => {
   const loadInvoices = async (resetList = true) => {
     setLoading(true);
     const currentOffset = resetList ? 0 : offset;
-    
+
     const result = await InvoiceManager.getInvoices(10, currentOffset);
-    
+
     if (result.success) {
       if (resetList) {
         setInvoices(result.invoices);
@@ -1067,7 +1054,7 @@ const InvoiceList = () => {
     } else {
       setError(result.error);
     }
-    
+
     setLoading(false);
   };
 
@@ -1075,13 +1062,13 @@ const InvoiceList = () => {
     loadInvoices(false);
   };
 
-  const handlePayInvoice = async (invoiceId) => {
+  const handlePayInvoice = async invoiceId => {
     // Show payment method selection modal
     const paymentMethodId = await selectPaymentMethod();
-    
+
     if (paymentMethodId) {
       const result = await InvoiceManager.payInvoice(invoiceId, paymentMethodId);
-      
+
       if (result.success) {
         showSuccessMessage('Invoice paid successfully!');
         loadInvoices(); // Reload to show updated status
@@ -1091,20 +1078,17 @@ const InvoiceList = () => {
     }
   };
 
-  const formatInvoiceStatus = (status) => {
+  const formatInvoiceStatus = status => {
     const statusColors = {
-      'PAID': 'green',
-      'OPEN': 'orange',
-      'DRAFT': 'gray',
-      'VOID': 'red',
-      'UNCOLLECTIBLE': 'red'
+      PAID: 'green',
+      OPEN: 'orange',
+      DRAFT: 'gray',
+      VOID: 'red',
+      UNCOLLECTIBLE: 'red'
     };
 
     return (
-      <span 
-        className="invoice-status" 
-        style={{ color: statusColors[status] || 'black' }}
-      >
+      <span className='invoice-status' style={{ color: statusColors[status] || 'black' }}>
         {status}
       </span>
     );
@@ -1115,34 +1099,34 @@ const InvoiceList = () => {
   }
 
   if (error) {
-    return <div className="error">Error: {error}</div>;
+    return <div className='error'>Error: {error}</div>;
   }
 
   return (
-    <div className="invoice-list">
+    <div className='invoice-list'>
       <h3>Billing History</h3>
-      
+
       {invoices.length === 0 ? (
-        <div className="no-invoices">
+        <div className='no-invoices'>
           <p>No invoices found.</p>
         </div>
       ) : (
         <>
-          <div className="invoices">
-            {invoices.map((invoice) => (
-              <div key={invoice.id} className="invoice-item">
-                <div className="invoice-header">
-                  <span className="invoice-number">#{invoice.number}</span>
+          <div className='invoices'>
+            {invoices.map(invoice => (
+              <div key={invoice.id} className='invoice-item'>
+                <div className='invoice-header'>
+                  <span className='invoice-number'>#{invoice.number}</span>
                   {formatInvoiceStatus(invoice.status)}
                 </div>
-                
-                <div className="invoice-details">
-                  <div className="invoice-amount">
+
+                <div className='invoice-details'>
+                  <div className='invoice-amount'>
                     <strong>${invoice.total.toFixed(2)}</strong>
                     <small> {invoice.currency.toUpperCase()}</small>
                   </div>
-                  
-                  <div className="invoice-dates">
+
+                  <div className='invoice-dates'>
                     <div>Created: {new Date(invoice.createdAt).toLocaleDateString()}</div>
                     {invoice.dueDate && (
                       <div>Due: {new Date(invoice.dueDate).toLocaleDateString()}</div>
@@ -1153,18 +1137,15 @@ const InvoiceList = () => {
                   </div>
                 </div>
 
-                <div className="invoice-actions">
+                <div className='invoice-actions'>
                   {invoice.pdfUrl && (
                     <button onClick={() => InvoiceManager.downloadInvoicePDF(invoice.id)}>
                       Download PDF
                     </button>
                   )}
-                  
+
                   {invoice.status === 'OPEN' && (
-                    <button 
-                      onClick={() => handlePayInvoice(invoice.id)}
-                      className="pay-button"
-                    >
+                    <button onClick={() => handlePayInvoice(invoice.id)} className='pay-button'>
                       Pay Now
                     </button>
                   )}
@@ -1174,11 +1155,7 @@ const InvoiceList = () => {
           </div>
 
           {hasMore && (
-            <button 
-              onClick={loadMoreInvoices}
-              disabled={loading}
-              className="load-more-btn"
-            >
+            <button onClick={loadMoreInvoices} disabled={loading} className='load-more-btn'>
               {loading ? 'Loading...' : 'Load More'}
             </button>
           )}

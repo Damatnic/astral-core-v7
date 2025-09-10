@@ -14,7 +14,7 @@ export const createMockResponse = (data: unknown, status: number = 200) => {
     headers: new Map([['content-type', 'application/json']]),
     body: JSON.stringify(data)
   };
-  
+
   return response;
 };
 
@@ -36,7 +36,7 @@ export const createAPIRequest = (
   } = {}
 ) => {
   const { method = 'GET', body, headers = {}, searchParams = {} } = options;
-  
+
   const urlObj = new URL(url);
   Object.entries(searchParams).forEach(([key, value]) => {
     urlObj.searchParams.set(key, value);
@@ -45,10 +45,12 @@ export const createAPIRequest = (
   const mockRequest = {
     url: urlObj.toString(),
     method,
-    headers: new Map(Object.entries({
-      'Content-Type': 'application/json',
-      ...headers
-    })),
+    headers: new Map(
+      Object.entries({
+        'Content-Type': 'application/json',
+        ...headers
+      })
+    ),
     json: jest.fn().mockResolvedValue(body || {}),
     text: jest.fn().mockResolvedValue(body ? JSON.stringify(body) : ''),
     formData: jest.fn().mockResolvedValue(new FormData()),
@@ -75,19 +77,21 @@ export const createAuthenticatedSession = (overrides: Partial<Session['user']> =
   expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 });
 
-export const createTherapistSession = (): Session => createAuthenticatedSession({
-  id: 'therapist-id',
-  email: 'therapist@example.com',
-  name: 'Test Therapist',
-  role: 'THERAPIST'
-});
+export const createTherapistSession = (): Session =>
+  createAuthenticatedSession({
+    id: 'therapist-id',
+    email: 'therapist@example.com',
+    name: 'Test Therapist',
+    role: 'THERAPIST'
+  });
 
-export const createAdminSession = (): Session => createAuthenticatedSession({
-  id: 'admin-id',
-  email: 'admin@example.com',
-  name: 'Test Admin',
-  role: 'ADMIN'
-});
+export const createAdminSession = (): Session =>
+  createAuthenticatedSession({
+    id: 'admin-id',
+    email: 'admin@example.com',
+    name: 'Test Admin',
+    role: 'ADMIN'
+  });
 
 // Database mock helpers
 export const createDatabaseMock = () => ({
@@ -181,11 +185,11 @@ export const testAPIEndpoint = async (
 ) => {
   try {
     const response = await handler(request);
-    
+
     if (response.status) {
       expect(response.status).toBe(expectedStatus);
     }
-    
+
     return response;
   } catch (error) {
     if (expectedStatus >= 400) {
@@ -200,7 +204,7 @@ export const testAPIEndpoint = async (
 // Rate limiting mock
 export const createRateLimitMock = (allowed: boolean = true) => ({
   getIdentifier: jest.fn().mockReturnValue('test-ip'),
-  check: jest.fn().mockResolvedValue({ 
+  check: jest.fn().mockResolvedValue({
     allowed,
     remaining: allowed ? 10 : 0,
     resetTime: Date.now() + 3600000
@@ -210,16 +214,16 @@ export const createRateLimitMock = (allowed: boolean = true) => ({
 // Validation mock helpers
 export const createValidationMock = () => ({
   validateInput: jest.fn().mockReturnValue({ isValid: true, errors: [] }),
-  sanitizeInput: jest.fn().mockImplementation((input) => input),
+  sanitizeInput: jest.fn().mockImplementation(input => input),
   validateFileUpload: jest.fn().mockReturnValue({ isValid: true }),
   validateCrisisData: jest.fn().mockReturnValue({ isValid: true })
 });
 
 // Encryption service mock
 export const createEncryptionMock = () => ({
-  encrypt: jest.fn().mockImplementation((data) => `encrypted_${data}`),
-  decrypt: jest.fn().mockImplementation((data) => data.replace('encrypted_', '')),
-  hashPassword: jest.fn().mockImplementation((password) => `hashed_${password}`),
+  encrypt: jest.fn().mockImplementation(data => `encrypted_${data}`),
+  decrypt: jest.fn().mockImplementation(data => data.replace('encrypted_', '')),
+  hashPassword: jest.fn().mockImplementation(password => `hashed_${password}`),
   verifyPassword: jest.fn().mockImplementation((password, hash) => hash === `hashed_${password}`),
   generateToken: jest.fn().mockReturnValue('test-token-123'),
   encryptObject: jest.fn(),

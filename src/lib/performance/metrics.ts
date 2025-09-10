@@ -67,7 +67,7 @@ class PerformanceMetricsCollector {
 
   private initialize() {
     if (typeof window === 'undefined' || this.isInitialized) return;
-    
+
     this.isInitialized = true;
     this.setupWebVitalsMonitoring();
     this.setupMemoryMonitoring();
@@ -77,25 +77,25 @@ class PerformanceMetricsCollector {
 
   private setupWebVitalsMonitoring() {
     // First Contentful Paint (FCP)
-    this.observePerformanceEntry('paint', (entry) => {
+    this.observePerformanceEntry('paint', entry => {
       if (entry.name === 'first-contentful-paint') {
         this.webVitals.fcp = entry.startTime;
       }
     });
 
     // Largest Contentful Paint (LCP)
-    this.observePerformanceEntry('largest-contentful-paint', (entry) => {
+    this.observePerformanceEntry('largest-contentful-paint', entry => {
       this.webVitals.lcp = entry.startTime;
     });
 
     // First Input Delay (FID) & Interaction to Next Paint (INP)
-    this.observePerformanceEntry('first-input', (entry) => {
+    this.observePerformanceEntry('first-input', entry => {
       const inputEntry = entry as PerformanceEventTiming;
       this.webVitals.fid = inputEntry.processingStart - entry.startTime;
     });
 
     // Layout Shift (CLS)
-    this.observePerformanceEntry('layout-shift', (entry) => {
+    this.observePerformanceEntry('layout-shift', entry => {
       const layoutEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
       if (!layoutEntry.hadRecentInput) {
         this.webVitals.cls = (this.webVitals.cls || 0) + (layoutEntry.value || 0);
@@ -103,7 +103,7 @@ class PerformanceMetricsCollector {
     });
 
     // Time to First Byte (TTFB)
-    this.observePerformanceEntry('navigation', (entry) => {
+    this.observePerformanceEntry('navigation', entry => {
       const navigationEntry = entry as PerformanceNavigationTiming;
       this.webVitals.ttfb = navigationEntry.responseStart - navigationEntry.requestStart;
     });
@@ -112,7 +112,11 @@ class PerformanceMetricsCollector {
   private setupMemoryMonitoring() {
     if ('memory' in performance) {
       const collectMemoryMetrics = () => {
-        const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+        const memory = (
+          performance as unknown as {
+            memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number };
+          }
+        ).memory;
         this.memoryMetrics.push({
           usedJSHeapSize: memory.usedJSHeapSize,
           totalJSHeapSize: memory.totalJSHeapSize,
@@ -133,9 +137,9 @@ class PerformanceMetricsCollector {
   }
 
   private setupResourceMonitoring() {
-    this.observePerformanceEntry('resource', (entry) => {
+    this.observePerformanceEntry('resource', entry => {
       const resourceEntry = entry as PerformanceResourceTiming;
-      
+
       // Track API calls
       if (resourceEntry.name.includes('/api/')) {
         this.apiMetrics.push({
@@ -157,9 +161,9 @@ class PerformanceMetricsCollector {
   }
 
   private setupNavigationMonitoring() {
-    this.observePerformanceEntry('navigation', (entry) => {
+    this.observePerformanceEntry('navigation', entry => {
       const navigationEntry = entry as PerformanceNavigationTiming;
-      
+
       // Additional navigation metrics can be collected here
       console.log('Page load complete:', {
         loadTime: navigationEntry.loadEventEnd - navigationEntry.fetchStart,
@@ -169,14 +173,11 @@ class PerformanceMetricsCollector {
     });
   }
 
-  private observePerformanceEntry(
-    entryType: string, 
-    callback: (entry: PerformanceEntry) => void
-  ) {
+  private observePerformanceEntry(entryType: string, callback: (entry: PerformanceEntry) => void) {
     if (!('PerformanceObserver' in window)) return;
 
     try {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           callback(entry);
         }
@@ -214,7 +215,7 @@ class PerformanceMetricsCollector {
   }
 
   public getLatestMemoryUsage(): MemoryMetric | null {
-    return this.memoryMetrics.length > 0 
+    return this.memoryMetrics.length > 0
       ? this.memoryMetrics[this.memoryMetrics.length - 1] || null
       : null;
   }
@@ -224,17 +225,22 @@ class PerformanceMetricsCollector {
       return { averageResponseTime: 0, totalRequests: 0, slowestEndpoints: [] };
     }
 
-    const averageResponseTime = this.apiMetrics.reduce((sum, metric) => sum + metric.responseTime, 0) / this.apiMetrics.length;
-    const endpointGroups = this.apiMetrics.reduce((groups, metric) => {
-      if (!groups[metric.endpoint]) {
-        groups[metric.endpoint] = { total: 0, count: 0, slowest: 0 };
-      }
-      const group = groups[metric.endpoint]!;
-      group.total += metric.responseTime;
-      group.count++;
-      group.slowest = Math.max(group.slowest, metric.responseTime);
-      return groups;
-    }, {} as Record<string, { total: number; count: number; slowest: number }>);
+    const averageResponseTime =
+      this.apiMetrics.reduce((sum, metric) => sum + metric.responseTime, 0) /
+      this.apiMetrics.length;
+    const endpointGroups = this.apiMetrics.reduce(
+      (groups, metric) => {
+        if (!groups[metric.endpoint]) {
+          groups[metric.endpoint] = { total: 0, count: 0, slowest: 0 };
+        }
+        const group = groups[metric.endpoint]!;
+        group.total += metric.responseTime;
+        group.count++;
+        group.slowest = Math.max(group.slowest, metric.responseTime);
+        return groups;
+      },
+      {} as Record<string, { total: number; count: number; slowest: number }>
+    );
 
     const slowestEndpoints = Object.entries(endpointGroups)
       .map(([endpoint, stats]) => ({
@@ -282,7 +288,13 @@ class PerformanceMetricsCollector {
     };
   }
 
-  public trackApiCall(endpoint: string, method: string, responseTime: number, status: number, size: number) {
+  public trackApiCall(
+    endpoint: string,
+    method: string,
+    responseTime: number,
+    status: number,
+    size: number
+  ) {
     this.apiMetrics.push({
       endpoint,
       method,
@@ -396,7 +408,7 @@ export function logPerformanceMetrics() {
     const collector = getPerformanceMetricsCollector();
     const report = collector.generateReport();
     const vitalsScore = collector.getWebVitalsScore();
-    
+
     console.group('Performance Metrics Report');
     console.log('Web Vitals Score:', `${vitalsScore.score}/100 (${vitalsScore.grade})`);
     console.log('Web Vitals:', report.webVitals);

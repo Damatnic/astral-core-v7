@@ -5,7 +5,11 @@
 
 import { WebSocketServer } from '@/lib/websocket/server';
 import { MessagingService } from '@/lib/services/messaging-service';
-import { createDatabaseMock, createPHIMock, createWebSocketMock } from '../../utils/api-test-helpers';
+import {
+  createDatabaseMock,
+  createPHIMock,
+  createWebSocketMock
+} from '../../utils/api-test-helpers';
 import { Server as HTTPServer } from 'http';
 
 // Mock Socket.IO
@@ -81,7 +85,7 @@ describe('WebSocket Functionality Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     messagingService = new MessagingService();
     webSocketServer = new WebSocketServer();
     mockHttpServer = {} as HTTPServer;
@@ -90,7 +94,7 @@ describe('WebSocket Functionality Tests', () => {
     mockWebSocketServer.sendToUser.mockClear();
     mockWebSocketServer.sendToRoom.mockClear();
     mockWebSocketServer.broadcastToRole.mockClear();
-    
+
     // Set up default database responses
     prisma.conversation.create.mockResolvedValue({
       id: 'conv-123',
@@ -122,20 +126,20 @@ describe('WebSocket Functionality Tests', () => {
       }
     });
 
-    phiService.encryptField.mockImplementation((content) => `encrypted_${content}`);
-    phiService.decryptField.mockImplementation((content) => content.replace('encrypted_', ''));
+    phiService.encryptField.mockImplementation(content => `encrypted_${content}`);
+    phiService.decryptField.mockImplementation(content => content.replace('encrypted_', ''));
   });
 
   describe('WebSocket Server Initialization', () => {
     it('should initialize WebSocket server with proper configuration', () => {
       webSocketServer.initialize(mockHttpServer);
-      
+
       expect(mockIo.use).toHaveBeenCalled(); // Authentication middleware should be set up
     });
 
     it('should set up authentication middleware', () => {
       webSocketServer.initialize(mockHttpServer);
-      
+
       // Verify middleware was added
       expect(mockIo.use).toHaveBeenCalledWith(expect.any(Function));
     });
@@ -200,8 +204,16 @@ describe('WebSocket Functionality Tests', () => {
       });
 
       // Verify WebSocket notifications were sent
-      expect(mockWebSocketServer.sendToUser).toHaveBeenCalledWith('user-1', 'message:new', expect.any(Object));
-      expect(mockWebSocketServer.sendToUser).toHaveBeenCalledWith('user-2', 'message:new', expect.any(Object));
+      expect(mockWebSocketServer.sendToUser).toHaveBeenCalledWith(
+        'user-1',
+        'message:new',
+        expect.any(Object)
+      );
+      expect(mockWebSocketServer.sendToUser).toHaveBeenCalledWith(
+        'user-2',
+        'message:new',
+        expect.any(Object)
+      );
 
       // Verify push notifications were sent to non-sender
       expect(notificationService.sendMessageNotification).toHaveBeenCalledWith(
@@ -231,7 +243,9 @@ describe('WebSocket Functionality Tests', () => {
 
       await messagingService.sendMessage(messageData);
 
-      expect(phiService.encryptField).toHaveBeenCalledWith('Patient ID: 12345, diagnosis: depression');
+      expect(phiService.encryptField).toHaveBeenCalledWith(
+        'Patient ID: 12345, diagnosis: depression'
+      );
     });
 
     it('should prevent unauthorized users from sending messages', async () => {
@@ -446,7 +460,7 @@ describe('WebSocket Functionality Tests', () => {
       await messagingService.editMessage('msg-123', 'user-1', 'Edited content');
 
       expect(phiService.encryptField).toHaveBeenCalledWith('Edited content');
-      
+
       expect(prisma.message.update).toHaveBeenCalledWith({
         where: { id: 'msg-123' },
         data: {
@@ -478,8 +492,9 @@ describe('WebSocket Functionality Tests', () => {
       // Mock message not found or different sender
       prisma.message.findFirst.mockResolvedValue(null);
 
-      await expect(messagingService.editMessage('msg-123', 'user-2', 'Unauthorized edit'))
-        .rejects.toThrow('Message not found or access denied');
+      await expect(
+        messagingService.editMessage('msg-123', 'user-2', 'Unauthorized edit')
+      ).rejects.toThrow('Message not found or access denied');
 
       expect(prisma.message.update).not.toHaveBeenCalled();
       expect(mockWebSocketServer.sendToUser).not.toHaveBeenCalled();
@@ -623,8 +638,12 @@ describe('WebSocket Functionality Tests', () => {
       };
 
       mockWebSocketServer.sendToRoom('conv-123', 'user:typing', typingData);
-      
-      expect(mockWebSocketServer.sendToRoom).toHaveBeenCalledWith('conv-123', 'user:typing', typingData);
+
+      expect(mockWebSocketServer.sendToRoom).toHaveBeenCalledWith(
+        'conv-123',
+        'user:typing',
+        typingData
+      );
     });
   });
 
@@ -720,7 +739,7 @@ describe('WebSocket Functionality Tests', () => {
       };
 
       await expect(messagingService.sendMessage(messageData)).rejects.toThrow('Encryption failed');
-      
+
       expect(prisma.message.create).not.toHaveBeenCalled();
       expect(mockWebSocketServer.sendToUser).not.toHaveBeenCalled();
     });
@@ -735,7 +754,9 @@ describe('WebSocket Functionality Tests', () => {
         type: 'text'
       };
 
-      await expect(messagingService.sendMessage(messageData)).rejects.toThrow('Database connection failed');
+      await expect(messagingService.sendMessage(messageData)).rejects.toThrow(
+        'Database connection failed'
+      );
     });
 
     it('should handle malformed message data', async () => {
@@ -767,10 +788,10 @@ describe('WebSocket Functionality Tests', () => {
       }));
 
       const promises = concurrentMessages.map(data => messagingService.sendMessage(data));
-      
+
       // Should handle all messages without errors
       await expect(Promise.all(promises)).resolves.toBeDefined();
-      
+
       expect(prisma.message.create).toHaveBeenCalledTimes(10);
     });
 
@@ -816,7 +837,7 @@ describe('WebSocket Functionality Tests', () => {
 
       // Should send WebSocket notification to all participants
       expect(mockWebSocketServer.sendToUser).toHaveBeenCalledTimes(100);
-      
+
       // Should send push notifications to all except sender
       expect(notificationService.sendMessageNotification).toHaveBeenCalledTimes(99);
     });

@@ -130,28 +130,38 @@ export default function MfaSetup({ onComplete, onCancel }: MfaSetupProps) {
 
   if (step === 'select') {
     return (
-      <Card className='max-w-2xl mx-auto' role="dialog" aria-labelledby="mfa-title" aria-describedby="mfa-description">
+      <Card
+        className='max-w-2xl mx-auto'
+        role='dialog'
+        aria-labelledby='mfa-title'
+        aria-describedby='mfa-description'
+      >
         <CardHeader>
-          <CardTitle id="mfa-title">Enable Two-Factor Authentication</CardTitle>
+          <CardTitle id='mfa-title'>Enable Two-Factor Authentication</CardTitle>
         </CardHeader>
         <CardContent>
-          <p id="mfa-description" className='text-gray-600 dark:text-gray-400 mb-6'>
+          <p id='mfa-description' className='text-gray-600 dark:text-gray-400 mb-6'>
             Add an extra layer of security to your account by enabling two-factor authentication.
           </p>
 
-          <div className='space-y-4' role="radiogroup" aria-labelledby="mfa-title">
+          <div className='space-y-4' role='radiogroup' aria-labelledby='mfa-title'>
             <button
               onClick={() => handleMethodSelect('TOTP')}
               className='w-full p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-              role="radio"
+              role='radio'
               aria-checked={method === 'TOTP'}
-              aria-describedby="totp-description"
+              aria-describedby='totp-description'
             >
               <div className='flex items-start gap-4'>
-                <div className='text-3xl' role="img" aria-label="Mobile phone emoji">📱</div>
+                <div className='text-3xl' role='img' aria-label='Mobile phone emoji'>
+                  📱
+                </div>
                 <div>
                   <h3 className='font-semibold'>Authenticator App (Recommended)</h3>
-                  <p id="totp-description" className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
+                  <p
+                    id='totp-description'
+                    className='text-sm text-gray-600 dark:text-gray-400 mt-1'
+                  >
                     Use an app like Google Authenticator or Authy to generate codes
                   </p>
                 </div>
@@ -167,15 +177,17 @@ export default function MfaSetup({ onComplete, onCancel }: MfaSetupProps) {
                 handleMethodSelect('SMS');
               }}
               className='w-full p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-              role="radio"
+              role='radio'
               aria-checked={method === 'SMS'}
-              aria-describedby="sms-description"
+              aria-describedby='sms-description'
             >
               <div className='flex items-start gap-4'>
-                <div className='text-3xl' role="img" aria-label="Speech bubble emoji">💬</div>
+                <div className='text-3xl' role='img' aria-label='Speech bubble emoji'>
+                  💬
+                </div>
                 <div className='flex-1'>
                   <h3 className='font-semibold'>SMS Text Message</h3>
-                  <p id="sms-description" className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
+                  <p id='sms-description' className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
                     Receive codes via text message to your phone
                   </p>
                   {method !== 'SMS' && (
@@ -186,8 +198,8 @@ export default function MfaSetup({ onComplete, onCancel }: MfaSetupProps) {
                       onChange={e => setPhoneNumber(e.target.value)}
                       onClick={e => e.stopPropagation()}
                       className='mt-2'
-                      aria-label="Phone number for SMS verification"
-                      aria-required="true"
+                      aria-label='Phone number for SMS verification'
+                      aria-required='true'
                     />
                   )}
                 </div>
@@ -197,15 +209,20 @@ export default function MfaSetup({ onComplete, onCancel }: MfaSetupProps) {
             <button
               onClick={() => handleMethodSelect('EMAIL')}
               className='w-full p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-              role="radio"
+              role='radio'
               aria-checked={method === 'EMAIL'}
-              aria-describedby="email-description"
+              aria-describedby='email-description'
             >
               <div className='flex items-start gap-4'>
-                <div className='text-3xl' role="img" aria-label="Email emoji">📧</div>
+                <div className='text-3xl' role='img' aria-label='Email emoji'>
+                  📧
+                </div>
                 <div>
                   <h3 className='font-semibold'>Email</h3>
-                  <p id="email-description" className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
+                  <p
+                    id='email-description'
+                    className='text-sm text-gray-600 dark:text-gray-400 mt-1'
+                  >
                     Receive codes via email to your registered address
                   </p>
                 </div>
@@ -268,12 +285,12 @@ export default function MfaSetup({ onComplete, onCancel }: MfaSetupProps) {
                 onChange={e => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className='text-center text-2xl tracking-widest'
                 maxLength={6}
-                aria-label="Enter 6-digit verification code"
-                aria-describedby="verification-help"
-                inputMode="numeric"
-                pattern="[0-9]*"
+                aria-label='Enter 6-digit verification code'
+                aria-describedby='verification-help'
+                inputMode='numeric'
+                pattern='[0-9]*'
               />
-              <div id="verification-help" className="sr-only">
+              <div id='verification-help' className='sr-only'>
                 Enter the 6-digit code from your authenticator app
               </div>
             </div>
@@ -321,12 +338,12 @@ export default function MfaSetup({ onComplete, onCancel }: MfaSetupProps) {
                 onChange={e => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className='text-center text-2xl tracking-widest'
                 maxLength={6}
-                aria-label="Enter 6-digit verification code"
-                aria-describedby="sms-email-verification-help"
-                inputMode="numeric"
-                pattern="[0-9]*"
+                aria-label='Enter 6-digit verification code'
+                aria-describedby='sms-email-verification-help'
+                inputMode='numeric'
+                pattern='[0-9]*'
               />
-              <div id="sms-email-verification-help" className="sr-only">
+              <div id='sms-email-verification-help' className='sr-only'>
                 Enter the 6-digit code sent to your {method === 'SMS' ? 'phone' : 'email'}
               </div>
             </div>

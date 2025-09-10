@@ -30,7 +30,9 @@
       "Bash(npm run typecheck:*)",
       "Bash(chmod:*)",
       "Read(//h//**)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npx next:*)",
+      "Bash(cmd /c \"dir src\\app\\api\\analytics\\dashboard\\ /a\")"
     ],
     "deny": [],
     "ask": []

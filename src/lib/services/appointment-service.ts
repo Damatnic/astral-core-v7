@@ -798,11 +798,9 @@ export class AppointmentService {
         });
       }
 
-      logSystemEvent(
-        'system',
-        `Sent ${appointmentsToRemind.length} appointment reminders`,
-        { category: 'appointment-reminders' }
-      );
+      logSystemEvent('system', `Sent ${appointmentsToRemind.length} appointment reminders`, {
+        category: 'appointment-reminders'
+      });
     } catch (error) {
       logError('Error sending reminders', error, 'appointment-service');
     }
@@ -992,7 +990,7 @@ export class AppointmentService {
  * @example
  * ```typescript
  * import { appointmentService } from '@/lib/services/appointment-service';
- * 
+ *
  * // Create appointment
  * const appointment = await appointmentService.createAppointment({
  *   userId: 'patient_123',

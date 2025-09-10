@@ -37,58 +37,64 @@ export const useErrorHandling = (options: UseErrorHandlingOptions = {}) => {
     retryCount: 0
   });
 
-  const handleError = useCallback((error: unknown, errorContext?: string) => {
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    const fullContext = errorContext ? `${context}:${errorContext}` : context;
-    
-    logError('Error handled by useErrorHandling', error as Error, fullContext, {
-      retryCount: errorState.retryCount,
-      maxRetries
-    });
+  const handleError = useCallback(
+    (error: unknown, errorContext?: string) => {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      const fullContext = errorContext ? `${context}:${errorContext}` : context;
 
-    setErrorState(prev => ({
-      ...prev,
-      error: errorMessage
-    }));
-
-    onError?.(error instanceof Error ? error : new Error(errorMessage));
-  }, [context, errorState.retryCount, maxRetries, onError]);
-
-  const retry = useCallback(async (operation: () => Promise<unknown>) => {
-    if (errorState.retryCount >= maxRetries) {
-      return false;
-    }
-
-    setErrorState(prev => ({
-      ...prev,
-      isRetrying: true
-    }));
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-      
-      const result = await operation();
-      
-      setErrorState({
-        error: null,
-        isRetrying: false,
-        retryCount: errorState.retryCount + 1
+      logError('Error handled by useErrorHandling', error as Error, fullContext, {
+        retryCount: errorState.retryCount,
+        maxRetries
       });
 
-      onRetrySuccess?.();
-      return result;
-    } catch (error) {
       setErrorState(prev => ({
         ...prev,
-        isRetrying: false,
-        retryCount: prev.retryCount + 1,
-        error: error instanceof Error ? error.message : 'Retry failed'
+        error: errorMessage
       }));
-      
-      handleError(error, 'retry');
-      return false;
-    }
-  }, [errorState.retryCount, maxRetries, retryDelay, handleError, onRetrySuccess]);
+
+      onError?.(error instanceof Error ? error : new Error(errorMessage));
+    },
+    [context, errorState.retryCount, maxRetries, onError]
+  );
+
+  const retry = useCallback(
+    async (operation: () => Promise<unknown>) => {
+      if (errorState.retryCount >= maxRetries) {
+        return false;
+      }
+
+      setErrorState(prev => ({
+        ...prev,
+        isRetrying: true
+      }));
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+
+        const result = await operation();
+
+        setErrorState({
+          error: null,
+          isRetrying: false,
+          retryCount: errorState.retryCount + 1
+        });
+
+        onRetrySuccess?.();
+        return result;
+      } catch (error) {
+        setErrorState(prev => ({
+          ...prev,
+          isRetrying: false,
+          retryCount: prev.retryCount + 1,
+          error: error instanceof Error ? error.message : 'Retry failed'
+        }));
+
+        handleError(error, 'retry');
+        return false;
+      }
+    },
+    [errorState.retryCount, maxRetries, retryDelay, handleError, onRetrySuccess]
+  );
 
   const clearError = useCallback(() => {
     setErrorState({
@@ -119,44 +125,51 @@ interface UseAsyncOperationOptions<T> extends UseErrorHandlingOptions {
 
 export const useAsyncOperation = <T = unknown>(options: UseAsyncOperationOptions<T> = {}) => {
   const { initialData, onSuccess, ...errorOptions } = options;
-  
+
   const [data, setData] = useState<T | null>(initialData || null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { error, isRetrying, retryCount, canRetry, handleError, retry, clearError } = useErrorHandling(errorOptions);
 
-  const execute = useCallback(async (operation: () => Promise<T>) => {
-    setIsLoading(true);
-    clearError();
-    
-    try {
-      const result = await operation();
-      setData(result);
-      onSuccess?.(result);
-      return result;
-    } catch (error) {
-      handleError(error);
-      throw error;
-    } finally {
+  const { error, isRetrying, retryCount, canRetry, handleError, retry, clearError } =
+    useErrorHandling(errorOptions);
+
+  const execute = useCallback(
+    async (operation: () => Promise<T>) => {
+      setIsLoading(true);
+      clearError();
+
+      try {
+        const result = await operation();
+        setData(result);
+        onSuccess?.(result);
+        return result;
+      } catch (error) {
+        handleError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleError, clearError, onSuccess]
+  );
+
+  const retryOperation = useCallback(
+    async (operation: () => Promise<T>) => {
+      if (!canRetry) return false;
+
+      setIsLoading(true);
+      const result = await retry(operation);
       setIsLoading(false);
-    }
-  }, [handleError, clearError, onSuccess]);
 
-  const retryOperation = useCallback(async (operation: () => Promise<T>) => {
-    if (!canRetry) return false;
-    
-    setIsLoading(true);
-    const result = await retry(operation);
-    setIsLoading(false);
-    
-    if (result && result !== false) {
-      const typedResult = result as T;
-      setData(typedResult);
-      onSuccess?.(typedResult);
-    }
-    
-    return result;
-  }, [retry, canRetry, onSuccess]);
+      if (result && result !== false) {
+        const typedResult = result as T;
+        setData(typedResult);
+        onSuccess?.(typedResult);
+      }
+
+      return result;
+    },
+    [retry, canRetry, onSuccess]
+  );
 
   return {
     data,
@@ -180,33 +193,36 @@ interface UseFormSubmissionOptions extends UseErrorHandlingOptions {
 
 export const useFormSubmission = (options: UseFormSubmissionOptions = {}) => {
   const { onSuccess, validateBeforeSubmit, ...errorOptions } = options;
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   const { error, handleError, clearError } = useErrorHandling(errorOptions);
 
-  const submit = useCallback(async (submitFunction: () => Promise<void>) => {
-    if (validateBeforeSubmit && !validateBeforeSubmit()) {
-      return false;
-    }
+  const submit = useCallback(
+    async (submitFunction: () => Promise<void>) => {
+      if (validateBeforeSubmit && !validateBeforeSubmit()) {
+        return false;
+      }
 
-    setIsSubmitting(true);
-    setIsSuccess(false);
-    clearError();
+      setIsSubmitting(true);
+      setIsSuccess(false);
+      clearError();
 
-    try {
-      await submitFunction();
-      setIsSuccess(true);
-      onSuccess?.();
-      return true;
-    } catch (error) {
-      handleError(error, 'submit');
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [validateBeforeSubmit, handleError, clearError, onSuccess]);
+      try {
+        await submitFunction();
+        setIsSuccess(true);
+        onSuccess?.();
+        return true;
+      } catch (error) {
+        handleError(error, 'submit');
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [validateBeforeSubmit, handleError, clearError, onSuccess]
+  );
 
   const reset = useCallback(() => {
     setIsSubmitting(false);

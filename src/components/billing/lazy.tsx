@@ -24,13 +24,13 @@ const withLazyLoading = <P extends object>(
 ) => {
   const LazyComponent = (props: P) => (
     <ErrorBoundary>
-      <Suspense 
+      <Suspense
         fallback={
-          <LoadingFallback 
-            variant="skeleton" 
-            size="lg" 
+          <LoadingFallback
+            variant='skeleton'
+            size='lg'
             {...(loadingMessage && { message: loadingMessage })}
-            className="min-h-[400px]"
+            className='min-h-[400px]'
           />
         }
       >
@@ -40,38 +40,29 @@ const withLazyLoading = <P extends object>(
   );
 
   LazyComponent.displayName = `LazyLoaded(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return LazyComponent;
 };
 
 // Wrapped lazy components with proper loading states
-export const LazyPaymentHistory = withLazyLoading(
-  PaymentHistory, 
-  'Loading payment history...'
-);
+export const LazyPaymentHistory = withLazyLoading(PaymentHistory, 'Loading payment history...');
 
 export const LazySubscriptionManager = withLazyLoading(
-  SubscriptionManager, 
+  SubscriptionManager,
   'Loading subscription manager...'
 );
 
 export const LazyBillingDashboard = withLazyLoading(
-  BillingDashboard, 
+  BillingDashboard,
   'Loading billing dashboard...'
 );
 
-export const LazyPaymentMethods = withLazyLoading(
-  PaymentMethods, 
-  'Loading payment methods...'
-);
+export const LazyPaymentMethods = withLazyLoading(PaymentMethods, 'Loading payment methods...');
 
-export const LazyPaymentForm = withLazyLoading(
-  PaymentForm, 
-  'Loading payment form...'
-);
+export const LazyPaymentForm = withLazyLoading(PaymentForm, 'Loading payment form...');
 
 export const LazyAppointmentPayment = withLazyLoading(
-  AppointmentPayment, 
+  AppointmentPayment,
   'Loading appointment payment...'
 );
 

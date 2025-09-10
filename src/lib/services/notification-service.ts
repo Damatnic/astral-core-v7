@@ -15,8 +15,6 @@ interface NotificationPayload {
   metadata?: Prisma.InputJsonValue;
 }
 
-
-
 interface PushNotification {
   userId: string;
   title: string;
@@ -79,11 +77,16 @@ export class NotificationService {
       // Map priority to WebSocket type
       const mapPriority = (priority: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' => {
         switch (priority) {
-          case 'LOW': return 'LOW';
-          case 'NORMAL': return 'MEDIUM';
-          case 'HIGH': return 'HIGH';
-          case 'URGENT': return 'URGENT';
-          default: return 'MEDIUM';
+          case 'LOW':
+            return 'LOW';
+          case 'NORMAL':
+            return 'MEDIUM';
+          case 'HIGH':
+            return 'HIGH';
+          case 'URGENT':
+            return 'URGENT';
+          default:
+            return 'MEDIUM';
         }
       };
 
@@ -146,7 +149,11 @@ export class NotificationService {
         payload.userId
       );
     } catch (error) {
-      logError('Failed to create notification', error instanceof Error ? error : new Error(String(error)), 'notification-service');
+      logError(
+        'Failed to create notification',
+        error instanceof Error ? error : new Error(String(error)),
+        'notification-service'
+      );
       throw error;
     }
   }
@@ -199,14 +206,22 @@ export class NotificationService {
             notificationId: `notification_${Date.now()}`,
             title: notification.title,
             message: notification.message,
-            priority: (notification.priority === 'NORMAL' ? 'MEDIUM' : notification.priority) as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+            priority: (notification.priority === 'NORMAL' ? 'MEDIUM' : notification.priority) as
+              | 'LOW'
+              | 'MEDIUM'
+              | 'HIGH'
+              | 'URGENT',
             ...(notification.actionUrl && { actionUrl: notification.actionUrl }),
             timestamp: Date.now(),
             userId: notification.userId
           });
         });
       } catch (error) {
-        logError('Batch notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');
+        logError(
+          'Batch notification error',
+          error instanceof Error ? error : new Error(String(error)),
+          'notification-service'
+        );
         // Re-queue failed notifications for retry
         this.notificationQueue.unshift(...batch);
       }
@@ -450,7 +465,11 @@ export class NotificationService {
         title: notification.title
       });
     } catch (error) {
-      logError('Push notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');
+      logError(
+        'Push notification error',
+        error instanceof Error ? error : new Error(String(error)),
+        'notification-service'
+      );
     }
   }
 
@@ -462,7 +481,10 @@ export class NotificationService {
    * @param {any} notification - Notification data for email content
    * @returns {Promise<void>}
    */
-  private async sendEmailNotification(userId: string, notification: NotificationPayload): Promise<void> {
+  private async sendEmailNotification(
+    userId: string,
+    notification: NotificationPayload
+  ): Promise<void> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -478,7 +500,11 @@ export class NotificationService {
         subject: notification.title
       });
     } catch (error) {
-      logError('Email notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');
+      logError(
+        'Email notification error',
+        error instanceof Error ? error : new Error(String(error)),
+        'notification-service'
+      );
     }
   }
 
@@ -797,14 +823,14 @@ export class NotificationService {
  * @example
  * ```typescript
  * import { notificationService } from '@/lib/services/notification-service';
- * 
+ *
  * // Send appointment reminder
  * await notificationService.sendAppointmentReminder(
  *   'patient_123',
  *   'appt_456',
  *   new Date()
  * );
- * 
+ *
  * // Create custom notification
  * await notificationService.createNotification({
  *   userId: 'user_123',

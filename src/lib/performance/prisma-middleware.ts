@@ -26,7 +26,7 @@ export function createPerformanceMiddleware() {
   return async (params: unknown, next: (params: unknown) => Promise<unknown>) => {
     const start = performance.now();
     const monitor = getDatabaseMonitor();
-    
+
     // Extract operation and model info
     const paramsObj = params as Record<string, unknown>;
     const operation = (paramsObj['action'] as string)?.toUpperCase() || 'unknown';
@@ -36,7 +36,7 @@ export function createPerformanceMiddleware() {
     try {
       const result = await next(params);
       const duration = performance.now() - start;
-      
+
       // Determine number of rows affected
       let rows = 0;
       if (Array.isArray(result)) {
@@ -52,17 +52,24 @@ export function createPerformanceMiddleware() {
       // Track successful query
       const queryMetric: Record<string, unknown> = {
         query,
-        operation: operation as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
+        operation: operation as
+          | 'SELECT'
+          | 'INSERT'
+          | 'UPDATE'
+          | 'DELETE'
+          | 'UPSERT'
+          | 'CREATE'
+          | 'DROP',
         duration,
         rows,
         table: model,
         success: true,
         timestamp: Date.now()
       };
-      
+
       if (currentContext.userId) queryMetric['userId'] = currentContext.userId;
       if (currentContext.endpoint) queryMetric['endpoint'] = currentContext.endpoint;
-      
+
       monitor.trackQuery(queryMetric);
 
       // Log slow queries in development
@@ -80,11 +87,18 @@ export function createPerformanceMiddleware() {
     } catch (error) {
       const duration = performance.now() - start;
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       // Track failed query
       const errorMetric: Record<string, unknown> = {
         query,
-        operation: operation as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'UPSERT' | 'CREATE' | 'DROP',
+        operation: operation as
+          | 'SELECT'
+          | 'INSERT'
+          | 'UPDATE'
+          | 'DELETE'
+          | 'UPSERT'
+          | 'CREATE'
+          | 'DROP',
         duration,
         rows: 0,
         table: model,
@@ -92,10 +106,10 @@ export function createPerformanceMiddleware() {
         errorMessage,
         timestamp: Date.now()
       };
-      
+
       if (currentContext.userId) errorMetric['userId'] = currentContext.userId;
       if (currentContext.endpoint) errorMetric['endpoint'] = currentContext.endpoint;
-      
+
       monitor.trackQuery(errorMetric);
 
       // Log database errors
@@ -117,7 +131,7 @@ function generateQueryString(params: unknown): string {
   const paramsObj = params as Record<string, unknown>;
   const action = String(paramsObj['action'] || 'unknown');
   const model = String(paramsObj['model'] || 'unknown');
-  
+
   return `${action.toUpperCase()} ${model}`;
 }
 
@@ -138,15 +152,19 @@ export function withQueryContext<T extends unknown[], R>(
 }
 
 // Express/Next.js middleware to extract context from request
-export function extractQueryContextFromRequest(req: { headers?: Record<string, string>; url?: string; [key: string]: unknown }): QueryContext {
+export function extractQueryContextFromRequest(req: {
+  headers?: Record<string, string>;
+  url?: string;
+  [key: string]: unknown;
+}): QueryContext {
   const context: QueryContext = {};
-  
+
   // Simplified to avoid complex type issues
   if (req.url) {
     const endpoint = req.url.split('?')[0]; // Remove query params
     if (endpoint) context.endpoint = endpoint;
   }
-  
+
   return context;
 }
 
@@ -161,8 +179,8 @@ export function analyzeQueryPerformance(queries: Record<string, unknown>[]) {
   const averageDuration = durations.length > 0 ? totalDuration / durations.length : 0;
   const slowQueryCount = durations.filter(d => d > 1000).length;
   const errorCount = queries.filter(q => q['success'] === false).length;
-  const errorRate = queryCount > 0 ? (errorCount / queryCount) : 0;
-  
+  const errorRate = queryCount > 0 ? errorCount / queryCount : 0;
+
   return {
     totalQueries: queryCount,
     totalDuration,
@@ -173,4 +191,3 @@ export function analyzeQueryPerformance(queries: Record<string, unknown>[]) {
     slowestQuery: durations.length > 0 ? Math.max(...durations) : 0
   };
 }
-

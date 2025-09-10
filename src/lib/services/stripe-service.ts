@@ -46,28 +46,44 @@ const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!, {
 // Helper function to map Stripe subscription status to our enum
 const mapSubscriptionStatus = (stripeStatus: string) => {
   switch (stripeStatus.toLowerCase()) {
-    case 'active': return 'ACTIVE';
-    case 'canceled': return 'CANCELED';
-    case 'incomplete': return 'INCOMPLETE';
-    case 'incomplete_expired': return 'INCOMPLETE_EXPIRED';
-    case 'past_due': return 'PAST_DUE';
-    case 'trialing': return 'TRIALING';
-    case 'unpaid': return 'UNPAID';
-    default: return 'ACTIVE';
+    case 'active':
+      return 'ACTIVE';
+    case 'canceled':
+      return 'CANCELED';
+    case 'incomplete':
+      return 'INCOMPLETE';
+    case 'incomplete_expired':
+      return 'INCOMPLETE_EXPIRED';
+    case 'past_due':
+      return 'PAST_DUE';
+    case 'trialing':
+      return 'TRIALING';
+    case 'unpaid':
+      return 'UNPAID';
+    default:
+      return 'ACTIVE';
   }
 };
 
 // Helper function to map Stripe payment status to our enum
 const mapPaymentStatus = (stripeStatus: string) => {
   switch (stripeStatus.toLowerCase()) {
-    case 'requires_payment_method': return 'REQUIRES_PAYMENT_METHOD';
-    case 'requires_confirmation': return 'REQUIRES_CONFIRMATION';
-    case 'requires_action': return 'REQUIRES_ACTION';
-    case 'processing': return 'PROCESSING';
-    case 'requires_capture': return 'REQUIRES_CAPTURE';
-    case 'canceled': return 'CANCELED';
-    case 'succeeded': return 'SUCCEEDED';
-    default: return 'PROCESSING';
+    case 'requires_payment_method':
+      return 'REQUIRES_PAYMENT_METHOD';
+    case 'requires_confirmation':
+      return 'REQUIRES_CONFIRMATION';
+    case 'requires_action':
+      return 'REQUIRES_ACTION';
+    case 'processing':
+      return 'PROCESSING';
+    case 'requires_capture':
+      return 'REQUIRES_CAPTURE';
+    case 'canceled':
+      return 'CANCELED';
+    case 'succeeded':
+      return 'SUCCEEDED';
+    default:
+      return 'PROCESSING';
   }
 };
 
@@ -214,9 +230,9 @@ export class StripeService {
     });
 
     if (!customer) {
-      const result = await this.createCustomer({ 
-        userId, 
-        email, 
+      const result = await this.createCustomer({
+        userId,
+        email,
         ...(name && { name })
       });
       customer = result.customer;
@@ -275,7 +291,9 @@ export class StripeService {
         subscriptionData.default_payment_method = data.paymentMethodId;
       }
 
-      const stripeSubscription = await stripe.subscriptions.create(subscriptionData) as Stripe.Subscription;
+      const stripeSubscription = (await stripe.subscriptions.create(
+        subscriptionData
+      )) as Stripe.Subscription;
 
       // Get price details for plan information
       const price = await stripe.prices.retrieve(data.priceId, { expand: ['product'] });
@@ -490,7 +508,10 @@ export class StripeService {
         ];
       }
 
-      const stripeSubscription = await stripe.subscriptions.update(data.subscriptionId, updateData) as Stripe.Subscription;
+      const stripeSubscription = (await stripe.subscriptions.update(
+        data.subscriptionId,
+        updateData
+      )) as Stripe.Subscription;
 
       // Update subscription in database
       const updatedSubscription = await prisma.subscription.update({
@@ -544,7 +565,7 @@ export class StripeService {
    * ```typescript
    * // Cancel at end of billing period
    * await StripeService.cancelSubscription('sub_123', true);
-   * 
+   *
    * // Cancel immediately
    * await StripeService.cancelSubscription('sub_123', false);
    * ```
@@ -733,7 +754,7 @@ export class StripeService {
    * ```typescript
    * // Full refund
    * const fullRefund = await StripeService.createRefund('pi_123');
-   * 
+   *
    * // Partial refund
    * const partialRefund = await StripeService.createRefund(
    *   'pi_123',
@@ -775,7 +796,9 @@ export class StripeService {
           reason:
             (reason as keyof typeof import('@prisma/client').RefundReason) ||
             'REQUESTED_BY_CUSTOMER',
-          status: stripeRefund.status ? stripeRefund.status.toUpperCase() as import('@prisma/client').RefundStatus : 'PENDING',
+          status: stripeRefund.status
+            ? (stripeRefund.status.toUpperCase() as import('@prisma/client').RefundStatus)
+            : 'PENDING',
           receiptNumber: stripeRefund.receipt_number
         }
       });
@@ -946,7 +969,7 @@ export class StripeService {
    *   request.body,
    *   request.headers['stripe-signature']
    * );
-   * 
+   *
    * if (event.type === 'payment_intent.succeeded') {
    *   // Handle successful payment
    * }

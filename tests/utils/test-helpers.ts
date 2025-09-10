@@ -1,4 +1,3 @@
-
 import { Session } from 'next-auth';
 
 // Mock user data generator
@@ -54,10 +53,12 @@ export const createMockRequest = (
   const mockRequest = {
     url,
     method,
-    headers: new Map(Object.entries({
-      'Content-Type': 'application/json',
-      ...headers
-    })),
+    headers: new Map(
+      Object.entries({
+        'Content-Type': 'application/json',
+        ...headers
+      })
+    ),
     json: jest.fn().mockResolvedValue(body || {}),
     text: jest.fn().mockResolvedValue(body ? JSON.stringify(body) : ''),
     formData: jest.fn().mockResolvedValue(new FormData()),

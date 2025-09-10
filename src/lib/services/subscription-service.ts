@@ -12,14 +12,14 @@ import Stripe from 'stripe';
 // Helper function to map Stripe status to Prisma enum
 function mapStripeStatusToPrisma(stripeStatus: Stripe.Subscription.Status): SubscriptionStatus {
   const statusMap: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
-    'incomplete': 'INCOMPLETE',
-    'incomplete_expired': 'INCOMPLETE_EXPIRED',
-    'trialing': 'TRIALING',
-    'active': 'ACTIVE',
-    'past_due': 'PAST_DUE',
-    'canceled': 'CANCELED',
-    'unpaid': 'UNPAID',
-    'paused': 'PAUSED'
+    incomplete: 'INCOMPLETE',
+    incomplete_expired: 'INCOMPLETE_EXPIRED',
+    trialing: 'TRIALING',
+    active: 'ACTIVE',
+    past_due: 'PAST_DUE',
+    canceled: 'CANCELED',
+    unpaid: 'UNPAID',
+    paused: 'PAUSED'
   };
   return statusMap[stripeStatus] || 'ACTIVE';
 }
@@ -158,10 +158,10 @@ export class SubscriptionService {
         outcome: 'SUCCESS'
       });
 
-      return { 
+      return {
         ...therapyPlan,
-        product, 
-        price 
+        product,
+        price
       } as TherapyPlanWithStripeData;
     } catch (error) {
       await auditLog({
@@ -271,8 +271,8 @@ export class SubscriptionService {
         outcome: 'SUCCESS'
       });
 
-      return { 
-        subscription, 
+      return {
+        subscription,
         ...(setupIntent && { setupIntent })
       } as SubscriptionWithSetupIntent;
     } catch (error) {
@@ -708,9 +708,9 @@ export class SubscriptionService {
       const { stripeSubscription } = await StripeService.getSubscription(subscriptionId);
 
       // Update local database
-      const stripeSubData = stripeSubscription as Stripe.Subscription & { 
-        current_period_start: number; 
-        current_period_end: number; 
+      const stripeSubData = stripeSubscription as Stripe.Subscription & {
+        current_period_start: number;
+        current_period_end: number;
       };
       await prisma.subscription.update({
         where: { id: subscription.id },
@@ -788,9 +788,7 @@ export class SubscriptionService {
       const eventDataTyped = eventData as Record<string, unknown>;
       if (status === 'canceled' && eventDataTyped) {
         const canceledAt = eventDataTyped['canceled_at'] as number | undefined;
-        updateData.canceledAt = canceledAt
-          ? new Date(canceledAt * 1000)
-          : new Date();
+        updateData.canceledAt = canceledAt ? new Date(canceledAt * 1000) : new Date();
       }
 
       if (eventDataTyped?.['current_period_start'] && eventDataTyped?.['current_period_end']) {

@@ -8,6 +8,7 @@ import type { AppointmentWithDetails } from '@/lib/types/therapy';
 import type { wellnessDataSchema } from '@/lib/types/wellness';
 import type { z } from 'zod';
 import { AppointmentListSkeleton } from '@/components/ui/SkeletonLoader';
+import { logError } from '@/lib/logger';
 
 type WellnessData = z.infer<typeof wellnessDataSchema>;
 
@@ -27,17 +28,17 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
     try {
       setWellnessLoading(true);
       setWellnessError(null);
-      
+
       const wellnessRes = await fetch('/api/wellness/data?limit=1');
-      
+
       if (!wellnessRes.ok) {
         throw new Error(`HTTP error! status: ${wellnessRes.status}`);
       }
-      
+
       const wellness = await wellnessRes.json();
       setWellnessData(wellness.data?.items?.[0]);
     } catch (error) {
-      console.error('Error fetching wellness data:', error);
+      logError('Error fetching wellness data', error, 'ClientDashboard');
       setWellnessError(error instanceof Error ? error.message : 'Failed to load wellness data');
     } finally {
       setWellnessLoading(false);
@@ -48,17 +49,17 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
     try {
       setAppointmentsLoading(true);
       setAppointmentsError(null);
-      
+
       const appointmentsRes = await fetch('/api/appointments?status=SCHEDULED&limit=5');
-      
+
       if (!appointmentsRes.ok) {
         throw new Error(`HTTP error! status: ${appointmentsRes.status}`);
       }
-      
+
       const appts = await appointmentsRes.json();
       setAppointments(appts.data?.items || []);
     } catch (error) {
-      console.error('Error fetching appointments data:', error);
+      logError('Error fetching appointments data', error, 'ClientDashboard');
       setAppointmentsError(error instanceof Error ? error.message : 'Failed to load appointments');
     } finally {
       setAppointmentsLoading(false);
@@ -67,12 +68,9 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      await Promise.allSettled([
-        fetchWellnessData(),
-        fetchAppointmentsData()
-      ]);
+      await Promise.allSettled([fetchWellnessData(), fetchAppointmentsData()]);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      logError('Error fetching dashboard data', error, 'ClientDashboard');
     }
   }, []);
 
@@ -97,7 +95,11 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
   };
 
   return (
-    <main className='min-h-screen bg-gray-50 dark:bg-gray-900' role="main" aria-label="Client Dashboard">
+    <main
+      className='min-h-screen bg-gray-50 dark:bg-gray-900'
+      role='main'
+      aria-label='Client Dashboard'
+    >
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* Header */}
         <header className='mb-8'>
@@ -115,49 +117,83 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
         </header>
 
         {/* Quick Actions */}
-        <section className='mb-8' aria-labelledby="quick-actions-heading">
-          <h2 id="quick-actions-heading" className="sr-only">Quick Actions</h2>
+        <section className='mb-8' aria-labelledby='quick-actions-heading'>
+          <h2 id='quick-actions-heading' className='sr-only'>
+            Quick Actions
+          </h2>
           <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-          <Link
-            href='/wellness'
-            className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            aria-describedby='wellness-description'
-          >
-            <div className='text-blue-600 dark:text-blue-400 text-3xl mb-2' role='img' aria-label='Chart emoji'>📊</div>
-            <h3 className='font-semibold text-gray-900 dark:text-white'>Track Wellness</h3>
-            <p id='wellness-description' className='text-sm text-gray-600 dark:text-gray-300'>Log your daily mood</p>
-          </Link>
+            <Link
+              href='/wellness'
+              className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              aria-describedby='wellness-description'
+            >
+              <div
+                className='text-blue-600 dark:text-blue-400 text-3xl mb-2'
+                role='img'
+                aria-label='Chart emoji'
+              >
+                📊
+              </div>
+              <h3 className='font-semibold text-gray-900 dark:text-white'>Track Wellness</h3>
+              <p id='wellness-description' className='text-sm text-gray-600 dark:text-gray-300'>
+                Log your daily mood
+              </p>
+            </Link>
 
-          <Link
-            href='/appointments'
-            className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            aria-describedby='appointments-description'
-          >
-            <div className='text-green-600 dark:text-green-400 text-3xl mb-2' role='img' aria-label='Calendar emoji'>📅</div>
-            <h3 className='font-semibold text-gray-900 dark:text-white'>Appointments</h3>
-            <p id='appointments-description' className='text-sm text-gray-600 dark:text-gray-300'>Schedule sessions</p>
-          </Link>
+            <Link
+              href='/appointments'
+              className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              aria-describedby='appointments-description'
+            >
+              <div
+                className='text-green-600 dark:text-green-400 text-3xl mb-2'
+                role='img'
+                aria-label='Calendar emoji'
+              >
+                📅
+              </div>
+              <h3 className='font-semibold text-gray-900 dark:text-white'>Appointments</h3>
+              <p id='appointments-description' className='text-sm text-gray-600 dark:text-gray-300'>
+                Schedule sessions
+              </p>
+            </Link>
 
-          <Link
-            href='/journal'
-            className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            aria-describedby='journal-description'
-          >
-            <div className='text-purple-600 dark:text-purple-400 text-3xl mb-2' role='img' aria-label='Writing emoji'>📝</div>
-            <h3 className='font-semibold text-gray-900 dark:text-white'>Journal</h3>
-            <p id='journal-description' className='text-sm text-gray-600 dark:text-gray-300'>Write your thoughts</p>
-          </Link>
+            <Link
+              href='/journal'
+              className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              aria-describedby='journal-description'
+            >
+              <div
+                className='text-purple-600 dark:text-purple-400 text-3xl mb-2'
+                role='img'
+                aria-label='Writing emoji'
+              >
+                📝
+              </div>
+              <h3 className='font-semibold text-gray-900 dark:text-white'>Journal</h3>
+              <p id='journal-description' className='text-sm text-gray-600 dark:text-gray-300'>
+                Write your thoughts
+              </p>
+            </Link>
 
-          <Link
-            href='/crisis'
-            className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow border-2 border-red-200 dark:border-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-            aria-describedby='crisis-description'
-            aria-label='Crisis Support - Emergency assistance available 24/7'
-          >
-            <div className='text-red-600 dark:text-red-400 text-3xl mb-2' role='img' aria-label='SOS emergency emoji'>🆘</div>
-            <h3 className='font-semibold text-gray-900 dark:text-white'>Crisis Support</h3>
-            <p id='crisis-description' className='text-sm text-gray-600 dark:text-gray-300'>Get help now</p>
-          </Link>
+            <Link
+              href='/crisis'
+              className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow border-2 border-red-200 dark:border-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+              aria-describedby='crisis-description'
+              aria-label='Crisis Support - Emergency assistance available 24/7'
+            >
+              <div
+                className='text-red-600 dark:text-red-400 text-3xl mb-2'
+                role='img'
+                aria-label='SOS emergency emoji'
+              >
+                🆘
+              </div>
+              <h3 className='font-semibold text-gray-900 dark:text-white'>Crisis Support</h3>
+              <p id='crisis-description' className='text-sm text-gray-600 dark:text-gray-300'>
+                Get help now
+              </p>
+            </Link>
           </div>
         </section>
 
@@ -169,24 +205,34 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
             </h2>
 
             {wellnessLoading ? (
-              <div className="space-y-4">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              <div className='space-y-4'>
+                <div className='animate-pulse'>
+                  <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3'></div>
+                  <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3'></div>
+                  <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3'></div>
                 </div>
               </div>
             ) : wellnessError ? (
-              <div className="text-center py-4">
-                <div className="text-red-500 dark:text-red-400 mb-2">
-                  <svg className="h-8 w-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <div className='text-center py-4'>
+                <div className='text-red-500 dark:text-red-400 mb-2'>
+                  <svg
+                    className='h-8 w-8 mx-auto mb-2'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z'
+                    />
                   </svg>
-                  <p className="text-sm">Failed to load wellness data</p>
+                  <p className='text-sm'>Failed to load wellness data</p>
                 </div>
                 <button
                   onClick={handleWellnessRetry}
-                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                  className='text-blue-600 dark:text-blue-400 hover:underline text-sm'
                 >
                   Try again
                 </button>
@@ -266,16 +312,26 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
             {appointmentsLoading ? (
               <AppointmentListSkeleton count={3} />
             ) : appointmentsError ? (
-              <div className="text-center py-4">
-                <div className="text-red-500 dark:text-red-400 mb-2">
-                  <svg className="h-8 w-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <div className='text-center py-4'>
+                <div className='text-red-500 dark:text-red-400 mb-2'>
+                  <svg
+                    className='h-8 w-8 mx-auto mb-2'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z'
+                    />
                   </svg>
-                  <p className="text-sm">Failed to load appointments</p>
+                  <p className='text-sm'>Failed to load appointments</p>
                 </div>
                 <button
                   onClick={handleAppointmentsRetry}
-                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                  className='text-blue-600 dark:text-blue-400 hover:underline text-sm'
                 >
                   Try again
                 </button>

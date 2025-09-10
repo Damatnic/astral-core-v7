@@ -76,9 +76,9 @@ export default function AnalyticsDashboard() {
       } else {
         toast.error(data.error || 'Failed to fetch analytics');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error loading analytics');
-      console.error('Analytics fetch error:', error);
+      // Error already handled by toast, no need for additional logging
     } finally {
       setLoading(false);
     }

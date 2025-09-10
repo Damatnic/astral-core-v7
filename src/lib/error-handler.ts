@@ -74,15 +74,16 @@ export class AppError extends Error {
       message: this.message,
       timestamp: new Date().toISOString()
     };
-    
+
     if (this.details !== undefined) apiError.details = this.details;
     if (this.requestId !== undefined) apiError.requestId = this.requestId;
-    
+
     return apiError;
   }
 }
 
 // Factory functions for common error types
+// Note: These are currently unused but available for future use
 export const createAuthError = (message: string = 'Authentication required', requestId?: string) =>
   new AppError(ErrorCode.UNAUTHORIZED, message, 401, undefined, requestId);
 
@@ -192,7 +193,9 @@ export function handleServiceError(
 }
 
 // Async error wrapper for API routes
-export function withErrorHandler<T extends unknown[]>(handler: (...args: T) => Promise<NextResponse>) {
+export function withErrorHandler<T extends unknown[]>(
+  handler: (...args: T) => Promise<NextResponse>
+) {
   return async (...args: T): Promise<NextResponse> => {
     try {
       return await handler(...args);
@@ -218,6 +221,7 @@ export function withServiceErrorHandler<T extends unknown[], R>(
 }
 
 // Helper to check if error is a specific type
+// Note: These are currently unused but available for future use
 export const isAuthError = (error: Error): error is AppError =>
   error instanceof AppError &&
   [ErrorCode.UNAUTHORIZED, ErrorCode.FORBIDDEN, ErrorCode.TOKEN_EXPIRED].includes(error.code);

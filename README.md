@@ -42,33 +42,35 @@ Before starting, ensure you have the following installed:
 ### Database Setup
 
 1. **Install PostgreSQL** (if not already installed):
+
    ```bash
    # macOS with Homebrew
    brew install postgresql@14
    brew services start postgresql@14
-   
+
    # Ubuntu/Debian
    sudo apt update
    sudo apt install postgresql postgresql-contrib
    sudo systemctl start postgresql
-   
+
    # Windows - Download installer from postgresql.org
    ```
 
 2. **Create database and user**:
+
    ```sql
    -- Connect to PostgreSQL
    sudo -u postgres psql
-   
+
    -- Create database
    CREATE DATABASE astralcore_v7;
-   
+
    -- Create user with password
    CREATE USER astral_user WITH ENCRYPTED PASSWORD 'secure_password_here';
-   
+
    -- Grant privileges
    GRANT ALL PRIVILEGES ON DATABASE astralcore_v7 TO astral_user;
-   
+
    -- Exit PostgreSQL
    \q
    ```
@@ -76,6 +78,7 @@ Before starting, ensure you have the following installed:
 ### Installation & Setup
 
 1. **Clone and install**:
+
    ```bash
    git clone <repository-url>
    cd astral-core-v7
@@ -83,10 +86,11 @@ Before starting, ensure you have the following installed:
    ```
 
 2. **Environment configuration**:
+
    ```bash
    # Copy environment template
    cp .env.example .env
-   
+
    # Generate required secrets
    openssl rand -hex 32   # For ENCRYPTION_KEY
    openssl rand -base64 32 # For NEXTAUTH_SECRET
@@ -94,33 +98,36 @@ Before starting, ensure you have the following installed:
    ```
 
 3. **Configure environment variables** (edit `.env`):
+
    ```bash
    # Database
    DATABASE_URL="postgresql://astral_user:secure_password_here@localhost:5432/astralcore_v7"
-   
+
    # Security (use generated values above)
    ENCRYPTION_KEY="your_generated_hex_key_here"
    NEXTAUTH_SECRET="your_generated_secret_here"
    JWT_SIGNING_KEY="your_generated_jwt_key_here"
-   
+
    # Application
    NEXTAUTH_URL="http://localhost:3000"
    NEXT_PUBLIC_APP_URL="http://localhost:3000"
    ```
 
 4. **Database setup**:
+
    ```bash
    # Generate Prisma client
    npm run db:generate
-   
+
    # Run database migrations
    npm run db:migrate
-   
+
    # (Optional) Seed with sample data
    npm run db:seed
    ```
 
 5. **Start development server**:
+
    ```bash
    npm run dev
    ```
@@ -335,16 +342,19 @@ npm run start
 ### Docker Deployment
 
 1. **Build Docker image**:
+
    ```bash
    docker build -t astral-core-v7 .
    ```
 
 2. **Run with Docker Compose**:
+
    ```bash
    docker-compose up -d
    ```
 
 3. **Environment variables in Docker**:
+
    ```yaml
    # docker-compose.yml
    version: '3.8'
@@ -352,13 +362,13 @@ npm run start
      app:
        build: .
        ports:
-         - "3000:3000"
+         - '3000:3000'
        environment:
          - DATABASE_URL=postgresql://user:pass@db:5432/astralcore
          - NEXTAUTH_SECRET=your-secret
        depends_on:
          - db
-     
+
      db:
        image: postgres:14
        environment:
@@ -367,7 +377,7 @@ npm run start
          - POSTGRES_PASSWORD=pass
        volumes:
          - postgres_data:/var/lib/postgresql/data
-   
+
    volumes:
      postgres_data:
    ```
@@ -390,12 +400,14 @@ npm run start
 #### Option 2: AWS/GCP/Azure
 
 1. **Prepare production build**:
+
    ```bash
    npm run build
    npm run start
    ```
 
 2. **Use PM2 for process management**:
+
    ```bash
    npm install -g pm2
    pm2 start ecosystem.config.js
@@ -404,18 +416,20 @@ npm run start
 3. **Ecosystem configuration** (`ecosystem.config.js`):
    ```javascript
    module.exports = {
-     apps: [{
-       name: 'astral-core-v7',
-       script: 'npm',
-       args: 'start',
-       instances: 'max',
-       exec_mode: 'cluster',
-       env: {
-         NODE_ENV: 'production',
-         PORT: 3000
+     apps: [
+       {
+         name: 'astral-core-v7',
+         script: 'npm',
+         args: 'start',
+         instances: 'max',
+         exec_mode: 'cluster',
+         env: {
+           NODE_ENV: 'production',
+           PORT: 3000
+         }
        }
-     }]
-   }
+     ]
+   };
    ```
 
 ### Database Migrations in Production
@@ -435,11 +449,13 @@ pg_dump -h your-db-host -U user -d database > backup.sql
 #### Database Connection Issues
 
 **Problem**: Cannot connect to PostgreSQL
+
 ```
 Error: P1001: Can't reach database server
 ```
 
 **Solutions**:
+
 1. Check PostgreSQL is running: `sudo systemctl status postgresql`
 2. Verify connection string in `.env`
 3. Check firewall settings
@@ -448,11 +464,13 @@ Error: P1001: Can't reach database server
 #### Migration Failures
 
 **Problem**: Prisma migration fails
+
 ```
 Error: P3014: The datasource provider is missing
 ```
 
 **Solutions**:
+
 1. Run `npm run db:generate` first
 2. Check DATABASE_URL format
 3. Reset database: `npm run db:push --force-reset` (DEV ONLY)
@@ -460,11 +478,13 @@ Error: P3014: The datasource provider is missing
 #### Authentication Issues
 
 **Problem**: NextAuth session errors
+
 ```
 Error: NEXTAUTH_SECRET missing
 ```
 
 **Solutions**:
+
 1. Generate secret: `openssl rand -base64 32`
 2. Add to `.env`: `NEXTAUTH_SECRET="generated-secret"`
 3. Restart development server
@@ -472,11 +492,13 @@ Error: NEXTAUTH_SECRET missing
 #### Build Failures
 
 **Problem**: TypeScript build errors
+
 ```
 Error: Type 'string' is not assignable to type 'never'
 ```
 
 **Solutions**:
+
 1. Run `npm run typecheck` to identify issues
 2. Check `tsconfig.json` configuration
 3. Update dependencies: `npm update`
@@ -486,11 +508,13 @@ Error: Type 'string' is not assignable to type 'never'
 #### Slow Database Queries
 
 1. **Check query performance**:
+
    ```bash
    npm run db:studio  # Use Prisma Studio
    ```
 
 2. **Add database indexes**:
+
    ```sql
    CREATE INDEX idx_user_email ON "User"(email);
    CREATE INDEX idx_wellness_date ON "WellnessEntry"(date);
@@ -502,12 +526,13 @@ Error: Type 'string' is not assignable to type 'never'
    const user = await prisma.user.findUnique({
      where: { id },
      select: { id: true, email: true, name: true }
-   })
+   });
    ```
 
 #### Memory Issues
 
 1. **Monitor memory usage**:
+
    ```bash
    node --max-old-space-size=4096 node_modules/.bin/next dev
    ```
@@ -522,11 +547,13 @@ Error: Type 'string' is not assignable to type 'never'
 #### Rate Limiting Triggered
 
 **Problem**: "Too Many Requests" errors
+
 ```
 Status: 429 - Rate limit exceeded
 ```
 
 **Solutions**:
+
 1. Increase limits in production: Update `RATE_LIMIT_MAX_REQUESTS`
 2. Implement exponential backoff in client code
 3. Use Redis for distributed rate limiting
@@ -534,11 +561,13 @@ Status: 429 - Rate limit exceeded
 #### Encryption Key Issues
 
 **Problem**: Data decryption failures
+
 ```
 Error: Invalid encryption key
 ```
 
 **Solutions**:
+
 1. Never change `ENCRYPTION_KEY` in production
 2. Backup encryption key securely
 3. Use key rotation strategy for security
@@ -548,11 +577,13 @@ Error: Invalid encryption key
 #### Port Already in Use
 
 **Problem**: Port 3000 is busy
+
 ```
 Error: Port 3000 is already in use
 ```
 
 **Solutions**:
+
 ```bash
 # Kill process using port
 sudo lsof -ti:3000 | xargs kill -9
@@ -564,11 +595,13 @@ PORT=3001 npm run dev
 #### Node Version Mismatch
 
 **Problem**: Node.js version incompatibility
+
 ```
 Error: The engine "node" is incompatible
 ```
 
 **Solutions**:
+
 ```bash
 # Check version
 node --version
@@ -581,6 +614,7 @@ nvm install 18.17.0
 ### Getting Help
 
 1. **Check logs**:
+
    ```bash
    # Development logs
    npm run dev
@@ -590,6 +624,7 @@ nvm install 18.17.0
    ```
 
 2. **Database logs**:
+
    ```bash
    # PostgreSQL logs
    tail -f /var/log/postgresql/postgresql-14-main.log
@@ -613,7 +648,7 @@ Comprehensive API documentation is available at:
 All API routes follow RESTful conventions:
 
 - `/api/auth/*` - Authentication and MFA
-- `/api/user/*` - User profiles and settings  
+- `/api/user/*` - User profiles and settings
 - `/api/wellness/*` - Wellness tracking and analytics
 - `/api/appointments/*` - Session scheduling
 - `/api/crisis/*` - Crisis assessment and intervention
@@ -637,7 +672,7 @@ All API routes follow RESTful conventions:
 
 1. **Environment Variables**: Never commit secrets to version control
 2. **Database Security**: Use connection pooling and SSL
-3. **API Security**: Implement rate limiting and input validation  
+3. **API Security**: Implement rate limiting and input validation
 4. **Session Management**: Secure session handling with timeouts
 5. **File Upload**: Virus scanning and type validation
 6. **Monitoring**: Real-time security event logging
@@ -680,7 +715,7 @@ Copyright (c) 2024 Astral Core
 **If you are in crisis or having thoughts of self-harm:**
 
 - **Call 911** for immediate emergency assistance
-- **Call 988** for the Suicide & Crisis Lifeline (24/7)  
+- **Call 988** for the Suicide & Crisis Lifeline (24/7)
 - **Text HOME to 741741** for Crisis Text Line
 
 **Help is always available. You matter, and your life has value.**

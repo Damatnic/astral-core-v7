@@ -122,7 +122,7 @@ class Logger {
       level,
       message
     };
-    
+
     if (context) entry.context = context;
     if (metadata) entry.metadata = this.sanitizeData(metadata) as Record<string, unknown>;
     if (error) {
@@ -132,7 +132,7 @@ class Logger {
         stack: !this.isProduction ? error.stack : undefined
       } as Error;
     }
-    
+
     return entry;
   }
 
@@ -211,7 +211,7 @@ class Logger {
       context: 'AUDIT',
       userId
     };
-    
+
     if (details) entry.metadata = this.sanitizeData(details) as Record<string, unknown>;
     if (sessionId) entry.sessionId = sessionId;
     if (requestId) entry.requestId = requestId;
@@ -249,7 +249,11 @@ export const logError = (
   logger.error(message, context, metadata, errorObj);
 };
 
-export const logWarning = (message: string, context?: string, metadata?: Record<string, unknown>) => {
+export const logWarning = (
+  message: string,
+  context?: string,
+  metadata?: Record<string, unknown>
+) => {
   logger.warn(message, context, metadata);
 };
 
@@ -271,6 +275,10 @@ export const logAudit = (
   logger.audit(action, userId, details, sessionId, requestId);
 };
 
-export const logCleanup = (message: string, context?: string, metadata?: Record<string, unknown>) => {
+export const logCleanup = (
+  message: string,
+  context?: string,
+  metadata?: Record<string, unknown>
+) => {
   logger.info(`[CLEANUP] ${message}`, context, metadata);
 };

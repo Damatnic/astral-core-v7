@@ -28,8 +28,8 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
-    this.state = { 
-      hasError: false, 
+    this.state = {
+      hasError: false,
       retryCount: 0,
       isRetrying: false
     };
@@ -48,12 +48,17 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error securely
-    logError('Enhanced Error Boundary caught an error', error, this.props.context || 'EnhancedErrorBoundary', {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: true,
-      retryCount: this.state.retryCount,
-      context: this.props.context
-    });
+    logError(
+      'Enhanced Error Boundary caught an error',
+      error,
+      this.props.context || 'EnhancedErrorBoundary',
+      {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true,
+        retryCount: this.state.retryCount,
+        context: this.props.context
+      }
+    );
 
     // Store error info for display
     this.setState({ errorInfo });
@@ -64,13 +69,13 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
   handleRetry = () => {
     const { maxRetries = 3 } = this.props;
-    
+
     if (this.state.retryCount >= maxRetries) {
       return;
     }
 
     this.setState({ isRetrying: true });
-    
+
     this.retryTimeout = setTimeout(() => {
       this.setState({
         hasError: false,
@@ -93,7 +98,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
         userReported: true,
         context: this.props.context
       });
-      
+
       // Show confirmation
       alert('Error report sent. Thank you for helping us improve!');
     }
@@ -106,7 +111,12 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      const { enableRetry = true, maxRetries = 3, retryMessage, showErrorDetails = false } = this.props;
+      const {
+        enableRetry = true,
+        maxRetries = 3,
+        retryMessage,
+        showErrorDetails = false
+      } = this.props;
       const { error, errorInfo, retryCount, isRetrying } = this.state;
       const canRetry = enableRetry && retryCount < maxRetries;
 
@@ -130,13 +140,14 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                     />
                   </svg>
                 </div>
-                
+
                 <h3 className='mt-2 text-lg font-medium text-gray-900 dark:text-white'>
                   Something went wrong
                 </h3>
-                
+
                 <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-                  {retryMessage || "We've encountered an unexpected error. Our team has been notified."}
+                  {retryMessage ||
+                    "We've encountered an unexpected error. Our team has been notified."}
                 </p>
 
                 {showErrorDetails && error && (
@@ -145,7 +156,9 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                       Error Details
                     </summary>
                     <div className='mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200'>
-                      <div><strong>Error:</strong> {error.message}</div>
+                      <div>
+                        <strong>Error:</strong> {error.message}
+                      </div>
                       {errorInfo && (
                         <div className='mt-2'>
                           <strong>Component Stack:</strong>
@@ -161,7 +174,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                     Retry attempt {retryCount} of {maxRetries}
                   </p>
                 )}
-                
+
                 <div className='mt-6 space-y-3'>
                   <div className='flex space-x-3'>
                     {canRetry && (
@@ -181,7 +194,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                         )}
                       </button>
                     )}
-                    
+
                     <button
                       type='button'
                       onClick={this.handleReload}
@@ -190,7 +203,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                       Reload Page
                     </button>
                   </div>
-                  
+
                   <button
                     type='button'
                     onClick={this.handleReportError}
@@ -233,9 +246,14 @@ export class CompactErrorBoundary extends Component<CompactErrorBoundaryProps, C
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logError('Compact Error Boundary caught an error', error, this.props.context || 'CompactErrorBoundary', {
-      componentStack: errorInfo.componentStack
-    });
+    logError(
+      'Compact Error Boundary caught an error',
+      error,
+      this.props.context || 'CompactErrorBoundary',
+      {
+        componentStack: errorInfo.componentStack
+      }
+    );
 
     this.props.onError?.(error);
   }
@@ -286,9 +304,9 @@ export class CompactErrorBoundary extends Component<CompactErrorBoundaryProps, C
 // Hook for function components to handle errors
 export const useErrorHandler = () => {
   return (error: Error, errorInfo?: string, context?: string) => {
-    logError('Handled error in component', error, context || 'useErrorHandler', { 
+    logError('Handled error in component', error, context || 'useErrorHandler', {
       errorInfo,
-      context 
+      context
     });
   };
 };
@@ -305,9 +323,9 @@ export const withErrorBoundary = <P extends object>(
 ) => {
   const WrappedComponent = (props: P) => {
     const ErrorBoundaryComponent = options?.compact ? CompactErrorBoundary : EnhancedErrorBoundary;
-    
+
     return (
-      <ErrorBoundaryComponent 
+      <ErrorBoundaryComponent
         fallback={options?.fallback}
         enableRetry={options?.enableRetry ?? true}
         context={options?.context || Component.displayName || Component.name}

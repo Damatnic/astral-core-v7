@@ -54,7 +54,7 @@ Object.defineProperty(global, 'window', {
 });
 
 // Import after mocks are set up
-import { 
+import {
   getPerformanceMetricsCollector,
   getWebVitalsMonitor,
   getErrorMonitor,
@@ -66,7 +66,7 @@ describe('Performance Monitoring System', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Reset performance mock data
     mockPerformance.now.mockReturnValue(Date.now());
     mockPerformance.getEntriesByType.mockReturnValue([]);
@@ -87,9 +87,9 @@ describe('Performance Monitoring System', () => {
 
     test('should track API calls', () => {
       const collector = getPerformanceMetricsCollector();
-      
+
       collector.trackApiCall('/api/test', 'GET', 150, 200, 1024);
-      
+
       const metrics = collector.getApiMetrics();
       expect(metrics).toHaveLength(1);
       expect(metrics[0]).toMatchObject({
@@ -103,7 +103,7 @@ describe('Performance Monitoring System', () => {
 
     test('should generate performance report', () => {
       const collector = getPerformanceMetricsCollector();
-      
+
       // Mock navigation timing
       mockPerformance.getEntriesByType.mockReturnValue([
         {
@@ -114,7 +114,7 @@ describe('Performance Monitoring System', () => {
       ]);
 
       const report = collector.generateReport();
-      
+
       expect(report).toHaveProperty('webVitals');
       expect(report).toHaveProperty('apiMetrics');
       expect(report).toHaveProperty('memoryMetrics');
@@ -125,7 +125,7 @@ describe('Performance Monitoring System', () => {
     test('should calculate Web Vitals score', () => {
       const collector = getPerformanceMetricsCollector();
       const score = collector.getWebVitalsScore();
-      
+
       expect(score).toHaveProperty('score');
       expect(score).toHaveProperty('grade');
       expect(score).toHaveProperty('issues');
@@ -146,10 +146,10 @@ describe('Performance Monitoring System', () => {
     test('should subscribe to vitals updates', () => {
       const monitor = getWebVitalsMonitor();
       const callback = jest.fn();
-      
+
       const unsubscribe = monitor.subscribe(callback);
       expect(typeof unsubscribe).toBe('function');
-      
+
       // Cleanup
       unsubscribe();
     });
@@ -157,7 +157,7 @@ describe('Performance Monitoring System', () => {
     test('should calculate vitals score', () => {
       const monitor = getWebVitalsMonitor();
       const score = monitor.getVitalsScore();
-      
+
       expect(score).toHaveProperty('overall');
       expect(score).toHaveProperty('grade');
       expect(score).toHaveProperty('details');
@@ -167,7 +167,7 @@ describe('Performance Monitoring System', () => {
     test('should generate insights', () => {
       const monitor = getWebVitalsMonitor();
       const insights = monitor.getInsights();
-      
+
       expect(Array.isArray(insights)).toBe(true);
     });
   });
@@ -182,13 +182,13 @@ describe('Performance Monitoring System', () => {
 
     test('should capture errors', () => {
       const monitor = getErrorMonitor();
-      
+
       monitor.captureError({
         message: 'Test error',
         type: 'javascript',
         severity: 'high'
       });
-      
+
       const errors = monitor.getErrors();
       expect(errors).toHaveLength(1);
       expect(errors[0]).toMatchObject({
@@ -200,7 +200,7 @@ describe('Performance Monitoring System', () => {
 
     test('should generate error patterns', () => {
       const monitor = getErrorMonitor();
-      
+
       // Add multiple similar errors
       for (let i = 0; i < 5; i++) {
         monitor.captureError({
@@ -209,7 +209,7 @@ describe('Performance Monitoring System', () => {
           severity: 'medium'
         });
       }
-      
+
       const patterns = monitor.getErrorPatterns();
       expect(patterns.length).toBeGreaterThan(0);
       expect(patterns[0]).toHaveProperty('count');
@@ -219,35 +219,35 @@ describe('Performance Monitoring System', () => {
     test('should subscribe to error events', () => {
       const monitor = getErrorMonitor();
       const callback = jest.fn();
-      
+
       const unsubscribe = monitor.subscribe(callback);
-      
+
       monitor.captureError({
         message: 'Test subscription error',
         type: 'custom',
         severity: 'low'
       });
-      
+
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({
           message: 'Test subscription error'
         })
       );
-      
+
       unsubscribe();
     });
 
     test('should generate error statistics', () => {
       const monitor = getErrorMonitor();
-      
+
       monitor.captureError({
         message: 'Critical error',
         type: 'javascript',
         severity: 'critical'
       });
-      
+
       const stats = monitor.getErrorStats();
-      
+
       expect(stats).toHaveProperty('total');
       expect(stats).toHaveProperty('bySeverity');
       expect(stats).toHaveProperty('byType');
@@ -266,7 +266,7 @@ describe('Performance Monitoring System', () => {
 
     test('should track database queries', () => {
       const monitor = getDatabaseMonitor();
-      
+
       const query = monitor.trackQuery({
         query: 'SELECT * FROM users WHERE id = ?',
         operation: 'SELECT',
@@ -275,18 +275,18 @@ describe('Performance Monitoring System', () => {
         table: 'users',
         success: true
       });
-      
+
       expect(query).toHaveProperty('id');
       expect(query.query).toBe('SELECT * FROM users WHERE id = ?');
       expect(query.duration).toBe(25);
-      
+
       const queries = monitor.getQueries();
       expect(queries).toHaveLength(1);
     });
 
     test('should detect slow queries', () => {
       const monitor = getDatabaseMonitor();
-      
+
       monitor.trackQuery({
         query: 'SELECT * FROM large_table',
         operation: 'SELECT',
@@ -295,7 +295,7 @@ describe('Performance Monitoring System', () => {
         table: 'large_table',
         success: true
       });
-      
+
       const slowQueries = monitor.getSlowQueries(1000);
       expect(slowQueries).toHaveLength(1);
       expect(slowQueries[0].duration).toBe(2000);
@@ -303,7 +303,7 @@ describe('Performance Monitoring System', () => {
 
     test('should generate database insights', () => {
       const monitor = getDatabaseMonitor();
-      
+
       // Add some slow queries
       for (let i = 0; i < 3; i++) {
         monitor.trackQuery({
@@ -315,11 +315,11 @@ describe('Performance Monitoring System', () => {
           success: true
         });
       }
-      
+
       const insights = monitor.generateInsights();
-      
+
       expect(Array.isArray(insights)).toBe(true);
-      
+
       if (insights.length > 0) {
         expect(insights[0]).toHaveProperty('type');
         expect(insights[0]).toHaveProperty('severity');
@@ -330,7 +330,7 @@ describe('Performance Monitoring System', () => {
 
     test('should calculate database statistics', () => {
       const monitor = getDatabaseMonitor();
-      
+
       monitor.trackQuery({
         query: 'SELECT * FROM users',
         operation: 'SELECT',
@@ -339,7 +339,7 @@ describe('Performance Monitoring System', () => {
         table: 'users',
         success: true
       });
-      
+
       monitor.trackQuery({
         query: 'INSERT INTO logs',
         operation: 'INSERT',
@@ -348,9 +348,9 @@ describe('Performance Monitoring System', () => {
         table: 'logs',
         success: true
       });
-      
+
       const stats = monitor.getStats();
-      
+
       expect(stats).toHaveProperty('totalQueries', 2);
       expect(stats).toHaveProperty('averageDuration');
       expect(stats).toHaveProperty('queryDistribution');
@@ -375,7 +375,7 @@ describe('Performance Monitoring System', () => {
 
     test('should calculate percentiles', () => {
       const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      
+
       expect(PerformanceUtils.calculatePercentile(values, 50)).toBe(5);
       expect(PerformanceUtils.calculatePercentile(values, 90)).toBe(9);
       expect(PerformanceUtils.calculatePercentile(values, 95)).toBe(10);
@@ -390,17 +390,17 @@ describe('Performance Monitoring System', () => {
       expect(PerformanceUtils.getPerformanceGrade(55)).toBe('F');
     });
 
-    test('should debounce function calls', (done) => {
+    test('should debounce function calls', done => {
       const mockFn = jest.fn();
       const debouncedFn = PerformanceUtils.debounce(mockFn, 100);
-      
+
       debouncedFn('test1');
       debouncedFn('test2');
       debouncedFn('test3');
-      
+
       // Should not be called immediately
       expect(mockFn).not.toHaveBeenCalled();
-      
+
       setTimeout(() => {
         expect(mockFn).toHaveBeenCalledTimes(1);
         expect(mockFn).toHaveBeenCalledWith('test3');
@@ -408,18 +408,18 @@ describe('Performance Monitoring System', () => {
       }, 150);
     });
 
-    test('should throttle function calls', (done) => {
+    test('should throttle function calls', done => {
       const mockFn = jest.fn();
       const throttledFn = PerformanceUtils.throttle(mockFn, 100);
-      
+
       throttledFn('test1');
       throttledFn('test2');
       throttledFn('test3');
-      
+
       // Should be called once immediately
       expect(mockFn).toHaveBeenCalledTimes(1);
       expect(mockFn).toHaveBeenCalledWith('test1');
-      
+
       setTimeout(() => {
         throttledFn('test4');
         expect(mockFn).toHaveBeenCalledTimes(2);
@@ -435,16 +435,16 @@ describe('Performance Monitoring System', () => {
       getWebVitalsMonitor();
       const errorMonitor = getErrorMonitor();
       const databaseMonitor = getDatabaseMonitor();
-      
+
       // Track some data across systems
       metricsCollector.trackApiCall('/api/users', 'GET', 120, 200, 2048);
-      
+
       errorMonitor.captureError({
         message: 'Integration test error',
         type: 'custom',
         severity: 'low'
       });
-      
+
       databaseMonitor.trackQuery({
         query: 'SELECT * FROM users',
         operation: 'SELECT',
@@ -453,7 +453,7 @@ describe('Performance Monitoring System', () => {
         table: 'users',
         success: true
       });
-      
+
       // Verify all systems have data
       expect(metricsCollector.getApiMetrics()).toHaveLength(1);
       expect(errorMonitor.getErrors()).toHaveLength(1);
@@ -462,13 +462,13 @@ describe('Performance Monitoring System', () => {
 
     test('should generate comprehensive performance report', () => {
       const metricsCollector = getPerformanceMetricsCollector();
-      
+
       // Add some test data
       metricsCollector.trackApiCall('/api/test1', 'GET', 100, 200, 1024);
       metricsCollector.trackApiCall('/api/test2', 'POST', 200, 201, 2048);
-      
+
       const report = metricsCollector.generateReport();
-      
+
       expect(report).toHaveProperty('webVitals');
       expect(report).toHaveProperty('apiMetrics');
       expect(report).toHaveProperty('memoryMetrics');
@@ -476,13 +476,13 @@ describe('Performance Monitoring System', () => {
       expect(report).toHaveProperty('resourceCounts');
       expect(report).toHaveProperty('bundleSize');
       expect(report).toHaveProperty('timestamp');
-      
+
       expect(report.apiMetrics).toHaveLength(2);
     });
 
     test('should handle error scenarios gracefully', () => {
       const errorMonitor = getErrorMonitor();
-      
+
       // Test with invalid data
       expect(() => {
         errorMonitor.captureError({
@@ -491,7 +491,7 @@ describe('Performance Monitoring System', () => {
           severity: 'low'
         });
       }).not.toThrow();
-      
+
       // Test with null/undefined values
       expect(() => {
         errorMonitor.captureError({

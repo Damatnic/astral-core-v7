@@ -87,10 +87,15 @@ export class PHIService {
       : data;
 
     try {
-      const result = await (this.prisma as unknown as Record<string, { create: (args: { data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()]?.create({
+      const result = await (
+        this.prisma as unknown as Record<
+          string,
+          { create: (args: { data: unknown }) => Promise<PHIRecord> }
+        >
+      )[model.toLowerCase()]?.create({
         data: encryptedData
       });
-      
+
       if (!result) {
         throw new Error(`Failed to create ${model} record`);
       }
@@ -133,7 +138,12 @@ export class PHIService {
     context?: PHIContext
   ): Promise<T[]> {
     try {
-      const results = await (this.prisma as unknown as Record<string, { findMany: (args: unknown) => Promise<PHIRecord[]> }>)[model.toLowerCase()]?.findMany(args);
+      const results = await (
+        this.prisma as unknown as Record<
+          string,
+          { findMany: (args: unknown) => Promise<PHIRecord[]> }
+        >
+      )[model.toLowerCase()]?.findMany(args);
 
       if (!results) {
         throw new Error(`Failed to find ${model} records`);
@@ -176,7 +186,12 @@ export class PHIService {
     context?: PHIContext
   ): Promise<T | null> {
     try {
-      const result = await (this.prisma as unknown as Record<string, { findUnique: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[model.toLowerCase()]?.findUnique({ where });
+      const result = await (
+        this.prisma as unknown as Record<
+          string,
+          { findUnique: (args: { where: unknown }) => Promise<PHIRecord | null> }
+        >
+      )[model.toLowerCase()]?.findUnique({ where });
 
       if (result) {
         await audit.logSuccess(
@@ -209,7 +224,7 @@ export class PHIService {
    * @throws {Error} If update fails or user lacks permissions
    * @example
    * ```typescript
-   * const updatedProfile = await phiService.update('Profile', 
+   * const updatedProfile = await phiService.update('Profile',
    *   { id: 'profile_123' },
    *   { phoneNumber: '+1-555-0123' },
    *   { userId: 'user_123', userRole: 'CLIENT' }
@@ -228,7 +243,12 @@ export class PHIService {
       : data;
 
     try {
-      const result = await (this.prisma as unknown as Record<string, { update: (args: { where: unknown; data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()]?.update({
+      const result = await (
+        this.prisma as unknown as Record<
+          string,
+          { update: (args: { where: unknown; data: unknown }) => Promise<PHIRecord> }
+        >
+      )[model.toLowerCase()]?.update({
         where,
         data: encryptedData
       });
@@ -262,7 +282,7 @@ export class PHIService {
    * @throws {Error} If deletion fails or user lacks permissions
    * @example
    * ```typescript
-   * await phiService.delete('JournalEntry', 
+   * await phiService.delete('JournalEntry',
    *   { id: 'journal_123' },
    *   { userId: 'user_123', userRole: 'CLIENT' }
    * );
@@ -270,7 +290,12 @@ export class PHIService {
    */
   async delete(model: ResourceType, where: PrismaWhereInput, context?: PHIContext): Promise<void> {
     try {
-      const result = await (this.prisma as unknown as Record<string, { delete: (args: { where: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()]?.delete({ where });
+      const result = await (
+        this.prisma as unknown as Record<
+          string,
+          { delete: (args: { where: unknown }) => Promise<PHIRecord> }
+        >
+      )[model.toLowerCase()]?.delete({ where });
 
       if (!result) {
         throw new Error(`Failed to delete ${model} record`);
@@ -353,7 +378,12 @@ export class PHIService {
         case 'WellnessData':
         case 'JournalEntry':
           // Users can access their own data
-          const resource = await (this.prisma as unknown as Record<string, { findFirst: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[resourceType.toLowerCase()]?.findFirst({
+          const resource = await (
+            this.prisma as unknown as Record<
+              string,
+              { findFirst: (args: { where: unknown }) => Promise<PHIRecord | null> }
+            >
+          )[resourceType.toLowerCase()]?.findFirst({
             where: { id: resourceId, userId }
           });
           return !!resource;
@@ -606,7 +636,7 @@ export class PHIService {
  * @example
  * ```typescript
  * import { phiService } from '@/lib/security/phi-service';
- * 
+ *
  * // Create encrypted patient profile
  * const profile = await phiService.create('Profile', {
  *   firstName: 'Jane',

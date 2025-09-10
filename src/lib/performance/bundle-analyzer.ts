@@ -41,7 +41,7 @@ class BundleAnalyzer {
   private setupResourceObserver() {
     if (!('PerformanceObserver' in window)) return;
 
-    const observer = new PerformanceObserver((list) => {
+    const observer = new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
         if (entry.entryType === 'resource' && entry.name.includes('chunks')) {
           this.trackChunkLoad(entry as PerformanceResourceTiming);
@@ -56,7 +56,7 @@ class BundleAnalyzer {
   private setupNavigationObserver() {
     if (!('PerformanceObserver' in window)) return;
 
-    const observer = new PerformanceObserver((list) => {
+    const observer = new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
         if (entry.entryType === 'navigation') {
           this.trackPageLoad(entry as PerformanceNavigationTiming);
@@ -82,7 +82,9 @@ class BundleAnalyzer {
 
     // Log for development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Chunk loaded: ${chunkName}, Size: ${this.formatSize(size)}, Load time: ${loadTime.toFixed(2)}ms`);
+      console.log(
+        `Chunk loaded: ${chunkName}, Size: ${this.formatSize(size)}, Load time: ${loadTime.toFixed(2)}ms`
+      );
     }
   }
 
@@ -98,7 +100,9 @@ class BundleAnalyzer {
     });
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Page load complete: ${loadTime.toFixed(2)}ms, Bundle size: ${this.formatSize(this.getTotalBundleSize())}`);
+      console.log(
+        `Page load complete: ${loadTime.toFixed(2)}ms, Bundle size: ${this.formatSize(this.getTotalBundleSize())}`
+      );
     }
   }
 
@@ -138,7 +142,7 @@ class BundleAnalyzer {
 
   public trackComponentLoad(componentName: string, startTime: number) {
     const loadTime = performance.now() - startTime;
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log(`Component loaded: ${componentName}, Load time: ${loadTime.toFixed(2)}ms`);
     }
@@ -154,9 +158,7 @@ class BundleAnalyzer {
     recommendations: string[];
   } {
     const chunks = this.getChunkInfo();
-    const largestChunks = chunks
-      .sort((a, b) => b.size - a.size)
-      .slice(0, 5);
+    const largestChunks = chunks.sort((a, b) => b.size - a.size).slice(0, 5);
 
     const recommendations: string[] = [];
 
@@ -169,9 +171,10 @@ class BundleAnalyzer {
       recommendations.push('Some chunks are over 500KB - consider breaking them down further');
     }
 
-    const avgLoadTime = this.metrics.length > 0 
-      ? this.metrics.reduce((sum, m) => sum + m.loadTime, 0) / this.metrics.length 
-      : 0;
+    const avgLoadTime =
+      this.metrics.length > 0
+        ? this.metrics.reduce((sum, m) => sum + m.loadTime, 0) / this.metrics.length
+        : 0;
 
     if (avgLoadTime > 3000) {
       recommendations.push('Average load time is over 3 seconds - optimize critical path');
@@ -187,11 +190,15 @@ class BundleAnalyzer {
   }
 
   public exportData(): string {
-    return JSON.stringify({
-      metrics: this.metrics,
-      chunks: Array.from(this.chunks.entries()),
-      report: this.generateReport()
-    }, null, 2);
+    return JSON.stringify(
+      {
+        metrics: this.metrics,
+        chunks: Array.from(this.chunks.entries()),
+        report: this.generateReport()
+      },
+      null,
+      2
+    );
   }
 
   public cleanup() {
@@ -227,7 +234,7 @@ export function logPerformanceReport() {
   if (process.env.NODE_ENV === 'development') {
     const analyzer = getBundleAnalyzer();
     const report = analyzer.generateReport();
-    
+
     console.group('Bundle Performance Report');
     console.log('Total Bundle Size:', report.totalSize);
     console.log('Average Load Time:', report.loadTime.toFixed(2) + 'ms');

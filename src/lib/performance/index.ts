@@ -57,11 +57,7 @@ export {
 } from './prisma-middleware';
 
 // Bundle analyzer (existing)
-export {
-  getBundleAnalyzer,
-  useBundleAnalyzer,
-  logPerformanceReport
-} from './bundle-analyzer';
+export { getBundleAnalyzer, useBundleAnalyzer, logPerformanceReport } from './bundle-analyzer';
 
 // Provider and HOCs
 export {
@@ -79,17 +75,15 @@ export { default as ErrorMonitor } from '../../components/performance/ErrorMonit
 export { default as DatabaseMonitor } from '../../components/performance/DatabaseMonitor';
 
 // Internal imports for initialization functions
-import { 
+import {
   getPerformanceMetricsCollector as _getPerformanceMetricsCollector,
   logPerformanceMetrics as _logPerformanceMetrics
 } from './metrics';
-import { 
+import {
   getWebVitalsMonitor as _getWebVitalsMonitor,
   logWebVitals as _logWebVitals
 } from './web-vitals';
-import { 
-  getErrorMonitor as _getErrorMonitor
-} from './error-monitoring';
+import { getErrorMonitor as _getErrorMonitor } from './error-monitoring';
 
 // Utility functions
 export const PerformanceUtils = {
@@ -141,7 +135,7 @@ export const PerformanceUtils = {
       if (!inThrottle) {
         func(...args);
         inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
+        setTimeout(() => (inThrottle = false), limit);
       }
     };
   }
@@ -185,7 +179,7 @@ export const DEFAULT_PERFORMANCE_CONFIG: PerformanceConfig = {
 // Initialize all performance monitoring systems
 export function initializePerformanceMonitoring(config: PerformanceConfig = {}) {
   const finalConfig = { ...DEFAULT_PERFORMANCE_CONFIG, ...config };
-  
+
   if (typeof window === 'undefined') {
     console.warn('Performance monitoring can only be initialized on the client side');
     return;
@@ -209,11 +203,11 @@ export function initializePerformanceMonitoring(config: PerformanceConfig = {}) 
     // Initialize error monitoring
     if (finalConfig.enableErrorMonitoring) {
       // Error monitor would be initialized here
-      
+
       if (finalConfig.enableNotifications) {
         // requestNotificationPermission();
       }
-      
+
       console.log('✅ Error monitor initialized');
     }
 
@@ -225,8 +219,8 @@ export function initializePerformanceMonitoring(config: PerformanceConfig = {}) 
     // Set up global error handlers
     if (finalConfig.enableErrorMonitoring) {
       const errorMonitor = _getErrorMonitor();
-      
-      window.addEventListener('unhandledrejection', (event) => {
+
+      window.addEventListener('unhandledrejection', event => {
         errorMonitor.captureError({
           message: `Unhandled Promise Rejection: ${event.reason}`,
           type: 'unhandledrejection',
@@ -234,7 +228,7 @@ export function initializePerformanceMonitoring(config: PerformanceConfig = {}) 
         });
       });
 
-      window.addEventListener('error', (event) => {
+      window.addEventListener('error', event => {
         if (event.error) {
           errorMonitor.captureError({
             message: event.error.message,
@@ -251,10 +245,10 @@ export function initializePerformanceMonitoring(config: PerformanceConfig = {}) 
 
     // Log success
     console.log('🎉 Performance monitoring system initialized successfully');
-    
+
     if (finalConfig.debugMode) {
       console.log('🔍 Debug mode enabled - detailed logging active');
-      
+
       // Log performance summary every 30 seconds in debug mode
       setInterval(() => {
         _logPerformanceMetrics();
@@ -262,7 +256,6 @@ export function initializePerformanceMonitoring(config: PerformanceConfig = {}) 
         console.log('📊 Error and database reports would be logged here');
       }, 30000);
     }
-
   } catch (error) {
     console.error('❌ Failed to initialize performance monitoring:', error);
   }

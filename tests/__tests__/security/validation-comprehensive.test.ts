@@ -15,7 +15,8 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       });
 
       it('should remove complex script tags with attributes', () => {
-        const maliciousInput = '<script type="text/javascript" src="evil.js">alert("XSS")</script>Safe text';
+        const maliciousInput =
+          '<script type="text/javascript" src="evil.js">alert("XSS")</script>Safe text';
         const result = ValidationService.sanitizeInput(maliciousInput);
         expect(result).toBe('Safe text');
       });
@@ -148,14 +149,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
         '+1-555-123-4567'
       ];
 
-      const invalidPhones = [
-        '123',
-        '555-123',
-        'not-a-phone',
-        '555.123.456',
-        '+1 555',
-        ''
-      ];
+      const invalidPhones = ['123', '555-123', 'not-a-phone', '555.123.456', '+1 555', ''];
 
       validPhones.forEach(phone => {
         it(`should validate valid phone: ${phone}`, () => {
@@ -232,7 +226,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       it('should validate valid adult age', () => {
         const thirtyYearsAgo = new Date();
         thirtyYearsAgo.setFullYear(thirtyYearsAgo.getFullYear() - 30);
-        
+
         expect(ValidationService.validateDateOfBirth(thirtyYearsAgo)).toBe(true);
         expect(ValidationService.validateDateOfBirth('1990-05-15')).toBe(true);
       });
@@ -240,14 +234,14 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       it('should reject dates that make person too young', () => {
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        
+
         expect(ValidationService.validateDateOfBirth(oneYearAgo)).toBe(false);
       });
 
       it('should reject dates that make person impossibly old', () => {
         const tooOld = new Date();
         tooOld.setFullYear(tooOld.getFullYear() - 150);
-        
+
         expect(ValidationService.validateDateOfBirth(tooOld)).toBe(false);
       });
 
@@ -255,14 +249,14 @@ describe('ValidationService - Comprehensive Security Tests', () => {
         const exactlyThirteenYearsAgo = new Date();
         exactlyThirteenYearsAgo.setFullYear(exactlyThirteenYearsAgo.getFullYear() - 13);
         exactlyThirteenYearsAgo.setDate(exactlyThirteenYearsAgo.getDate() - 1); // Just past 13th birthday
-        
+
         expect(ValidationService.validateDateOfBirth(exactlyThirteenYearsAgo)).toBe(true);
       });
 
       it('should validate maximum age boundary (120 years)', () => {
         const exactly120YearsAgo = new Date();
         exactly120YearsAgo.setFullYear(exactly120YearsAgo.getFullYear() - 120);
-        
+
         expect(ValidationService.validateDateOfBirth(exactly120YearsAgo)).toBe(true);
       });
     });
@@ -318,12 +312,12 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       it('should reject invalid JSON strings', () => {
         const invalidJson = [
           '{key: "value"}', // Unquoted key
-          '{key: value}',   // Unquoted key and value
+          '{key: value}', // Unquoted key and value
           '{"key": value}', // Unquoted value
-          '{',              // Incomplete
-          'undefined',      // Invalid literal
+          '{', // Incomplete
+          'undefined', // Invalid literal
           "{'key': 'value'}", // Single quotes
-          ''                // Empty string
+          '' // Empty string
         ];
 
         invalidJson.forEach(json => {
@@ -368,7 +362,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
           '4532015112830366', // Visa
           '4000056655665556', // Visa test
           '5555555555554444', // Mastercard test
-          '378282246310005',  // Amex test
+          '378282246310005' // Amex test
         ];
 
         validCards.forEach(card => {
@@ -380,7 +374,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
         const invalidCards = [
           '1234567890123456', // Invalid by Luhn
           '4532015112830367', // Invalid Luhn checksum
-          '123',              // Too short
+          '123', // Too short
           '12345678901234567890', // Too long
           'abcd1234567890123', // Contains letters
           ''
@@ -399,12 +393,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
 
     describe('validateZipCode', () => {
       it('should validate US ZIP codes', () => {
-        const validUS = [
-          '12345',
-          '12345-6789',
-          '90210',
-          '10001-1234'
-        ];
+        const validUS = ['12345', '12345-6789', '90210', '10001-1234'];
 
         validUS.forEach(zip => {
           expect(ValidationService.validateZipCode(zip, 'US')).toBe(true);
@@ -412,12 +401,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       });
 
       it('should validate Canadian postal codes', () => {
-        const validCA = [
-          'K1A 0A9',
-          'M5V 3L9',
-          'T2X0M4',
-          'V6B-1A1'
-        ];
+        const validCA = ['K1A 0A9', 'M5V 3L9', 'T2X0M4', 'V6B-1A1'];
 
         validCA.forEach(zip => {
           expect(ValidationService.validateZipCode(zip, 'CA')).toBe(true);
@@ -425,13 +409,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       });
 
       it('should validate UK postal codes', () => {
-        const validUK = [
-          'SW1A 1AA',
-          'M1 1AA',
-          'B33 8TH',
-          'W1A 0AX',
-          'EC1A1BB'
-        ];
+        const validUK = ['SW1A 1AA', 'M1 1AA', 'B33 8TH', 'W1A 0AX', 'EC1A1BB'];
 
         validUK.forEach(zip => {
           expect(ValidationService.validateZipCode(zip, 'UK')).toBe(true);
@@ -442,11 +420,11 @@ describe('ValidationService - Comprehensive Security Tests', () => {
         // Invalid US
         expect(ValidationService.validateZipCode('123', 'US')).toBe(false);
         expect(ValidationService.validateZipCode('12345-123', 'US')).toBe(false);
-        
+
         // Invalid CA
         expect(ValidationService.validateZipCode('123456', 'CA')).toBe(false);
         expect(ValidationService.validateZipCode('K1A', 'CA')).toBe(false);
-        
+
         // Invalid UK
         expect(ValidationService.validateZipCode('123', 'UK')).toBe(false);
         expect(ValidationService.validateZipCode('INVALID', 'UK')).toBe(false);
@@ -500,7 +478,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
     describe('validateMimeType', () => {
       it('should validate exact MIME type matches', () => {
         const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-        
+
         expect(ValidationService.validateMimeType('image/jpeg', allowedTypes)).toBe(true);
         expect(ValidationService.validateMimeType('image/png', allowedTypes)).toBe(true);
         expect(ValidationService.validateMimeType('application/pdf', allowedTypes)).toBe(true);
@@ -508,7 +486,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
 
       it('should validate wildcard MIME type patterns', () => {
         const allowedTypes = ['image/*', 'application/pdf'];
-        
+
         expect(ValidationService.validateMimeType('image/jpeg', allowedTypes)).toBe(true);
         expect(ValidationService.validateMimeType('image/gif', allowedTypes)).toBe(true);
         expect(ValidationService.validateMimeType('image/webp', allowedTypes)).toBe(true);
@@ -517,7 +495,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
 
       it('should reject non-allowed MIME types', () => {
         const allowedTypes = ['image/*', 'application/pdf'];
-        
+
         expect(ValidationService.validateMimeType('video/mp4', allowedTypes)).toBe(false);
         expect(ValidationService.validateMimeType('application/exe', allowedTypes)).toBe(false);
         expect(ValidationService.validateMimeType('text/html', allowedTypes)).toBe(false);
@@ -532,7 +510,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       it('should validate files within size limit', () => {
         const oneMB = 1024 * 1024;
         const fiveMB = 5 * oneMB;
-        
+
         expect(ValidationService.validateFileSize(oneMB, 5)).toBe(true);
         expect(ValidationService.validateFileSize(fiveMB, 5)).toBe(true);
         expect(ValidationService.validateFileSize(fiveMB - 1, 5)).toBe(true);
@@ -540,7 +518,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
 
       it('should reject files over size limit', () => {
         const sixMB = 6 * 1024 * 1024;
-        
+
         expect(ValidationService.validateFileSize(sixMB, 5)).toBe(false);
       });
 
@@ -556,7 +534,9 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       it('should escape special regex characters', () => {
         const input = 'Hello (world) [test] {more} .* +? ^$ | \\';
         const result = ValidationService.escapeRegExp(input);
-        expect(result).toBe('Hello \\(world\\) \\[test\\] \\{more\\} \\.\\* \\+\\? \\^\\$ \\| \\\\');
+        expect(result).toBe(
+          'Hello \\(world\\) \\[test\\] \\{more\\} \\.\\* \\+\\? \\^\\$ \\| \\\\'
+        );
       });
 
       it('should not modify safe strings', () => {
@@ -570,7 +550,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
         const escaped = ValidationService.escapeRegExp(searchTerm);
         const regex = new RegExp(escaped);
         const text = 'The price: $29.99 is correct';
-        
+
         expect(regex.test(text)).toBe(true);
       });
     });
@@ -640,7 +620,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
   describe('Security Edge Cases and Attack Vectors', () => {
     it('should handle extremely long inputs', () => {
       const longString = 'a'.repeat(100000);
-      
+
       // Should not crash and should handle gracefully
       expect(() => ValidationService.sanitizeInput(longString)).not.toThrow();
       expect(() => ValidationService.validateEmail(longString)).not.toThrow();
@@ -663,9 +643,9 @@ describe('ValidationService - Comprehensive Security Tests', () => {
         <object data="javascript:alert(1)"></object>
         <embed src="javascript:alert(1)">
       `;
-      
+
       const sanitized = ValidationService.sanitizeInput(complexAttack);
-      
+
       expect(sanitized).not.toContain('<script>');
       expect(sanitized).not.toContain('<iframe>');
       expect(sanitized).not.toContain('javascript:');
@@ -677,7 +657,7 @@ describe('ValidationService - Comprehensive Security Tests', () => {
       // Test file size boundaries
       expect(ValidationService.validateFileSize(Number.MAX_SAFE_INTEGER, 1)).toBe(false);
       expect(ValidationService.validateFileSize(-1, 5)).toBe(false);
-      
+
       // Test age boundaries
       const futureDate = new Date();
       futureDate.setFullYear(futureDate.getFullYear() + 1);
@@ -693,11 +673,11 @@ describe('ValidationService - Comprehensive Security Tests', () => {
     it('should handle regex denial of service (ReDoS) patterns', () => {
       // Test with patterns that could cause catastrophic backtracking
       const reDoSEmail = 'a'.repeat(1000) + '@' + 'b'.repeat(1000) + '.com';
-      
+
       const startTime = Date.now();
       const result = ValidationService.validateEmail(reDoSEmail);
       const endTime = Date.now();
-      
+
       // Should complete quickly (under 1 second)
       expect(endTime - startTime).toBeLessThan(1000);
       expect(result).toBe(false); // Should still return correct result

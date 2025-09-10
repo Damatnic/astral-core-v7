@@ -79,15 +79,15 @@ const measurePerformance = async <T>(
 ): Promise<{ result: T; executionTime: number; memoryUsage: NodeJS.MemoryUsage }> => {
   const startMemory = process.memoryUsage();
   const startTime = performance.now();
-  
+
   const result = await operation();
-  
+
   const endTime = performance.now();
   const endMemory = process.memoryUsage();
   const executionTime = endTime - startTime;
 
   console.log(`${operationName}: ${executionTime.toFixed(2)}ms`);
-  
+
   // Check if operation exceeded time limit
   expect(executionTime).toBeLessThan(maxExecutionTime);
 
@@ -111,10 +111,10 @@ const measureThroughput = async <T>(
   targetThroughput: number = 50 // operations per second
 ): Promise<{ throughput: number; averageTime: number; results: T[] }> => {
   const startTime = performance.now();
-  
+
   const promises = Array.from({ length: concurrentRequests }, () => operation());
   const results = await Promise.all(promises);
-  
+
   const endTime = performance.now();
   const totalTime = endTime - startTime;
   const throughput = (concurrentRequests / totalTime) * 1000; // ops per second
@@ -131,7 +131,7 @@ const measureThroughput = async <T>(
 describe('Critical Operations Performance Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Set up reasonable mock responses for performance testing
     prisma.user.create.mockResolvedValue({ id: 'user-123' });
     prisma.customer.create.mockResolvedValue({ id: 'customer-123' });
@@ -139,9 +139,9 @@ describe('Critical Operations Performance Tests', () => {
     prisma.payment.create.mockResolvedValue({ id: 'payment-123' });
     prisma.message.create.mockResolvedValue({ id: 'message-123' });
     prisma.conversationParticipant.findFirst.mockResolvedValue({ id: 'participant-123' });
-    
-    encryption.encrypt.mockImplementation((data) => `encrypted_${data}`);
-    encryption.decrypt.mockImplementation((data) => data.replace('encrypted_', ''));
+
+    encryption.encrypt.mockImplementation(data => `encrypted_${data}`);
+    encryption.decrypt.mockImplementation(data => data.replace('encrypted_', ''));
     phiService.create.mockResolvedValue({ id: 'phi-record-123' });
   });
 
@@ -156,10 +156,10 @@ describe('Critical Operations Performance Tests', () => {
       const { executionTime } = await measurePerformance(
         async () => {
           // Simulate registration process
-          const hashedPassword = await new Promise(resolve => 
+          const hashedPassword = await new Promise(resolve =>
             setTimeout(() => resolve('$2b$12$hashed'), 10)
           );
-          
+
           await prisma.user.create({
             data: {
               email: registrationData.email,
@@ -167,7 +167,7 @@ describe('Critical Operations Performance Tests', () => {
               name: registrationData.name
             }
           });
-          
+
           return { success: true };
         },
         'User Registration',
@@ -188,7 +188,7 @@ describe('Critical Operations Performance Tests', () => {
         loginOperation,
         'Concurrent Logins',
         20, // 20 concurrent requests
-        30  // 30 logins per second minimum
+        30 // 30 logins per second minimum
       );
 
       expect(throughput).toBeGreaterThan(30);
@@ -207,7 +207,7 @@ describe('Critical Operations Performance Tests', () => {
     it('should process payment creation within time limits', async () => {
       const paymentData = {
         customerId: 'customer-123',
-        amount: 150.00,
+        amount: 150.0,
         currency: 'usd',
         description: 'Therapy session fee'
       };
@@ -227,7 +227,7 @@ describe('Critical Operations Performance Tests', () => {
       const paymentOperation = async () => {
         return await StripeService.createPaymentIntent({
           customerId: 'customer-123',
-          amount: 100.00
+          amount: 100.0
         });
       };
 
@@ -235,7 +235,7 @@ describe('Critical Operations Performance Tests', () => {
         paymentOperation,
         'Concurrent Payment Processing',
         10, // 10 concurrent payments
-        5   // 5 payments per second minimum
+        5 // 5 payments per second minimum
       );
 
       expect(throughput).toBeGreaterThan(5);
@@ -260,7 +260,7 @@ describe('Critical Operations Performance Tests', () => {
 
     it('should handle bulk customer operations', async () => {
       const bulkCustomerCreation = async () => {
-        const operations = Array.from({ length: 50 }, (_, i) => 
+        const operations = Array.from({ length: 50 }, (_, i) =>
           StripeService.createCustomer({
             userId: `user-${i}`,
             email: `user${i}@example.com`,
@@ -301,7 +301,7 @@ describe('Critical Operations Performance Tests', () => {
             method: 'POST',
             body: assessmentData
           });
-          
+
           return await CrisisAssessPOST(request);
         },
         'Crisis Assessment Processing',
@@ -327,7 +327,7 @@ describe('Critical Operations Performance Tests', () => {
             immediateRisk: false
           }
         });
-        
+
         return await CrisisAssessPOST(request);
       };
 
@@ -335,7 +335,7 @@ describe('Critical Operations Performance Tests', () => {
         assessmentOperation,
         'Concurrent Crisis Assessments',
         15, // 15 concurrent assessments
-        10  // 10 assessments per second minimum
+        10 // 10 assessments per second minimum
       );
 
       expect(throughput).toBeGreaterThan(10);
@@ -359,7 +359,7 @@ describe('Critical Operations Performance Tests', () => {
               immediateRisk: i % 10 === 0
             }
           });
-          
+
           return await CrisisAssessPOST(request);
         });
 
@@ -469,8 +469,8 @@ describe('Critical Operations Performance Tests', () => {
     });
 
     it('should handle large text sanitization efficiently', async () => {
-      const largeText = '<script>evil()</script>'.repeat(1000) + 
-                      'Safe content here. '.repeat(10000);
+      const largeText =
+        '<script>evil()</script>'.repeat(1000) + 'Safe content here. '.repeat(10000);
 
       const { executionTime } = await measurePerformance(
         async () => {
@@ -487,9 +487,9 @@ describe('Critical Operations Performance Tests', () => {
       const creditCards = [
         '4532015112830366', // Valid Visa
         '5555555555554444', // Valid Mastercard
-        '378282246310005',  // Valid Amex
+        '378282246310005', // Valid Amex
         '1234567890123456', // Invalid
-        '4532015112830367'  // Invalid checksum
+        '4532015112830367' // Invalid checksum
       ];
 
       const { executionTime } = await measurePerformance(
@@ -534,7 +534,7 @@ describe('Critical Operations Performance Tests', () => {
 
     it('should handle high-volume message processing', async () => {
       const messagingService = new MessagingService();
-      
+
       const bulkMessageOperation = async () => {
         const messages = Array.from({ length: 100 }, (_, i) => ({
           conversationId: 'conv-123',
@@ -558,7 +558,7 @@ describe('Critical Operations Performance Tests', () => {
 
     it('should retrieve conversation history efficiently', async () => {
       const messagingService = new MessagingService();
-      
+
       // Mock large conversation history
       const mockMessages = Array.from({ length: 1000 }, (_, i) => ({
         id: `msg-${i}`,
@@ -566,9 +566,9 @@ describe('Critical Operations Performance Tests', () => {
         sender: { id: 'user-1', name: 'User 1' },
         readReceipts: []
       }));
-      
+
       prisma.message.findMany.mockResolvedValue(mockMessages.slice(0, 50));
-      phiService.decryptField.mockImplementation(async (content) => 
+      phiService.decryptField.mockImplementation(async content =>
         content.replace('encrypted_', '')
       );
 
@@ -589,7 +589,7 @@ describe('Critical Operations Performance Tests', () => {
   describe('Memory Usage and Resource Management', () => {
     it('should maintain reasonable memory usage during bulk operations', async () => {
       const initialMemory = process.memoryUsage();
-      
+
       // Perform memory-intensive operations
       const bulkOperation = async () => {
         const largeDataSet = Array.from({ length: 10000 }, (_, i) => ({
@@ -606,17 +606,14 @@ describe('Critical Operations Performance Tests', () => {
         }));
       };
 
-      const { result } = await measurePerformance(
-        bulkOperation,
-        'Memory Intensive Operation'
-      );
+      const { result } = await measurePerformance(bulkOperation, 'Memory Intensive Operation');
 
       const finalMemory = process.memoryUsage();
       const memoryIncrease = finalMemory.heapUsed - initialMemory.heapUsed;
       const memoryIncreaseMB = memoryIncrease / (1024 * 1024);
 
       console.log(`Memory increase: ${memoryIncreaseMB.toFixed(2)}MB`);
-      
+
       // Memory increase should be reasonable (less than 100MB for this test)
       expect(memoryIncreaseMB).toBeLessThan(100);
       expect(result).toHaveLength(10000);
@@ -624,13 +621,13 @@ describe('Critical Operations Performance Tests', () => {
 
     it('should handle garbage collection efficiently', async () => {
       const memoryBefore = process.memoryUsage().heapUsed;
-      
+
       // Create and dispose of large amounts of data
       for (let i = 0; i < 1000; i++) {
         const largeString = 'x'.repeat(10000); // 10KB
         const encrypted = encryption.encrypt(largeString);
         const decrypted = encryption.decrypt(encrypted);
-        
+
         // Force some processing
         ValidationService.sanitizeInput(decrypted);
       }
@@ -645,7 +642,7 @@ describe('Critical Operations Performance Tests', () => {
       const memoryDifferenceMB = memoryDifference / (1024 * 1024);
 
       console.log(`Memory difference after GC: ${memoryDifferenceMB.toFixed(2)}MB`);
-      
+
       // Memory should be cleaned up efficiently
       expect(memoryDifferenceMB).toBeLessThan(50);
     });
@@ -680,16 +677,15 @@ describe('Critical Operations Performance Tests', () => {
 
     it('should handle pagination efficiently', async () => {
       const messagingService = new MessagingService();
-      
+
       // Test paginated message retrieval
       const paginationTest = async () => {
         const pages = [];
         for (let page = 0; page < 10; page++) {
-          const messages = await messagingService.getConversationMessages(
-            'conv-123',
-            'user-1',
-            { limit: 50, offset: page * 50 }
-          );
+          const messages = await messagingService.getConversationMessages('conv-123', 'user-1', {
+            limit: 50,
+            offset: page * 50
+          });
           pages.push(messages);
         }
         return pages;
@@ -719,20 +715,22 @@ describe('Critical Operations Performance Tests', () => {
               content: `Load test message from user ${userId}`,
               type: 'text'
             }),
-            
+
             // Process a payment
             StripeService.createPaymentIntent({
               customerId: `load-customer-${userId}`,
               amount: 100 + userId
             }),
-            
+
             // Validate some input
-            Promise.resolve(ValidationService.sanitizeInput(`<script>alert(${userId})</script>Data`)),
-            
+            Promise.resolve(
+              ValidationService.sanitizeInput(`<script>alert(${userId})</script>Data`)
+            ),
+
             // Encrypt some data
             Promise.resolve(encryption.encrypt(`User ${userId} sensitive data`))
           ];
-          
+
           return await Promise.all(operations);
         });
 
@@ -746,11 +744,11 @@ describe('Critical Operations Performance Tests', () => {
       );
 
       expect(executionTime).toBeLessThan(30000);
-      
+
       // Calculate operations per second
       const totalOperations = 50 * 4; // 50 users * 4 operations each
       const operationsPerSecond = totalOperations / (executionTime / 1000);
-      
+
       console.log(`Load test throughput: ${operationsPerSecond.toFixed(2)} ops/sec`);
       expect(operationsPerSecond).toBeGreaterThan(20); // At least 20 ops/sec under load
     });

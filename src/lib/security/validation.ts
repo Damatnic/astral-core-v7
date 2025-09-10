@@ -352,7 +352,7 @@ export class ValidationService {
  * @example
  * ```typescript
  * import { commonSchemas } from '@/lib/security/validation';
- * 
+ *
  * // Validate email
  * const result = commonSchemas.email.safeParse('user@example.com');
  * if (result.success) {

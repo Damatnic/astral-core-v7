@@ -211,8 +211,6 @@ const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDas
 
   const fetchBillingSummary = async () => {
     try {
-
-
       // Fetch summary data from multiple endpoints
       const [subscriptionRes, paymentMethodsRes, paymentsRes] = await Promise.all([
         fetch('/api/payments/subscriptions'),
@@ -261,7 +259,6 @@ const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDas
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load billing summary');
     } finally {
-
     }
   };
 

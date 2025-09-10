@@ -39,7 +39,7 @@ const LazyMyHeavyComponent = React.lazy(() => import('./MyHeavyComponent'));
 function MyLazyWrapper(props) {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<LoadingFallback message="Loading component..." />}>
+      <Suspense fallback={<LoadingFallback message='Loading component...' />}>
         <LazyMyHeavyComponent {...props} />
       </Suspense>
     </ErrorBoundary>
@@ -50,29 +50,28 @@ function MyLazyWrapper(props) {
 ## Loading Strategies
 
 ### 1. Immediate Loading (High Priority)
+
 Use for critical components that users need right away.
 
 ```tsx
 import { useLazyLoading, LoadingStrategy } from '@/hooks/useLazyLoading';
 
-const { shouldLoad } = useLazyLoading(
-  () => import('./CriticalComponent'),
-  { strategy: LoadingStrategy.IMMEDIATE }
-);
+const { shouldLoad } = useLazyLoading(() => import('./CriticalComponent'), {
+  strategy: LoadingStrategy.IMMEDIATE
+});
 ```
 
 ### 2. On Interaction Loading
+
 Best for heavy components that aren't immediately needed.
 
 ```tsx
 function InteractiveButton() {
   const [showComponent, setShowComponent] = useState(false);
-  
+
   return (
     <div>
-      <button onClick={() => setShowComponent(true)}>
-        Load Heavy Component
-      </button>
+      <button onClick={() => setShowComponent(true)}>Load Heavy Component</button>
       {showComponent && <LazyHeavyComponent />}
     </div>
   );
@@ -80,6 +79,7 @@ function InteractiveButton() {
 ```
 
 ### 3. Hover Preloading
+
 Preload components when user hovers over triggers.
 
 ```tsx
@@ -102,6 +102,7 @@ function NavigationItem({ route }) {
 ```
 
 ### 4. Viewport Loading
+
 Load components when they become visible.
 
 ```tsx
@@ -110,11 +111,7 @@ import { useComponentVisibility } from '@/hooks/useLazyLoading';
 function ViewportLazyComponent() {
   const { ref, isVisible } = useComponentVisibility(0.2); // 20% visible
 
-  return (
-    <div ref={ref}>
-      {isVisible ? <LazyHeavyComponent /> : <LoadingFallback />}
-    </div>
-  );
+  return <div ref={ref}>{isVisible ? <LazyHeavyComponent /> : <LoadingFallback />}</div>;
 }
 ```
 
@@ -132,7 +129,7 @@ function DashboardPage({ user }) {
   }, [user.role]);
 
   const DashboardComponent = getDashboardComponent(user.role);
-  
+
   return <DashboardComponent user={user} />;
 }
 ```
@@ -145,14 +142,12 @@ function ProgressiveComponent() {
 
   useEffect(() => {
     // Check if user has good connection/fast device
-    const isCapable = navigator.connection?.effectiveType === '4g' && 
-                     navigator.hardwareConcurrency > 4;
+    const isCapable =
+      navigator.connection?.effectiveType === '4g' && navigator.hardwareConcurrency > 4;
     setCanUseAdvanced(isCapable);
   }, []);
 
-  return canUseAdvanced ? 
-    <LazyAdvancedComponent /> : 
-    <BasicFallbackComponent />;
+  return canUseAdvanced ? <LazyAdvancedComponent /> : <BasicFallbackComponent />;
 }
 ```
 
@@ -165,7 +160,7 @@ function App({ user }) {
   useEffect(() => {
     // Preload components based on user role
     preloadByUserRole(user.role);
-    
+
     // Progressively load other components when browser is idle
     progressivelyLoadComponents();
   }, [user.role]);
@@ -185,7 +180,7 @@ function LazyComponentWithCustomError() {
   return (
     <ErrorBoundary
       fallback={<div>Oops! This component failed to load.</div>}
-      onError={(error) => {
+      onError={error => {
         console.error('Lazy component failed:', error);
         // Report to error tracking service
       }}
@@ -240,12 +235,14 @@ function MonitoredLazyComponent() {
   const { trackComponentLoad } = useBundleAnalyzer();
   const startTime = useRef(performance.now());
 
-  const LazyComponent = useMemo(() => 
-    React.lazy(async () => {
-      const component = await import('./HeavyComponent');
-      trackComponentLoad('HeavyComponent', startTime.current);
-      return component;
-    }), []
+  const LazyComponent = useMemo(
+    () =>
+      React.lazy(async () => {
+        const component = await import('./HeavyComponent');
+        trackComponentLoad('HeavyComponent', startTime.current);
+        return component;
+      }),
+    []
   );
 
   return (
@@ -275,7 +272,7 @@ if (process.env.NODE_ENV === 'development') {
 // Role-based loading with preloading
 const DashboardWrapper = ({ user }) => {
   const DashboardComponent = getDashboardComponent(user.role);
-  
+
   useEffect(() => {
     // Preload other dashboards user might switch to
     if (user.permissions?.canSwitchRoles) {
@@ -294,7 +291,7 @@ const DashboardWrapper = ({ user }) => {
 // Load heavy forms on interaction
 function FormTrigger({ formType }) {
   const [showForm, setShowForm] = useState(false);
-  
+
   const preloadForm = () => {
     if (formType === 'payment') {
       preloadComponents.billing.paymentForm();
@@ -303,10 +300,7 @@ function FormTrigger({ formType }) {
 
   return (
     <div>
-      <button 
-        onMouseEnter={preloadForm}
-        onClick={() => setShowForm(true)}
-      >
+      <button onMouseEnter={preloadForm} onClick={() => setShowForm(true)}>
         Open Form
       </button>
       {showForm && <LazyPaymentForm />}
@@ -321,12 +315,9 @@ function FormTrigger({ formType }) {
 // Load analytics on tab activation
 function AnalyticsTab() {
   const [isActive, setIsActive] = useState(false);
-  
+
   return (
-    <Tab 
-      active={isActive}
-      onActivate={() => setIsActive(true)}
-    >
+    <Tab active={isActive} onActivate={() => setIsActive(true)}>
       {isActive && <LazyAnalyticsDashboard />}
     </Tab>
   );
@@ -342,10 +333,10 @@ import { render, waitFor } from '@testing-library/react';
 
 test('lazy component loads correctly', async () => {
   const { getByText, getByTestId } = render(<LazyComponent />);
-  
+
   // Check loading state
   expect(getByText('Loading...')).toBeInTheDocument();
-  
+
   // Wait for component to load
   await waitFor(() => {
     expect(getByTestId('loaded-component')).toBeInTheDocument();
@@ -361,9 +352,8 @@ cy.visit('/dashboard');
 cy.get('[data-testid="dashboard"]').should('be.visible');
 
 // Measure performance
-cy.window().then((win) => {
-  const loadTime = win.performance.timing.loadEventEnd - 
-                  win.performance.timing.navigationStart;
+cy.window().then(win => {
+  const loadTime = win.performance.timing.loadEventEnd - win.performance.timing.navigationStart;
   expect(loadTime).to.be.lessThan(3000); // Under 3 seconds
 });
 ```
@@ -371,6 +361,7 @@ cy.window().then((win) => {
 ## Best Practices Summary
 
 ### Do's ✅
+
 - Use consistent loading patterns across the app
 - Implement error boundaries for all lazy components
 - Preload based on user behavior and role
@@ -379,6 +370,7 @@ cy.window().then((win) => {
 - Test both loading and loaded states
 
 ### Don'ts ❌
+
 - Don't lazy load tiny components (< 10KB)
 - Don't create too many small chunks (aim for 20KB+ chunks)
 - Don't forget error handling
@@ -387,6 +379,7 @@ cy.window().then((win) => {
 - Don't lazy load components that are always needed
 
 ### Performance Tips 🚀
+
 1. **Bundle Size**: Target components > 20KB for lazy loading
 2. **User Experience**: Keep loading states under 200ms perceived time
 3. **Preloading**: Use hover/focus events for instant loading feel

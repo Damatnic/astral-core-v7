@@ -60,30 +60,34 @@ class WebVitalsMonitor {
 
   private initialize() {
     if (typeof window === 'undefined' || this.isInitialized) return;
-    
+
     this.isInitialized = true;
     this.setupVitalsMonitoring();
   }
 
   private setupVitalsMonitoring() {
     // First Contentful Paint
-    this.observeVital('paint', (entries) => {
+    this.observeVital('paint', entries => {
       const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint');
       if (fcpEntry) {
-        this.updateVital('fcp', fcpEntry.startTime, fcpEntry.startTime, 'fcp-' + Date.now(), [fcpEntry]);
+        this.updateVital('fcp', fcpEntry.startTime, fcpEntry.startTime, 'fcp-' + Date.now(), [
+          fcpEntry
+        ]);
       }
     });
 
     // Largest Contentful Paint
-    this.observeVital('largest-contentful-paint', (entries) => {
+    this.observeVital('largest-contentful-paint', entries => {
       const lcpEntry = entries[entries.length - 1]; // Get the latest LCP
       if (lcpEntry) {
-        this.updateVital('lcp', lcpEntry.startTime, lcpEntry.startTime, 'lcp-' + Date.now(), [lcpEntry]);
+        this.updateVital('lcp', lcpEntry.startTime, lcpEntry.startTime, 'lcp-' + Date.now(), [
+          lcpEntry
+        ]);
       }
     });
 
     // First Input Delay
-    this.observeVital('first-input', (entries) => {
+    this.observeVital('first-input', entries => {
       const fidEntry = entries[0];
       if (fidEntry) {
         const delay = (fidEntry as PerformanceEventTiming).processingStart - fidEntry.startTime;
@@ -94,8 +98,8 @@ class WebVitalsMonitor {
     // Cumulative Layout Shift
     let clsValue = 0;
     const clsEntries: PerformanceEntry[] = [];
-    
-    this.observeVital('layout-shift', (entries) => {
+
+    this.observeVital('layout-shift', entries => {
       for (const entry of entries) {
         const layoutEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value: number };
         if (!layoutEntry.hadRecentInput) {
@@ -103,13 +107,13 @@ class WebVitalsMonitor {
           clsEntries.push(entry);
         }
       }
-      
+
       const lastEntry = entries[entries.length - 1] as PerformanceEntry & { value: number };
       this.updateVital('cls', clsValue, lastEntry.value, 'cls-' + Date.now(), clsEntries);
     });
 
     // Time to First Byte
-    this.observeVital('navigation', (entries) => {
+    this.observeVital('navigation', entries => {
       const navigationEntry = entries[0] as PerformanceNavigationTiming;
       if (navigationEntry) {
         const ttfb = navigationEntry.responseStart - navigationEntry.requestStart;
@@ -119,12 +123,15 @@ class WebVitalsMonitor {
 
     // Interaction to Next Paint (for browsers that support it)
     if ('PerformanceEventTiming' in window) {
-      this.observeVital('event', (entries) => {
+      this.observeVital('event', entries => {
         let maxDelay = 0;
         let inpEntry: PerformanceEntry | null = null;
-        
+
         for (const entry of entries) {
-          const eventEntry = entry as PerformanceEntry & { interactionId?: number; duration: number };
+          const eventEntry = entry as PerformanceEntry & {
+            interactionId?: number;
+            duration: number;
+          };
           if (eventEntry.interactionId && eventEntry.duration) {
             if (eventEntry.duration > maxDelay) {
               maxDelay = eventEntry.duration;
@@ -132,7 +139,7 @@ class WebVitalsMonitor {
             }
           }
         }
-        
+
         if (inpEntry) {
           this.updateVital('inp', maxDelay, maxDelay, 'inp-' + Date.now(), [inpEntry]);
         }
@@ -140,22 +147,19 @@ class WebVitalsMonitor {
     }
   }
 
-  private observeVital(
-    entryType: string,
-    callback: (entries: PerformanceEntry[]) => void
-  ) {
+  private observeVital(entryType: string, callback: (entries: PerformanceEntry[]) => void) {
     if (!('PerformanceObserver' in window)) return;
 
     try {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         callback(list.getEntries());
       });
 
-      observer.observe({ 
-        type: entryType, 
-        buffered: true 
+      observer.observe({
+        type: entryType,
+        buffered: true
       });
-      
+
       this.observers.set(entryType, observer);
     } catch (e) {
       console.warn(`Failed to observe ${entryType}:`, e);
@@ -196,7 +200,7 @@ class WebVitalsMonitor {
 
   public subscribe(callback: (data: WebVitalsData) => void): () => void {
     this.callbacks.push(callback);
-    
+
     // Immediately call with current data
     if (Object.keys(this.vitals).length > 0) {
       callback({ ...this.vitals });
@@ -221,7 +225,7 @@ class WebVitalsMonitor {
 
     Object.entries(this.vitals).forEach(([key, vital]) => {
       if (!vital) return;
-      
+
       const thresholds = WEB_VITALS_THRESHOLDS[key as keyof WebVitalsThresholds];
       if (!thresholds) return;
 
@@ -243,7 +247,7 @@ class WebVitalsMonitor {
 
     const overall = metricCount > 0 ? Math.round(totalScore / metricCount) : 0;
     let grade: string;
-    
+
     if (overall >= 90) grade = 'A';
     else if (overall >= 80) grade = 'B';
     else if (overall >= 70) grade = 'C';
@@ -255,10 +259,10 @@ class WebVitalsMonitor {
 
   public getInsights(): WebVitalsInsight[] {
     const insights: WebVitalsInsight[] = [];
-    
+
     Object.entries(this.vitals).forEach(([key, vital]) => {
       if (!vital) return;
-      
+
       const thresholds = WEB_VITALS_THRESHOLDS[key as keyof WebVitalsThresholds];
       if (!thresholds) return;
 
@@ -278,49 +282,55 @@ class WebVitalsMonitor {
       switch (key) {
         case 'fcp':
           if (rating !== 'good') {
-            recommendation = vital.value > 3000 
-              ? 'Consider reducing server response time, eliminating render-blocking resources, and optimizing critical rendering path.'
-              : 'Optimize critical resources loading and reduce initial payload size.';
+            recommendation =
+              vital.value > 3000
+                ? 'Consider reducing server response time, eliminating render-blocking resources, and optimizing critical rendering path.'
+                : 'Optimize critical resources loading and reduce initial payload size.';
           }
           break;
-        
+
         case 'lcp':
           if (rating !== 'good') {
-            recommendation = vital.value > 4000
-              ? 'Optimize largest content element loading, use efficient image formats, and implement preloading for critical resources.'
-              : 'Consider image optimization and resource prioritization.';
+            recommendation =
+              vital.value > 4000
+                ? 'Optimize largest content element loading, use efficient image formats, and implement preloading for critical resources.'
+                : 'Consider image optimization and resource prioritization.';
           }
           break;
-        
+
         case 'fid':
           if (rating !== 'good') {
-            recommendation = vital.value > 300
-              ? 'Reduce JavaScript execution time, break up long tasks, and optimize event handlers.'
-              : 'Consider code splitting and reducing main thread blocking.';
+            recommendation =
+              vital.value > 300
+                ? 'Reduce JavaScript execution time, break up long tasks, and optimize event handlers.'
+                : 'Consider code splitting and reducing main thread blocking.';
           }
           break;
-        
+
         case 'cls':
           if (rating !== 'good') {
-            recommendation = vital.value > 0.25
-              ? 'Set explicit dimensions for images and ads, avoid inserting content above existing content, and use CSS transform for animations.'
-              : 'Reserve space for dynamic content and avoid layout shifts.';
+            recommendation =
+              vital.value > 0.25
+                ? 'Set explicit dimensions for images and ads, avoid inserting content above existing content, and use CSS transform for animations.'
+                : 'Reserve space for dynamic content and avoid layout shifts.';
           }
           break;
-        
+
         case 'ttfb':
           if (rating !== 'good') {
-            recommendation = vital.value > 1800
-              ? 'Optimize server performance, implement CDN, and reduce database query time.'
-              : 'Consider server-side optimizations and caching strategies.';
+            recommendation =
+              vital.value > 1800
+                ? 'Optimize server performance, implement CDN, and reduce database query time.'
+                : 'Consider server-side optimizations and caching strategies.';
           }
           break;
-        
+
         case 'inp':
           if (rating !== 'good') {
-            recommendation = vital.value > 500
-              ? 'Optimize event handlers, reduce main thread blocking, and defer non-critical JavaScript.'
-              : 'Improve interaction responsiveness with better task scheduling.';
+            recommendation =
+              vital.value > 500
+                ? 'Optimize event handlers, reduce main thread blocking, and defer non-critical JavaScript.'
+                : 'Improve interaction responsiveness with better task scheduling.';
           }
           break;
       }
@@ -376,7 +386,7 @@ export function getWebVitalsMonitor(): WebVitalsMonitor {
 // React hook
 export function useWebVitals() {
   const monitor = getWebVitalsMonitor();
-  
+
   return {
     vitals: monitor.getVitals(),
     score: monitor.getVitalsScore(),
@@ -390,22 +400,29 @@ export function useWebVitals() {
 export function sendVitalsToAnalytics(vitals: WebVitalsData, endpoint = '/api/analytics/vitals') {
   if (typeof window === 'undefined') return;
 
-  const data = Object.entries(vitals).reduce((acc, [key, vital]) => {
-    if (vital) {
-      acc[key] = {
-        value: vital.value,
-        rating: vital.value <= WEB_VITALS_THRESHOLDS[key as keyof WebVitalsThresholds]?.good ? 'good' :
-                vital.value <= WEB_VITALS_THRESHOLDS[key as keyof WebVitalsThresholds]?.needsImprovement ? 'needs-improvement' :
-                'poor'
-      };
-    }
-    return acc;
-  }, {} as Record<string, { value: number; rating: string }>);
+  const data = Object.entries(vitals).reduce(
+    (acc, [key, vital]) => {
+      if (vital) {
+        acc[key] = {
+          value: vital.value,
+          rating:
+            vital.value <= WEB_VITALS_THRESHOLDS[key as keyof WebVitalsThresholds]?.good
+              ? 'good'
+              : vital.value <=
+                  WEB_VITALS_THRESHOLDS[key as keyof WebVitalsThresholds]?.needsImprovement
+                ? 'needs-improvement'
+                : 'poor'
+        };
+      }
+      return acc;
+    },
+    {} as Record<string, { value: number; rating: string }>
+  );
 
   fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       vitals: data,
@@ -423,7 +440,7 @@ export function logWebVitals() {
   if (process.env.NODE_ENV === 'development') {
     const monitor = getWebVitalsMonitor();
     const data = monitor.exportData();
-    
+
     console.group('Web Vitals Report');
     console.log('Overall Score:', `${data.score.overall}/100 (${data.score.grade})`);
     console.table(data.vitals);

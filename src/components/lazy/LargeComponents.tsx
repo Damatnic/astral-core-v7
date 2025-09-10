@@ -22,11 +22,11 @@ const withLazyLoading = <P extends object>(
 ) => {
   const LazyComponent = (props: P) => (
     <ErrorBoundary>
-      <Suspense 
+      <Suspense
         fallback={
-          <LoadingFallback 
-            variant="skeleton" 
-            size="md" 
+          <LoadingFallback
+            variant='skeleton'
+            size='md'
             message={loadingMessage}
             className={minHeight}
           />
@@ -38,25 +38,21 @@ const withLazyLoading = <P extends object>(
   );
 
   LazyComponent.displayName = `Lazy(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return LazyComponent;
 };
 
 // Wrapped lazy components
-export const LazyMfaSetup = withLazyLoading(
-  MfaSetup, 
-  'Loading MFA setup...',
-  'min-h-[400px]'
-);
+export const LazyMfaSetup = withLazyLoading(MfaSetup, 'Loading MFA setup...', 'min-h-[400px]');
 
 export const LazyFileUpload = withLazyLoading(
-  FileUpload, 
+  FileUpload,
   'Loading file upload...',
   'min-h-[200px]'
 );
 
 export const LazyNotificationBell = withLazyLoading(
-  NotificationBell, 
+  NotificationBell,
   'Loading notifications...',
   'min-h-[50px]'
 );

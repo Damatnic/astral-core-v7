@@ -1,7 +1,8 @@
 export const APP_CONFIG = {
   name: 'Astral Core',
   version: '0.1.0',
-  description: 'Secure HIPAA-compliant mental health platform providing therapy, wellness tracking, and crisis support services.',
+  description:
+    'Secure HIPAA-compliant mental health platform providing therapy, wellness tracking, and crisis support services.',
   environment: process.env.NODE_ENV || 'development',
   features: {
     aiTherapy: process.env['ENABLE_AI_THERAPY'] === 'true',

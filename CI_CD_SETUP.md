@@ -7,6 +7,7 @@ This document describes the comprehensive CI/CD pipeline setup for Astral Core v
 ## 🏗️ Pipeline Architecture
 
 ### Workflow Structure
+
 ```
 Pull Request → Validation → Security Scan → Performance Test
                     ↓
@@ -18,10 +19,12 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 ## 📋 Workflows
 
 ### 1. Pull Request Validation (`pr-validation.yml`)
+
 **Triggers:** Pull requests to main/master/develop
 **Purpose:** Comprehensive validation of code changes
 
 **Jobs:**
+
 - **Code Quality**: ESLint, TypeScript checking, Prettier formatting
 - **Testing**: Unit, integration, and E2E tests with coverage
 - **Security Scan**: Vulnerability scanning with Snyk and SonarCloud
@@ -30,10 +33,12 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 - **Bundle Analysis**: Bundle size analysis and comparison
 
 ### 2. Production Deployment (`production-deploy.yml`)
+
 **Triggers:** Push to main/master, manual dispatch, tags
 **Purpose:** Automated production deployment with safety checks
 
 **Jobs:**
+
 - **Pre-deployment Validation**: Code quality and security checks
 - **Build & Push**: Docker image building and registry push
 - **Database Migration**: Safe database schema updates
@@ -42,10 +47,12 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 - **Post-deployment**: Cache clearing, monitoring updates
 
 ### 3. Security Scanning (`security-scan.yml`)
+
 **Triggers:** Daily schedule, dependency changes, manual dispatch
 **Purpose:** Comprehensive security analysis
 
 **Jobs:**
+
 - **Dependency Scanning**: npm audit, Snyk, OSV Scanner
 - **Static Analysis**: CodeQL, Semgrep, Snyk Code
 - **Secret Scanning**: TruffleHog, GitLeaks
@@ -54,10 +61,12 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 - **License Compliance**: License compatibility checking
 
 ### 4. Performance Testing (`performance-testing.yml`)
+
 **Triggers:** Daily schedule, code changes, manual dispatch
 **Purpose:** Performance monitoring and regression detection
 
 **Jobs:**
+
 - **Build Analysis**: Build time and bundle size tracking
 - **Lighthouse Testing**: Core Web Vitals and performance metrics
 - **Load Testing**: Artillery and K6 load testing
@@ -65,10 +74,12 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 - **Report Generation**: Performance trend analysis
 
 ### 5. Database Migrations (`database-migrations.yml`)
+
 **Triggers:** Schema changes, manual dispatch
 **Purpose:** Safe database migration management
 
 **Jobs:**
+
 - **Schema Validation**: Prisma schema validation
 - **Compatibility Testing**: Multi-version PostgreSQL testing
 - **Staging Deployment**: Safe staging migration
@@ -76,10 +87,12 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 - **Rollback Capability**: Automated rollback on failure
 
 ### 6. Code Quality (`code-quality.yml`)
+
 **Triggers:** Code changes, daily schedule
 **Purpose:** Comprehensive code quality analysis
 
 **Jobs:**
+
 - **Linting & Formatting**: ESLint and Prettier checks
 - **TypeScript Analysis**: Type checking and unused code detection
 - **Testing Suite**: Unit, integration, E2E with coverage
@@ -88,10 +101,12 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 - **SonarCloud Analysis**: Quality gate enforcement
 
 ### 7. Dependency Management (`dependency-update.yml`)
+
 **Triggers:** Daily schedule, manual dispatch
 **Purpose:** Automated dependency updates and security patches
 
 **Jobs:**
+
 - **Security Audit**: Vulnerability scanning and reporting
 - **Update Creation**: Automated PR creation for updates
 - **Auto-merge**: Safe auto-merging of security patches
@@ -100,7 +115,9 @@ Scheduled → Dependency Updates → Security Scans → Performance Tests
 ## 🔧 Reusable Workflows
 
 ### Build Workflow (`reusable-build.yml`)
+
 Standardized build process with caching and optimization
+
 - Node.js setup with version pinning
 - Dependency caching and installation
 - Prisma client generation
@@ -108,7 +125,9 @@ Standardized build process with caching and optimization
 - Artifact uploading
 
 ### Test Workflow (`reusable-test.yml`)
+
 Comprehensive testing with multiple strategies
+
 - Unit, integration, and E2E testing
 - Coverage threshold enforcement
 - Multiple PostgreSQL version testing
@@ -116,7 +135,9 @@ Comprehensive testing with multiple strategies
 - Results aggregation and reporting
 
 ### Deploy Workflow (`reusable-deploy.yml`)
+
 Production-ready deployment with safety measures
+
 - Multiple deployment strategies (rolling, blue-green, recreate)
 - Health checks and smoke tests
 - Automated rollback on failure
@@ -126,20 +147,24 @@ Production-ready deployment with safety measures
 ## 🛠️ Scripts and Automation
 
 ### Deployment Scripts
+
 - **`scripts/deployment/deploy.sh`**: Main deployment script
 - **`scripts/deployment/rollback.sh`**: Rollback automation
 - **`scripts/docker/docker-entrypoint.sh`**: Container startup script
 
 ### Kubernetes Manifests
+
 - **`scripts/kubernetes/deployment.yaml`**: Production Kubernetes resources
 - **`scripts/kubernetes/secrets-template.yaml`**: Secret management template
 
 ## 🔐 Security Configuration
 
 ### Secret Management
+
 All sensitive data is managed through GitHub Secrets and Kubernetes Secrets:
 
 **Required GitHub Secrets:**
+
 - `DATABASE_URL`: Production database connection
 - `NEXTAUTH_SECRET`: Authentication secret
 - `STRIPE_SECRET_KEY`: Payment processing
@@ -150,6 +175,7 @@ All sensitive data is managed through GitHub Secrets and Kubernetes Secrets:
 - `SONAR_TOKEN`: Code quality analysis
 
 ### Security Scanning
+
 - **Dependency Scanning**: npm audit, Snyk, OSV
 - **Code Analysis**: CodeQL, Semgrep
 - **Secret Detection**: TruffleHog, GitLeaks
@@ -159,12 +185,14 @@ All sensitive data is managed through GitHub Secrets and Kubernetes Secrets:
 ## 📊 Monitoring and Notifications
 
 ### Performance Monitoring
+
 - Lighthouse CI for Core Web Vitals
 - Bundle size tracking
 - Load testing with Artillery and K6
 - Performance regression detection
 
 ### Notification Channels
+
 - GitHub PR comments and checks
 - Slack notifications (configurable)
 - Email alerts for security issues
@@ -173,6 +201,7 @@ All sensitive data is managed through GitHub Secrets and Kubernetes Secrets:
 ## 🚀 Getting Started
 
 ### 1. Repository Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/astral-core-v7.git
@@ -187,6 +216,7 @@ cp .env.example .env.local
 ```
 
 ### 2. GitHub Secrets Configuration
+
 Set up the following secrets in your GitHub repository:
 
 ```bash
@@ -214,6 +244,7 @@ SLACK_WEBHOOK_URL="https://hooks.slack.com/..."
 ```
 
 ### 3. Kubernetes Setup
+
 ```bash
 # Create namespace
 kubectl create namespace astral-core
@@ -229,6 +260,7 @@ kubectl apply -f scripts/kubernetes/deployment.yaml
 ```
 
 ### 4. Manual Deployment
+
 ```bash
 # Deploy to staging
 ./scripts/deployment/deploy.sh --environment staging --tag v1.0.0
@@ -243,20 +275,26 @@ kubectl apply -f scripts/kubernetes/deployment.yaml
 ## 🔄 Workflow Customization
 
 ### Environment Configuration
+
 Edit `.github/deployment/` configuration files:
+
 - `default.env`: Global settings
-- `staging.env`: Staging-specific settings  
+- `staging.env`: Staging-specific settings
 - `production.env`: Production-specific settings
 
 ### Notification Setup
+
 Configure Slack notifications:
+
 ```bash
 # Set Slack webhook URL in GitHub secrets
 SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 ```
 
 ### Quality Gates
+
 Customize quality thresholds in workflow files:
+
 - Test coverage: 80% (configurable)
 - Performance budgets: Lighthouse thresholds
 - Security: Vulnerability severity levels
@@ -265,17 +303,20 @@ Customize quality thresholds in workflow files:
 ## 📈 Performance Budgets
 
 ### Lighthouse Thresholds
+
 - Performance: 80+
 - Accessibility: 95+
 - Best Practices: 90+
 - SEO: 90+
 
 ### Bundle Size Limits
+
 - Initial bundle: <1MB
 - Route chunks: <500KB
 - Vendor chunks: <2MB
 
 ### Load Testing Criteria
+
 - Response time: <2000ms (95th percentile)
 - Error rate: <0.1%
 - Concurrent users: 100+ (production)
@@ -285,26 +326,31 @@ Customize quality thresholds in workflow files:
 ### Common Issues
 
 **Build Failures:**
+
 - Check Node.js version compatibility
 - Verify environment variables are set
 - Review dependency conflicts
 
 **Deployment Issues:**
+
 - Validate Kubernetes configuration
 - Check secret availability
 - Verify Docker image accessibility
 
 **Test Failures:**
+
 - Review test database configuration
 - Check environment variable setup
 - Validate test data fixtures
 
 **Security Scan Failures:**
+
 - Review vulnerability reports
 - Update vulnerable dependencies
 - Configure security scanning exceptions
 
 ### Support Resources
+
 - GitHub Issues: Report bugs and request features
 - Documentation: Comprehensive setup guides
 - Monitoring Dashboard: Real-time system status
@@ -313,12 +359,14 @@ Customize quality thresholds in workflow files:
 ## 📝 Maintenance
 
 ### Regular Tasks
+
 - **Weekly**: Review dependency updates
 - **Monthly**: Security audit and penetration testing
 - **Quarterly**: Performance baseline updates
 - **Annually**: Security infrastructure review
 
 ### Monitoring
+
 - Pipeline success rates
 - Deployment frequency
 - Performance trends

@@ -7,7 +7,7 @@ This guide covers setting up Astral Core v7 for local development.
 ### Required Software
 
 - **Node.js**: 18.17.0 or higher
-- **npm**: 9.0.0 or higher  
+- **npm**: 9.0.0 or higher
 - **PostgreSQL**: 14.0 or higher
 - **Git**: Latest version
 
@@ -25,12 +25,14 @@ This guide covers setting up Astral Core v7 for local development.
 #### Install PostgreSQL
 
 **macOS (Homebrew):**
+
 ```bash
 brew install postgresql@14
 brew services start postgresql@14
 ```
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt update
 sudo apt install postgresql postgresql-contrib
@@ -281,9 +283,9 @@ node --max-old-space-size=4096 node_modules/.bin/next dev
 ```bash
 # Monitor slow queries
 psql -U astral_dev -d astralcore_v7 -c "
-SELECT query, mean_exec_time, calls 
-FROM pg_stat_statements 
-ORDER BY mean_exec_time DESC 
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
 LIMIT 10;
 "
 ```

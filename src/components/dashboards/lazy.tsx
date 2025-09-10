@@ -21,13 +21,13 @@ const withDashboardLoading = <P extends object>(
 ) => {
   const LazyDashboard = (props: P) => (
     <ErrorBoundary>
-      <Suspense 
+      <Suspense
         fallback={
-          <LoadingFallback 
-            variant="skeleton" 
-            size="lg" 
+          <LoadingFallback
+            variant='skeleton'
+            size='lg'
             {...(loadingMessage && { message: loadingMessage })}
-            className="min-h-[600px]"
+            className='min-h-[600px]'
           />
         }
       >
@@ -37,23 +37,23 @@ const withDashboardLoading = <P extends object>(
   );
 
   LazyDashboard.displayName = `LazyDashboard(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return LazyDashboard;
 };
 
 // Wrapped lazy dashboard components
 export const LazyAdminDashboard = withDashboardLoading(
-  AdminDashboard, 
+  AdminDashboard,
   'Loading admin dashboard...'
 );
 
 export const LazyTherapistDashboard = withDashboardLoading(
-  TherapistDashboard, 
+  TherapistDashboard,
   'Loading therapist dashboard...'
 );
 
 export const LazyClientDashboard = withDashboardLoading(
-  ClientDashboard, 
+  ClientDashboard,
   'Loading client dashboard...'
 );
 

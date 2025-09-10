@@ -182,7 +182,7 @@ export class RateLimiter {
  * @example
  * ```typescript
  * import { rateLimiters } from '@/lib/security/rate-limit';
- * 
+ *
  * // Check auth rate limit
  * const authStatus = await rateLimiters.auth.check('user_123');
  * if (!authStatus.allowed) {

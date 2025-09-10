@@ -7,14 +7,16 @@ The Astral Core v7 Performance Monitoring System provides comprehensive real-tim
 ## 🚀 Features
 
 ### Core Web Vitals Monitoring
+
 - **First Contentful Paint (FCP)** - Time when first content appears
-- **Largest Contentful Paint (LCP)** - Time when largest content loads  
+- **Largest Contentful Paint (LCP)** - Time when largest content loads
 - **First Input Delay (FID)** - Time to first interaction
 - **Cumulative Layout Shift (CLS)** - Visual stability score
 - **Time to First Byte (TTFB)** - Server response time
 - **Interaction to Next Paint (INP)** - Interaction responsiveness
 
 ### API Performance Tracking
+
 - Response time monitoring
 - Error rate tracking
 - Endpoint-specific metrics
@@ -22,6 +24,7 @@ The Astral Core v7 Performance Monitoring System provides comprehensive real-tim
 - Payload size monitoring
 
 ### Database Query Performance
+
 - Query execution time tracking
 - Slow query detection (configurable threshold)
 - N+1 query pattern detection
@@ -29,6 +32,7 @@ The Astral Core v7 Performance Monitoring System provides comprehensive real-tim
 - Query operation distribution
 
 ### Error Monitoring & Alerting
+
 - JavaScript error tracking
 - Unhandled promise rejection monitoring
 - Resource loading error detection
@@ -37,6 +41,7 @@ The Astral Core v7 Performance Monitoring System provides comprehensive real-tim
 - Error pattern recognition
 
 ### Memory & Resource Monitoring
+
 - JavaScript heap size tracking
 - Bundle size analysis
 - Resource loading performance
@@ -46,6 +51,7 @@ The Astral Core v7 Performance Monitoring System provides comprehensive real-tim
 ## 📦 Installation & Setup
 
 ### 1. Database Schema
+
 Run the Prisma migration to add performance monitoring tables:
 
 ```bash
@@ -61,18 +67,14 @@ Wrap your app with the PerformanceProvider:
 // app/layout.tsx
 import { PerformanceProvider } from '@/providers/PerformanceProvider';
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang='en'>
       <body>
         <PerformanceProvider
           enableAnalytics={true}
           enableNotifications={true}
-          analyticsEndpoint="/api/analytics/performance"
+          analyticsEndpoint='/api/analytics/performance'
           debugMode={process.env.NODE_ENV === 'development'}
         >
           {children}
@@ -142,11 +144,7 @@ export default function AdminPage() {
   return (
     <div>
       <h1>Performance Dashboard</h1>
-      <PerformanceDashboard 
-        refreshInterval={30000}
-        showAdvanced={true}
-        compact={false}
-      />
+      <PerformanceDashboard refreshInterval={30000} showAdvanced={true} compact={false} />
     </div>
   );
 }
@@ -160,13 +158,7 @@ Monitor Core Web Vitals specifically:
 import { WebVitalsMonitor } from '@/lib/performance';
 
 export default function WebVitalsPage() {
-  return (
-    <WebVitalsMonitor 
-      showInsights={true}
-      showThresholds={true}
-      compact={false}
-    />
-  );
+  return <WebVitalsMonitor showInsights={true} showThresholds={true} compact={false} />;
 }
 ```
 
@@ -178,13 +170,7 @@ Track and analyze errors:
 import { ErrorMonitor } from '@/lib/performance';
 
 export default function ErrorsPage() {
-  return (
-    <ErrorMonitor 
-      showPatterns={true}
-      maxErrors={100}
-      refreshInterval={30000}
-    />
-  );
+  return <ErrorMonitor showPatterns={true} maxErrors={100} refreshInterval={30000} />;
 }
 ```
 
@@ -196,13 +182,7 @@ Monitor database performance:
 import { DatabaseMonitor } from '@/lib/performance';
 
 export default function DatabasePage() {
-  return (
-    <DatabaseMonitor 
-      showInsights={true}
-      maxQueries={100}
-      showSlowQueriesOnly={false}
-    />
-  );
+  return <DatabaseMonitor showInsights={true} maxQueries={100} showSlowQueriesOnly={false} />;
 }
 ```
 
@@ -225,24 +205,20 @@ export default function MyComponent() {
 
   const handleCustomEvent = () => {
     const startTime = performance.now();
-    
+
     // Do some work
     doSomeWork();
-    
+
     const duration = performance.now() - startTime;
-    trackCustomEvent('custom-work', duration, { 
-      category: 'user-interaction' 
+    trackCustomEvent('custom-work', duration, {
+      category: 'user-interaction'
     });
   };
 
   return (
     <div>
-      <button onClick={handleExpensiveOperation}>
-        Expensive Operation
-      </button>
-      <button onClick={handleCustomEvent}>
-        Track Custom Event
-      </button>
+      <button onClick={handleExpensiveOperation}>Expensive Operation</button>
+      <button onClick={handleCustomEvent}>Track Custom Event</button>
     </div>
   );
 }
@@ -263,7 +239,7 @@ const MyComponent = withPerformanceMonitoring(({ data }) => {
 // Hook approach
 function MyOtherComponent() {
   const { trackRerender } = useComponentPerformance('MyOtherComponent');
-  
+
   useEffect(() => {
     trackRerender();
   });
@@ -379,7 +355,7 @@ function WebVitalsComponent() {
   const { vitals, score, insights, subscribe, exportData } = useWebVitals();
 
   useEffect(() => {
-    const unsubscribe = subscribe((newVitals) => {
+    const unsubscribe = subscribe(newVitals => {
       console.log('Web Vitals updated:', newVitals);
     });
 
@@ -388,7 +364,9 @@ function WebVitalsComponent() {
 
   return (
     <div>
-      <p>Overall Score: {score.overall}/100 (Grade: {score.grade})</p>
+      <p>
+        Overall Score: {score.overall}/100 (Grade: {score.grade})
+      </p>
       <p>FCP: {vitals.fcp?.value}ms</p>
       <p>LCP: {vitals.lcp?.value}ms</p>
       <p>Insights: {insights.length}</p>
@@ -405,14 +383,7 @@ Track and analyze errors:
 import { useErrorMonitoring } from '@/lib/performance';
 
 function ErrorComponent() {
-  const { 
-    captureError, 
-    errors, 
-    patterns, 
-    stats, 
-    subscribe, 
-    exportData 
-  } = useErrorMonitoring();
+  const { captureError, errors, patterns, stats, subscribe, exportData } = useErrorMonitoring();
 
   const handleError = () => {
     captureError({
@@ -442,15 +413,8 @@ Monitor database performance:
 import { useDatabaseMonitoring } from '@/lib/performance';
 
 function DatabaseComponent() {
-  const {
-    queries,
-    slowQueries,
-    patterns,
-    stats,
-    insights,
-    subscribe,
-    exportData
-  } = useDatabaseMonitoring();
+  const { queries, slowQueries, patterns, stats, insights, subscribe, exportData } =
+    useDatabaseMonitoring();
 
   return (
     <div>
@@ -474,16 +438,16 @@ Configure performance thresholds:
 const config = {
   thresholds: {
     // Database
-    slowQueryMs: 1000,        // Queries slower than 1s
-    frequentQueryCount: 100,  // Queries executed 100+ times
+    slowQueryMs: 1000, // Queries slower than 1s
+    frequentQueryCount: 100, // Queries executed 100+ times
     cacheHitRateThreshold: 0.8, // Cache hit rate below 80%
-    
+
     // Components
-    slowComponentMs: 100,     // Component renders slower than 100ms
-    
+    slowComponentMs: 100, // Component renders slower than 100ms
+
     // Errors
     errorRateThreshold: 0.05, // Error rate above 5%
-    
+
     // Memory
     memoryUsageThreshold: 0.8 // Memory usage above 80%
   }
@@ -496,12 +460,12 @@ Default Web Vitals thresholds (configurable):
 
 ```typescript
 const webVitalsThresholds = {
-  fcp: { good: 1800, needsImprovement: 3000 },     // ms
-  lcp: { good: 2500, needsImprovement: 4000 },     // ms
-  fid: { good: 100, needsImprovement: 300 },       // ms
-  cls: { good: 0.1, needsImprovement: 0.25 },      // score
-  ttfb: { good: 800, needsImprovement: 1800 },     // ms
-  inp: { good: 200, needsImprovement: 500 }        // ms
+  fcp: { good: 1800, needsImprovement: 3000 }, // ms
+  lcp: { good: 2500, needsImprovement: 4000 }, // ms
+  fid: { good: 100, needsImprovement: 300 }, // ms
+  cls: { good: 0.1, needsImprovement: 0.25 }, // score
+  ttfb: { good: 800, needsImprovement: 1800 }, // ms
+  inp: { good: 200, needsImprovement: 500 } // ms
 };
 ```
 
@@ -520,10 +484,8 @@ function setupAlerts() {
   addAlertRule({
     id: 'high-error-rate',
     name: 'High Error Rate Detected',
-    condition: (errors) => {
-      const recentErrors = errors.filter(e => 
-        Date.now() - e.timestamp < 5 * 60 * 1000
-      );
+    condition: errors => {
+      const recentErrors = errors.filter(e => Date.now() - e.timestamp < 5 * 60 * 1000);
       return recentErrors.length >= 10;
     },
     severity: 'critical',
@@ -569,10 +531,7 @@ Generate custom performance insights:
 import { PerformanceUtils } from '@/lib/performance';
 
 // Calculate custom percentiles
-const p95ResponseTime = PerformanceUtils.calculatePercentile(
-  apiResponseTimes, 
-  95
-);
+const p95ResponseTime = PerformanceUtils.calculatePercentile(apiResponseTimes, 95);
 
 // Get performance grade
 const grade = PerformanceUtils.getPerformanceGrade(performanceScore);
@@ -600,6 +559,7 @@ npm run test:coverage tests/performance/
 ### Test Coverage
 
 The test suite covers:
+
 - ✅ Metrics collection and reporting
 - ✅ Web Vitals monitoring
 - ✅ Error tracking and pattern recognition
@@ -611,34 +571,42 @@ The test suite covers:
 ## 🚀 Performance Best Practices
 
 ### 1. Monitor Key Metrics
+
 Focus on metrics that impact user experience:
+
 - Core Web Vitals (FCP, LCP, FID, CLS)
 - API response times
 - Database query performance
 - JavaScript errors
 
 ### 2. Set Appropriate Thresholds
+
 Configure thresholds based on your application needs:
+
 - Consider your user base and typical hardware
 - Account for network conditions
 - Set realistic but ambitious targets
 
 ### 3. Use Insights for Optimization
+
 - Review insights regularly
 - Prioritize high-impact issues
 - Track improvements over time
 
 ### 4. Implement Caching
+
 - Cache frequently accessed data
 - Use appropriate cache strategies
 - Monitor cache hit rates
 
 ### 5. Optimize Database Queries
+
 - Add indexes for commonly filtered columns
 - Avoid N+1 query patterns
 - Use pagination for large datasets
 
 ### 6. Monitor Error Rates
+
 - Set up alerting for error spikes
 - Categorize errors by severity
 - Track error resolution
@@ -657,10 +625,10 @@ function BusinessMetricsComponent() {
 
   const trackUserAction = (action: string, metadata?: any) => {
     const startTime = performance.now();
-    
+
     // Perform action
     performAction(action);
-    
+
     const duration = performance.now() - startTime;
     trackCustomEvent(`user-${action}`, duration, metadata);
   };
@@ -676,23 +644,23 @@ Implement performance budgets:
 ```typescript
 const performanceBudgets = {
   maxBundleSize: 500 * 1024, // 500KB
-  maxApiResponseTime: 200,   // 200ms
+  maxApiResponseTime: 200, // 200ms
   maxDatabaseQueryTime: 100, // 100ms
-  maxMemoryUsage: 0.7        // 70% of heap limit
+  maxMemoryUsage: 0.7 // 70% of heap limit
 };
 
 // Check against budgets
 function checkPerformanceBudgets(metrics: any) {
   const issues = [];
-  
+
   if (metrics.bundleSize > performanceBudgets.maxBundleSize) {
     issues.push('Bundle size exceeds budget');
   }
-  
+
   if (metrics.avgApiResponseTime > performanceBudgets.maxApiResponseTime) {
     issues.push('API response time exceeds budget');
   }
-  
+
   return issues;
 }
 ```
@@ -714,8 +682,8 @@ function RealTimeMonitor() {
     });
 
     const unsubscribeErrors = errorMonitor.subscribe((error) => {
-      setLiveMetrics(prev => ({ 
-        ...prev, 
+      setLiveMetrics(prev => ({
+        ...prev,
         lastError: error,
         errorCount: (prev?.errorCount || 0) + 1
       }));

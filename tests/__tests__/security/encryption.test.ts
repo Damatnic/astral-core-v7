@@ -95,7 +95,7 @@ describe('EncryptionService', () => {
     it('should encrypt and decrypt be reversible', () => {
       // Restore original crypto functions
       jest.restoreAllMocks();
-      
+
       const realService = new EncryptionService(mockKey);
       const plaintext = 'test data for encryption';
       const encrypted = realService.encrypt(plaintext);
@@ -139,7 +139,7 @@ describe('EncryptionService', () => {
       const decrypted = realService.decryptObject(encrypted, ['email', 'sensitiveData']);
       expect(decrypted.email).toBe(testObj.email);
       expect(decrypted.sensitiveData).toBe(testObj.sensitiveData);
-      
+
       // Re-apply mocks
       const mockCrypto = crypto as jest.Mocked<typeof crypto>;
       Object.assign(mockCrypto, {
@@ -240,7 +240,7 @@ describe('EncryptionService', () => {
     it('should reject incorrect password', () => {
       jest.restoreAllMocks(); // Use real crypto for more realistic test
       const realService = new EncryptionService(mockKey);
-      
+
       const correctPassword = 'correctPassword';
       const wrongPassword = 'wrongPassword';
       const hashedPassword = realService.hashPassword(correctPassword);
@@ -248,7 +248,7 @@ describe('EncryptionService', () => {
       const isValid = realService.verifyPassword(wrongPassword, hashedPassword);
 
       expect(isValid).toBe(false);
-      
+
       // Re-apply mocks
       const mockCrypto = crypto as jest.Mocked<typeof crypto>;
       Object.assign(mockCrypto, {

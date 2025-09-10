@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Astral Core - Mental Health Platform',
-  description: 'Secure HIPAA-compliant mental health platform providing therapy, wellness tracking, and crisis support services.'
+  description:
+    'Secure HIPAA-compliant mental health platform providing therapy, wellness tracking, and crisis support services.'
 };
 
 export default function RootLayout({
@@ -25,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name='viewport' content='width=device-width, initial-scale=1' />
         <style>{`
           .sr-only {
             position: absolute;
@@ -54,13 +55,14 @@ export default function RootLayout({
         `}</style>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white">
+        <a
+          href='#main-content'
+          className='sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white'
+        >
           Skip to main content
         </a>
-        <div id="main-content">
-          {children}
-        </div>
-        <div id="announcements" aria-live="polite" aria-atomic="true" className="sr-only"></div>
+        <div id='main-content'>{children}</div>
+        <div id='announcements' aria-live='polite' aria-atomic='true' className='sr-only'></div>
       </body>
     </html>
   );

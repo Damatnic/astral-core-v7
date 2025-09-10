@@ -5,6 +5,7 @@ Welcome to the comprehensive API documentation for Astral Core v7, a secure ment
 ## 🚀 Getting Started
 
 ### Quick Links
+
 - **[Interactive API Documentation](./index.html)** - Swagger UI with live testing
 - **[OpenAPI Specification](./api/openapi.yaml)** - Complete API specification
 - **[Authentication Examples](./examples/authentication-flow.md)** - User auth and MFA implementation
@@ -12,6 +13,7 @@ Welcome to the comprehensive API documentation for Astral Core v7, a secure ment
 - **[Payment Integration Examples](./examples/payment-integration.md)** - Subscription and billing management
 
 ### API Base URL
+
 ```
 Production: https://astral-core.app/api
 Staging: https://staging.astral-core.app/api
@@ -19,7 +21,9 @@ Development: http://localhost:3000/api
 ```
 
 ### Authentication
+
 All protected endpoints require authentication via:
+
 - **Bearer Token**: `Authorization: Bearer <jwt_token>`
 - **Session Cookie**: `next-auth.session-token` (for web clients)
 
@@ -27,18 +31,19 @@ All protected endpoints require authentication via:
 
 ### Core Features
 
-| Feature | Description | Endpoints |
-|---------|-------------|-----------|
-| **🔐 Authentication** | User registration, login, MFA | `/auth/*` |
-| **🚨 Crisis Management** | Risk assessment, intervention | `/crisis/*` |
-| **💳 Payments** | Subscriptions, billing, webhooks | `/payments/*` |
-| **👤 User Profiles** | Profile management, GDPR compliance | `/user/*` |
-| **📊 Wellness Tracking** | Daily mood, symptoms, analytics | `/wellness/*` |
-| **📅 Appointments** | Session scheduling, management | `/appointments/*` |
-| **🔔 Notifications** | User notifications, preferences | `/notifications/*` |
-| **📁 Files** | Secure upload, PHI compliance | `/files/*` |
+| Feature                  | Description                         | Endpoints          |
+| ------------------------ | ----------------------------------- | ------------------ |
+| **🔐 Authentication**    | User registration, login, MFA       | `/auth/*`          |
+| **🚨 Crisis Management** | Risk assessment, intervention       | `/crisis/*`        |
+| **💳 Payments**          | Subscriptions, billing, webhooks    | `/payments/*`      |
+| **👤 User Profiles**     | Profile management, GDPR compliance | `/user/*`          |
+| **📊 Wellness Tracking** | Daily mood, symptoms, analytics     | `/wellness/*`      |
+| **📅 Appointments**      | Session scheduling, management      | `/appointments/*`  |
+| **🔔 Notifications**     | User notifications, preferences     | `/notifications/*` |
+| **📁 Files**             | Secure upload, PHI compliance       | `/files/*`         |
 
 ### Security Features
+
 - ✅ **Rate Limiting** - Prevents abuse and ensures service availability
 - ✅ **PHI Compliance** - HIPAA-compliant data handling
 - ✅ **Audit Logging** - Comprehensive activity tracking
@@ -49,6 +54,7 @@ All protected endpoints require authentication via:
 ## 🔑 Authentication
 
 ### Registration
+
 ```javascript
 POST /api/auth/register
 {
@@ -59,6 +65,7 @@ POST /api/auth/register
 ```
 
 ### Login with MFA
+
 ```javascript
 // Step 1: Login
 POST /api/auth/login
@@ -76,6 +83,7 @@ POST /api/auth/mfa/verify
 ```
 
 ### MFA Setup
+
 ```javascript
 // Initialize TOTP setup
 POST /api/auth/mfa/setup
@@ -88,6 +96,7 @@ POST /api/auth/mfa/setup
 ## 🚨 Crisis Assessment
 
 ### Perform Assessment
+
 ```javascript
 POST /api/crisis/assess
 {
@@ -107,13 +116,16 @@ POST /api/crisis/assess
 ```
 
 ### Emergency Response
+
 For `EMERGENCY` or `CRITICAL` assessments:
+
 - Automatic alerting to crisis response team
 - Emergency contact notifications
 - Immediate resource provision
 - Follow-up scheduling
 
 ### Crisis Resources (Always Available)
+
 ```javascript
 GET /api/crisis/assess
 // Returns 24/7 crisis resources even without authentication
@@ -121,7 +133,7 @@ GET /api/crisis/assess
   "resources": {
     "US": {
       "suicide": "988",
-      "crisis": "741741", 
+      "crisis": "741741",
       "emergency": "911"
     }
   }
@@ -131,6 +143,7 @@ GET /api/crisis/assess
 ## 💳 Payment Integration
 
 ### Create Subscription
+
 ```javascript
 POST /api/payments/subscriptions
 {
@@ -141,6 +154,7 @@ POST /api/payments/subscriptions
 ```
 
 ### Payment Method Setup
+
 ```javascript
 // If subscription requires payment setup
 {
@@ -154,9 +168,11 @@ POST /api/payments/subscriptions
 ```
 
 ### Webhook Handling
+
 The system processes various Stripe webhooks:
+
 - `customer.subscription.updated`
-- `invoice.payment_succeeded` 
+- `invoice.payment_succeeded`
 - `invoice.payment_failed`
 - `payment_method.attached`
 - `charge.dispute.created`
@@ -164,11 +180,12 @@ The system processes various Stripe webhooks:
 ## 👤 User Profile Management
 
 ### Create Profile
+
 ```javascript
 POST /api/user/profile
 {
   "firstName": "John",
-  "lastName": "Doe", 
+  "lastName": "Doe",
   "dateOfBirth": "1990-01-15",
   "phoneNumber": "+1234567890",
   "emergencyContact": {
@@ -186,15 +203,17 @@ POST /api/user/profile
 ```
 
 ### GDPR Compliance
+
 ```javascript
 // Delete all user data
-DELETE /api/user/profile
+DELETE / api / user / profile;
 // Irreversibly removes all user information
 ```
 
 ## 📊 Wellness Tracking
 
 ### Log Daily Data
+
 ```javascript
 POST /api/wellness/data
 {
@@ -216,6 +235,7 @@ POST /api/wellness/data
 ```
 
 ### Retrieve Analytics
+
 ```javascript
 GET /api/wellness/data?startDate=2024-01-01&endDate=2024-01-31&limit=30
 // Returns paginated wellness data with analytics
@@ -224,6 +244,7 @@ GET /api/wellness/data?startDate=2024-01-01&endDate=2024-01-31&limit=30
 ## 📅 Appointments
 
 ### Get Appointments
+
 ```javascript
 GET /api/appointments?status=SCHEDULED&limit=10
 {
@@ -251,6 +272,7 @@ GET /api/appointments?status=SCHEDULED&limit=10
 ## 📁 File Management
 
 ### Upload Files
+
 ```javascript
 POST /api/files/upload
 Content-Type: multipart/form-data
@@ -275,6 +297,7 @@ description: "Initial consent form"
 ## 🔔 Notifications
 
 ### Get Notifications
+
 ```javascript
 GET /api/notifications?isRead=false&type=CRISIS&limit=20
 {
@@ -298,25 +321,26 @@ GET /api/notifications?isRead=false&type=CRISIS&limit=20
 
 ## 📊 Rate Limits
 
-| Endpoint Category | Limit | Window |
-|------------------|-------|--------|
-| Authentication | 5 requests | 5 minutes |
-| Crisis Assessment | 10 requests | 1 minute |
-| Wellness Data | 30 requests | 1 minute |
-| Subscription Management | 3 requests | 5 minutes |
-| General API | 100 requests | 1 minute |
+| Endpoint Category       | Limit        | Window    |
+| ----------------------- | ------------ | --------- |
+| Authentication          | 5 requests   | 5 minutes |
+| Crisis Assessment       | 10 requests  | 1 minute  |
+| Wellness Data           | 30 requests  | 1 minute  |
+| Subscription Management | 3 requests   | 5 minutes |
+| General API             | 100 requests | 1 minute  |
 
 ## ⚡ Real-time Features
 
 ### WebSocket Events
+
 ```javascript
 // Connect to WebSocket
 const ws = new WebSocket('wss://astral-core.app/api/socket');
 
 // Listen for real-time updates
-ws.onmessage = (event) => {
+ws.onmessage = event => {
   const data = JSON.parse(event.data);
-  
+
   switch (data.type) {
     case 'crisis_alert':
       handleCrisisAlert(data);
@@ -334,11 +358,13 @@ ws.onmessage = (event) => {
 ## 🧪 Testing
 
 ### Test Environment
+
 - **Base URL**: `https://staging.astral-core.app/api`
 - **Test Stripe Keys**: Use Stripe test mode keys
 - **Mock Crisis Resources**: Test crisis flows safely
 
 ### Test Users
+
 ```javascript
 // Test credentials (staging only)
 {
@@ -349,11 +375,12 @@ ws.onmessage = (event) => {
 ```
 
 ### Test Payment Methods
+
 ```javascript
 // Stripe test cards
 {
   "success": "4242424242424242",
-  "decline": "4000000000000002", 
+  "decline": "4000000000000002",
   "require_auth": "4000002500003155",
   "insufficient_funds": "4000000000009995"
 }
@@ -362,6 +389,7 @@ ws.onmessage = (event) => {
 ## 🔧 Error Handling
 
 ### Standard Error Response
+
 ```javascript
 {
   "error": "Error message",
@@ -376,6 +404,7 @@ ws.onmessage = (event) => {
 ```
 
 ### HTTP Status Codes
+
 - `200` - Success
 - `201` - Created
 - `400` - Bad Request / Validation Error
@@ -387,7 +416,9 @@ ws.onmessage = (event) => {
 - `500` - Internal Server Error
 
 ### Crisis-Safe Error Handling
+
 Even on errors, crisis endpoints always provide emergency resources:
+
 ```javascript
 {
   "error": "Assessment failed",
@@ -403,16 +434,19 @@ Even on errors, crisis endpoints always provide emergency resources:
 ## 📚 Additional Resources
 
 ### SDKs and Libraries
+
 - **JavaScript SDK**: `@astral-core/sdk-js` (coming soon)
 - **React Hooks**: `@astral-core/react-hooks` (coming soon)
 - **Stripe Integration**: Built-in webhook handling
 
 ### Support
+
 - **Documentation**: [docs.astral-core.app](https://docs.astral-core.app)
 - **API Support**: api-support@astral-core.app
 - **Crisis Support**: Always available at 988 or 911
 
 ### Compliance & Security
+
 - **HIPAA Compliant**: All PHI is encrypted and audited
 - **SOC 2 Type II**: Security and availability certification
 - **GDPR Compliant**: Right to erasure and data portability
@@ -423,6 +457,7 @@ Even on errors, crisis endpoints always provide emergency resources:
 ## 🚨 Emergency Notice
 
 **If you are in crisis or having thoughts of self-harm:**
+
 - **Call 911** for immediate emergency assistance
 - **Call 988** for the Suicide & Crisis Lifeline (24/7)
 - **Text HOME to 741741** for Crisis Text Line
@@ -431,5 +466,5 @@ Help is always available. You matter, and your life has value.
 
 ---
 
-*Last updated: January 2024*
-*API Version: 7.0.0*
+_Last updated: January 2024_
+_API Version: 7.0.0_
