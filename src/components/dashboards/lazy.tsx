@@ -26,7 +26,7 @@ const withDashboardLoading = <P extends object>(
           <LoadingFallback 
             variant="skeleton" 
             size="lg" 
-            message={loadingMessage}
+            {...(loadingMessage && { message: loadingMessage })}
             className="min-h-[600px]"
           />
         }

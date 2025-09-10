@@ -162,8 +162,8 @@ class PerformanceMetricsCollector {
       
       // Additional navigation metrics can be collected here
       console.log('Page load complete:', {
-        loadTime: navigationEntry.loadEventEnd - navigationEntry.navigationStart,
-        domContentLoaded: navigationEntry.domContentLoadedEventEnd - navigationEntry.navigationStart,
+        loadTime: navigationEntry.loadEventEnd - navigationEntry.fetchStart,
+        domContentLoaded: navigationEntry.domContentLoadedEventEnd - navigationEntry.fetchStart,
         firstByte: navigationEntry.responseStart - navigationEntry.requestStart
       });
     });
@@ -215,7 +215,7 @@ class PerformanceMetricsCollector {
 
   public getLatestMemoryUsage(): MemoryMetric | null {
     return this.memoryMetrics.length > 0 
-      ? this.memoryMetrics[this.memoryMetrics.length - 1] 
+      ? this.memoryMetrics[this.memoryMetrics.length - 1] || null
       : null;
   }
 
@@ -229,9 +229,10 @@ class PerformanceMetricsCollector {
       if (!groups[metric.endpoint]) {
         groups[metric.endpoint] = { total: 0, count: 0, slowest: 0 };
       }
-      groups[metric.endpoint].total += metric.responseTime;
-      groups[metric.endpoint].count++;
-      groups[metric.endpoint].slowest = Math.max(groups[metric.endpoint].slowest, metric.responseTime);
+      const group = groups[metric.endpoint]!;
+      group.total += metric.responseTime;
+      group.count++;
+      group.slowest = Math.max(group.slowest, metric.responseTime);
       return groups;
     }, {} as Record<string, { total: number; count: number; slowest: number }>);
 
@@ -265,13 +266,16 @@ class PerformanceMetricsCollector {
 
     const bundleSize = resources
       .filter(r => r.name.includes('chunks') || r.name.includes('.js'))
-      .reduce((total, r) => total + (r.transferSize || r.encodedBodySize || 0), 0);
+      .reduce((total, r) => {
+        const resourceTiming = r as PerformanceResourceTiming;
+        return total + (resourceTiming.transferSize || resourceTiming.encodedBodySize || 0);
+      }, 0);
 
     return {
       webVitals: this.getWebVitals(),
       apiMetrics: this.getApiMetrics(),
       memoryMetrics: this.getMemoryMetrics(),
-      pageLoadTime: navigation ? navigation.loadEventEnd - navigation.navigationStart : 0,
+      pageLoadTime: navigation ? navigation.loadEventEnd - navigation.fetchStart : 0,
       resourceCounts,
       bundleSize,
       timestamp: Date.now()

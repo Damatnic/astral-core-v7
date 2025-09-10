@@ -127,10 +127,18 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const validatedData = profileSchema.partial().parse(body);
 
-    // Convert date string to Date object if provided
-    const updateData: Partial<z.infer<typeof profileSchema> & { dateOfBirth?: Date }> = {
-      ...validatedData
-    };
+    // Filter out undefined values and convert date for exactOptionalPropertyTypes
+    const updateData: Partial<z.infer<typeof profileSchema> & { dateOfBirth?: Date }> = {};
+    
+    if (validatedData.firstName) updateData.firstName = validatedData.firstName;
+    if (validatedData.lastName) updateData.lastName = validatedData.lastName;
+    if (validatedData.phoneNumber) updateData.phoneNumber = validatedData.phoneNumber;
+    if (validatedData.address) updateData.address = validatedData.address;
+    if (validatedData.city) updateData.city = validatedData.city;
+    if (validatedData.state) updateData.state = validatedData.state;
+    if (validatedData.zipCode) updateData.zipCode = validatedData.zipCode;
+    if (validatedData.country) updateData.country = validatedData.country;
+    if (validatedData.emergencyContact) updateData.emergencyContact = validatedData.emergencyContact;
     if (validatedData.dateOfBirth) {
       updateData.dateOfBirth = new Date(validatedData.dateOfBirth);
     }

@@ -8,6 +8,21 @@ import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { encryption } from '@/lib/security/encryption';
 import { auditLog } from '@/lib/security/audit';
+
+// Extend Stripe types to include missing properties
+interface StripeSubscriptionWithPeriods extends Stripe.Subscription {
+  current_period_start: number;
+  current_period_end: number;
+}
+
+// Helper function to safely extract subscription periods
+const getSubscriptionPeriods = (subscription: Stripe.Subscription) => {
+  const sub = subscription as unknown as StripeSubscriptionWithPeriods;
+  return {
+    currentPeriodStart: new Date((sub.current_period_start || 0) * 1000),
+    currentPeriodEnd: new Date((sub.current_period_end || 0) * 1000)
+  };
+};
 import type {
   CreateCustomerResponse,
   CreateSubscriptionResponse,
@@ -274,8 +289,7 @@ export class StripeService {
           stripePriceId: data.priceId,
           stripeProductId: product.id,
           status: mapSubscriptionStatus(stripeSubscription.status),
-          currentPeriodStart: new Date((stripeSubscription as Record<string, unknown>)['current_period_start'] as number * 1000),
-          currentPeriodEnd: new Date((stripeSubscription as Record<string, unknown>)['current_period_end'] as number * 1000),
+          ...getSubscriptionPeriods(stripeSubscription),
           planType: this.determinePlanType(product.name),
           planName: product.name,
           amount: price.unit_amount! / 100,
@@ -483,8 +497,7 @@ export class StripeService {
         where: { id: subscription.id },
         data: {
           status: mapSubscriptionStatus(stripeSubscription.status),
-          currentPeriodStart: new Date((stripeSubscription as Record<string, unknown>)['current_period_start'] as number * 1000),
-          currentPeriodEnd: new Date((stripeSubscription as Record<string, unknown>)['current_period_end'] as number * 1000),
+          ...getSubscriptionPeriods(stripeSubscription),
           ...(data.priceId && {
             stripePriceId: data.priceId
             // Get updated price details

@@ -21,10 +21,8 @@ export async function POST(request: NextRequest) {
     const validated = verifySchema.parse(body);
 
     // Rate limiting per user
-    const allowed = await rateLimiter.checkLimit(
-      `mfa-verify:${validated.userId}`,
-      10,
-      900000 // 15 minutes
+    const allowed = await rateLimiter.check(
+      `mfa-verify:${validated.userId}`
     );
     if (!allowed) {
       return NextResponse.json(
@@ -57,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Set secure cookie
-      const cookieStore = cookies();
+      const cookieStore = await cookies();
       cookieStore.set('session-token', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

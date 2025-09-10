@@ -149,9 +149,10 @@ export const useAsyncOperation = <T = unknown>(options: UseAsyncOperationOptions
     const result = await retry(operation);
     setIsLoading(false);
     
-    if (result) {
-      setData(result);
-      onSuccess?.(result);
+    if (result && result !== false) {
+      const typedResult = result as T;
+      setData(typedResult);
+      onSuccess?.(typedResult);
     }
     
     return result;

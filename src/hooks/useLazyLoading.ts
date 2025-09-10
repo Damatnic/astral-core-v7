@@ -18,7 +18,7 @@ interface UseLazyLoadingOptions {
 }
 
 interface UseLazyLoadingReturn {
-  ref: React.RefObject<HTMLElement>;
+  ref: React.RefObject<HTMLElement | null>;
   shouldLoad: boolean;
   isVisible: boolean;
   preload: () => void;
@@ -48,8 +48,8 @@ export function useLazyLoading<T = unknown>(
   const [hasPreloaded, setHasPreloaded] = useState(false);
   
   const ref = useRef<HTMLElement>(null);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout>();
-  const observerRef = useRef<IntersectionObserver>();
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const observerRef = useRef<IntersectionObserver | undefined>(undefined);
 
   // Preload function
   const preload = useCallback(async () => {
@@ -97,6 +97,8 @@ export function useLazyLoading<T = unknown>(
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
+        if (!entry) return;
+        
         setIsVisible(entry.isIntersecting);
         
         if (entry.isIntersecting) {
@@ -191,7 +193,9 @@ export function useComponentVisibility(threshold = 0.1) {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting);
+        if (entry) {
+          setIsVisible(entry.isIntersecting);
+        }
       },
       { threshold }
     );

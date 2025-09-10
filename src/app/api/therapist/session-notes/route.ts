@@ -96,14 +96,14 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error: unknown) {
-    if (error.message === 'Unauthorized') {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
         { status: HTTP_STATUS.UNAUTHORIZED }
       );
     }
 
-    if (error.message.startsWith('Forbidden')) {
+    if (error instanceof Error && error.message.startsWith('Forbidden')) {
       return NextResponse.json({ error: error.message }, { status: HTTP_STATUS.FORBIDDEN });
     }
 
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (error.message === 'Unauthorized') {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
         { status: HTTP_STATUS.UNAUTHORIZED }

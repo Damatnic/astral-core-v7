@@ -162,15 +162,23 @@ export class AppointmentService {
 
       // Real-time notification
       websocketServer.sendToUser(data.userId, 'appointment:created', {
-        appointmentId: appointment.id,
-        scheduledAt: appointment.scheduledAt,
-        therapist: appointment.therapist.name
+        type: 'appointment:created',
+        timestamp: Date.now(),
+        data: {
+          appointmentId: appointment.id,
+          scheduledAt: appointment.scheduledAt,
+          therapist: appointment.therapist.name
+        }
       });
 
       websocketServer.sendToUser(data.therapistId, 'appointment:new', {
-        appointmentId: appointment.id,
-        scheduledAt: appointment.scheduledAt,
-        client: appointment.user.name
+        type: 'appointment:new',
+        timestamp: Date.now(),
+        data: {
+          appointmentId: appointment.id,
+          scheduledAt: appointment.scheduledAt,
+          client: appointment.user.name
+        }
       });
 
       // Audit log
@@ -266,12 +274,19 @@ export class AppointmentService {
         // Check therapist availability
         const isAvailableTime = availability.includes(time.getHours());
 
-        slots.push({
+        const slot: TimeSlot = {
           start: new Date(time),
           end: new Date(slotEnd),
-          available: !hasConflict && isAvailableTime,
-          reason: hasConflict ? 'Booked' : !isAvailableTime ? 'Unavailable' : undefined
-        });
+          available: !hasConflict && isAvailableTime
+        };
+
+        if (hasConflict) {
+          slot.reason = 'Booked';
+        } else if (!isAvailableTime) {
+          slot.reason = 'Unavailable';
+        }
+
+        slots.push(slot);
       }
 
       return slots;
@@ -384,17 +399,25 @@ export class AppointmentService {
 
       // Real-time notifications
       websocketServer.sendToUser(appointment.userId, 'appointment:rescheduled', {
-        appointmentId,
-        oldTime: appointment.scheduledAt,
-        newTime: newDateTime,
-        reason
+        type: 'appointment:rescheduled',
+        timestamp: Date.now(),
+        data: {
+          appointmentId,
+          oldTime: appointment.scheduledAt,
+          newTime: newDateTime,
+          reason
+        }
       });
 
       websocketServer.sendToUser(appointment.therapistId, 'appointment:rescheduled', {
-        appointmentId,
-        oldTime: appointment.scheduledAt,
-        newTime: newDateTime,
-        reason
+        type: 'appointment:rescheduled',
+        timestamp: Date.now(),
+        data: {
+          appointmentId,
+          oldTime: appointment.scheduledAt,
+          newTime: newDateTime,
+          reason
+        }
       });
 
       // Audit log
@@ -505,15 +528,23 @@ export class AppointmentService {
 
       // Real-time notifications
       websocketServer.sendToUser(appointment.userId, 'appointment:cancelled', {
-        appointmentId,
-        reason,
-        refundEligible: hoursUntilAppointment >= 24
+        type: 'appointment:cancelled',
+        timestamp: Date.now(),
+        data: {
+          appointmentId,
+          reason,
+          refundEligible: hoursUntilAppointment >= 24
+        }
       });
 
       websocketServer.sendToUser(appointment.therapistId, 'appointment:cancelled', {
-        appointmentId,
-        reason,
-        clientName: appointment.user.name
+        type: 'appointment:cancelled',
+        timestamp: Date.now(),
+        data: {
+          appointmentId,
+          reason,
+          clientName: appointment.user.name
+        }
       });
 
       // Audit log
@@ -555,13 +586,15 @@ export class AppointmentService {
           user: {
             select: {
               id: true,
-              name: true
+              name: true,
+              email: true
             }
           },
           therapist: {
             select: {
               id: true,
-              name: true
+              name: true,
+              email: true
             }
           }
         }
@@ -582,6 +615,22 @@ export class AppointmentService {
         data: {
           status: 'CONFIRMED',
           updatedAt: new Date()
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          therapist: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
         }
       });
 
@@ -750,8 +799,9 @@ export class AppointmentService {
       }
 
       logSystemEvent(
-        'appointment-reminders',
-        `Sent ${appointmentsToRemind.length} appointment reminders`
+        'system',
+        `Sent ${appointmentsToRemind.length} appointment reminders`,
+        { category: 'appointment-reminders' }
       );
     } catch (error) {
       logError('Error sending reminders', error, 'appointment-service');

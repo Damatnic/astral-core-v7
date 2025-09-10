@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/config';
 import { StripeService } from '@/lib/services/stripe-service';
 import { prisma } from '@/lib/db';
 import { rateLimit } from '@/lib/security/rate-limit';
@@ -33,8 +33,8 @@ const refundPaymentSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'session-payment', 5, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('session-payment');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many payment attempts' }, { status: 429 });
     }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     const { payment, paymentIntent } = await StripeService.createPaymentIntent({
       customerId: customer.id,
       amount,
-      paymentMethodId,
+      ...(paymentMethodId && { paymentMethodId }),
       description: `Therapy session payment - ${appointment.scheduledAt.toDateString()}`,
       appointmentId,
       metadata: {
@@ -183,8 +183,8 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'payment-history', 20, 60000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('payment-history');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -290,8 +290,8 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'payment-refund', 3, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('payment-refund');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many refund attempts' }, { status: 429 });
     }
 
@@ -317,7 +317,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );

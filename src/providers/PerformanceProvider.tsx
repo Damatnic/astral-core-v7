@@ -158,6 +158,9 @@ export function PerformanceProvider({
         clearInterval(debugInterval);
       };
     }
+
+    // Return undefined if no cleanup is needed
+    return undefined;
   }, [enableAnalytics, enableNotifications, analyticsEndpoint, debugMode]);
 
   const contextValue: PerformanceContextType = {
@@ -203,7 +206,7 @@ export function withPerformanceMonitoring<P extends object>(
       const handleError = (error: Error) => {
         errorMonitor.captureError({
           message: `Component Error in ${name}: ${error.message}`,
-          stack: error.stack,
+          ...(error.stack && { stack: error.stack }),
           type: 'javascript',
           severity: 'high',
           context: {

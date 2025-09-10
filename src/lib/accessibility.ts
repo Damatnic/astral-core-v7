@@ -126,12 +126,12 @@ export function trapFocus(element: HTMLElement): () => void {
 
     if (e.shiftKey) {
       if (document.activeElement === firstFocusable) {
-        lastFocusable.focus();
+        lastFocusable?.focus();
         e.preventDefault();
       }
     } else {
       if (document.activeElement === lastFocusable) {
-        firstFocusable.focus();
+        firstFocusable?.focus();
         e.preventDefault();
       }
     }

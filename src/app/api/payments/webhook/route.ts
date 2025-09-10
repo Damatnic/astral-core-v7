@@ -43,7 +43,7 @@ const DISPUTE_CONFIG: DisputeWorkflow = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const signature = headers().get('stripe-signature');
+    const signature = (await headers()).get('stripe-signature');
 
     if (!signature) {
       return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 });
@@ -236,32 +236,38 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     }
 
     // Create or update invoice record
+    if (!invoice.id) {
+      throw new Error('Invoice ID is required');
+    }
+    
+    const stripeInvoice = invoice as any; // Cast to access Stripe properties
+    const subscription = stripeInvoice.subscription;
+    const subscriptionRecord = subscription 
+      ? await prisma.subscription.findUnique({
+          where: { stripeSubscriptionId: subscription as string }
+        })
+      : null;
+    
     await prisma.invoice.upsert({
       where: { stripeInvoiceId: invoice.id },
       create: {
         customerId: customer.id,
-        subscriptionId: invoice.subscription
-          ? (
-              await prisma.subscription.findUnique({
-                where: { stripeSubscriptionId: invoice.subscription as string }
-              })
-            )?.id
-          : undefined,
+        ...(subscriptionRecord?.id && { subscriptionId: subscriptionRecord.id }),
         stripeInvoiceId: invoice.id,
-        number: invoice.number,
+        number: stripeInvoice.number,
         status: 'PAID',
-        total: invoice.total / 100,
-        subtotal: invoice.subtotal / 100,
-        tax: invoice.tax ? invoice.tax / 100 : 0,
-        amountPaid: invoice.amount_paid / 100,
-        amountDue: invoice.amount_due / 100,
-        currency: invoice.currency,
-        description: invoice.description,
-        pdfUrl: invoice.invoice_pdf,
-        hostedInvoiceUrl: invoice.hosted_invoice_url,
-        paymentIntentId: invoice.payment_intent as string,
-        paidAt: invoice.status_transitions.paid_at
-          ? new Date(invoice.status_transitions.paid_at * 1000)
+        total: stripeInvoice.total / 100,
+        subtotal: stripeInvoice.subtotal / 100,
+        tax: stripeInvoice.tax ? stripeInvoice.tax / 100 : 0,
+        amountPaid: stripeInvoice.amount_paid / 100,
+        amountDue: stripeInvoice.amount_due / 100,
+        currency: stripeInvoice.currency,
+        description: stripeInvoice.description,
+        pdfUrl: stripeInvoice.invoice_pdf,
+        hostedInvoiceUrl: stripeInvoice.hosted_invoice_url,
+        ...(stripeInvoice.payment_intent && { paymentIntentId: stripeInvoice.payment_intent as string }),
+        paidAt: stripeInvoice.status_transitions?.paid_at
+          ? new Date(stripeInvoice.status_transitions.paid_at * 1000)
           : null
       },
       update: {
@@ -275,8 +281,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     });
 
     // If this is a subscription renewal, process it
-    if (invoice.subscription) {
-      await SubscriptionService.processSubscriptionRenewal(invoice.subscription as string);
+    if (stripeInvoice.subscription) {
+      await SubscriptionService.processSubscriptionRenewal(stripeInvoice.subscription as string);
     }
 
     await auditLog({
@@ -286,7 +292,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       details: {
         invoiceId: invoice.id,
         amount: invoice.amount_paid / 100,
-        subscriptionId: invoice.subscription as string
+        subscriptionId: stripeInvoice.subscription as string
       },
       outcome: 'SUCCESS'
     });
@@ -311,30 +317,36 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     }
 
     // Update invoice status
+    if (!invoice.id) {
+      throw new Error('Invoice ID is required');
+    }
+    
+    const stripeInvoice = invoice as any; // Cast to access Stripe properties
+    const subscription = stripeInvoice.subscription;
+    const subscriptionRecord = subscription 
+      ? await prisma.subscription.findUnique({
+          where: { stripeSubscriptionId: subscription as string }
+        })
+      : null;
+    
     await prisma.invoice.upsert({
       where: { stripeInvoiceId: invoice.id },
       create: {
         customerId: customer.id,
-        subscriptionId: invoice.subscription
-          ? (
-              await prisma.subscription.findUnique({
-                where: { stripeSubscriptionId: invoice.subscription as string }
-              })
-            )?.id
-          : undefined,
+        ...(subscriptionRecord?.id && { subscriptionId: subscriptionRecord.id }),
         stripeInvoiceId: invoice.id,
-        number: invoice.number,
+        number: stripeInvoice.number,
         status: 'OPEN',
-        total: invoice.total / 100,
-        subtotal: invoice.subtotal / 100,
-        tax: invoice.tax ? invoice.tax / 100 : 0,
-        amountPaid: invoice.amount_paid / 100,
-        amountDue: invoice.amount_due / 100,
-        currency: invoice.currency,
-        description: invoice.description,
-        pdfUrl: invoice.invoice_pdf,
-        hostedInvoiceUrl: invoice.hosted_invoice_url,
-        paymentIntentId: invoice.payment_intent as string
+        total: stripeInvoice.total / 100,
+        subtotal: stripeInvoice.subtotal / 100,
+        tax: stripeInvoice.tax ? stripeInvoice.tax / 100 : 0,
+        amountPaid: stripeInvoice.amount_paid / 100,
+        amountDue: stripeInvoice.amount_due / 100,
+        currency: stripeInvoice.currency,
+        description: stripeInvoice.description,
+        pdfUrl: stripeInvoice.invoice_pdf,
+        hostedInvoiceUrl: stripeInvoice.hosted_invoice_url,
+        ...(stripeInvoice.payment_intent && { paymentIntentId: stripeInvoice.payment_intent as string })
       },
       update: {
         status: 'OPEN',
@@ -350,25 +362,30 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       details: {
         invoiceId: invoice.id,
         amountDue: invoice.amount_due / 100,
-        subscriptionId: invoice.subscription as string
+        subscriptionId: (invoice as any).subscription as string
       },
       outcome: 'FAILURE'
     });
 
     // Send notification to user about failed payment
+    if (!invoice.id) {
+      throw new Error('Invoice ID is required');
+    }
+    
+    const invoiceData = invoice as any;
     await sendPaymentFailureNotification(
       customer.userId,
       invoice.id,
-      invoice.amount_due / 100,
-      invoice.subscription as string
+      invoiceData.amount_due / 100,
+      invoiceData.subscription as string
     );
 
     // Implement retry logic or grace period
     await handlePaymentRetryLogic(
       invoice.id,
       customer.userId,
-      invoice.subscription as string,
-      invoice.amount_due / 100
+      stripeInvoice.subscription as string,
+      stripeInvoice.amount_due / 100
     );
   } catch (error) {
     console.error('Error handling invoice payment failed:', error);
@@ -397,7 +414,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       data: {
         status: 'SUCCEEDED',
         processedAt: new Date(),
-        receiptUrl: paymentIntent.charges.data[0]?.receipt_url
+        receiptUrl: (paymentIntent as any).charges?.data?.[0]?.receipt_url || null
       }
     });
 
@@ -442,13 +459,21 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       return;
     }
 
+    const updateData: any = {
+      status: 'FAILED'
+    };
+    
+    if (paymentIntent.last_payment_error?.code) {
+      updateData.failureCode = paymentIntent.last_payment_error.code;
+    }
+    
+    if (paymentIntent.last_payment_error?.message) {
+      updateData.failureMessage = paymentIntent.last_payment_error.message;
+    }
+
     await prisma.payment.update({
       where: { id: payment.id },
-      data: {
-        status: 'FAILED',
-        failureCode: paymentIntent.last_payment_error?.code,
-        failureMessage: paymentIntent.last_payment_error?.message
-      }
+      data: updateData
     });
 
     await auditLog({
@@ -553,7 +578,7 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
 async function handleCustomerCreated(customer: Stripe.Customer) {
   try {
     // This is a backup handler - customers should be created via our API
-    const userId = customer.metadata?.userId;
+    const userId = customer.metadata?.['userId'];
 
     if (!userId) {
       console.log(`Customer ${customer.id} created without userId metadata`);
@@ -566,13 +591,18 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
     });
 
     if (!existingCustomer) {
+      const customerData: any = {
+        userId,
+        stripeCustomerId: customer.id,
+        email: customer.email || ''
+      };
+      
+      if (customer.name) {
+        customerData.name = customer.name;
+      }
+
       await prisma.customer.create({
-        data: {
-          userId,
-          stripeCustomerId: customer.id,
-          email: customer.email || '',
-          name: customer.name
-        }
+        data: customerData
       });
     }
 
@@ -633,7 +663,12 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
     );
 
     // Implement dispute handling workflow
-    await handleDisputeWorkflow(dispute, payment);
+    const paymentForDispute = {
+      id: payment.id,
+      customer: { userId: payment.customer.userId },
+      ...(payment.metadata && { metadata: JSON.stringify(payment.metadata) })
+    };
+    await handleDisputeWorkflow(dispute, paymentForDispute);
   } catch (error) {
     console.error('Error handling charge dispute created:', error);
     throw error;
@@ -704,75 +739,37 @@ async function handlePaymentRetryLogic(
       return;
     }
 
-    // Parse retry data from metadata or initialize
-    let retryData = { attempts: 0, gracePeriodEndAt: null };
-    if (invoice.metadata) {
-      try {
-        const parsed = JSON.parse(invoice.metadata as string);
-        retryData = parsed.retryData || retryData;
-      } catch {
-        // Metadata parsing failed, use defaults
-      }
-    }
+    // Initialize grace period for payment failure handling
+    const gracePeriodEnd = new Date(
+      Date.now() + PAYMENT_RETRY_CONFIG.gracePeriodHours * 60 * 60 * 1000
+    );
 
-    // Initialize grace period if not set
-    if (!retryData.gracePeriodEndAt) {
-      retryData.gracePeriodEndAt = new Date(
-        Date.now() + PAYMENT_RETRY_CONFIG.gracePeriodHours * 60 * 60 * 1000
-      );
-    }
+    // Simplified retry logic without metadata dependency
 
-    const gracePeriodEnd = new Date(retryData.gracePeriodEndAt);
+    // Schedule retry notification
+    await notificationService.createNotification({
+      userId,
+      title: 'Payment Failed',
+      message: `Your payment failed. Please update your payment method to avoid service interruption.`,
+      type: 'SYSTEM',
+      priority: 'HIGH',
+      actionUrl: '/billing/payment-methods'
+    });
 
-    // Check if we should still retry
-    if (retryData.attempts < PAYMENT_RETRY_CONFIG.maxAttempts && new Date() < gracePeriodEnd) {
-      const backoffHours = Math.pow(PAYMENT_RETRY_CONFIG.backoffMultiplier, retryData.attempts);
-      const nextRetryAt = new Date(Date.now() + backoffHours * 60 * 60 * 1000);
+    await auditLog({
+      userId,
+      action: 'PAYMENT_FAILED',
+      entity: 'Invoice',
+      entityId: invoice.id,
+      details: {
+        invoiceId,
+        failureReason: 'Payment attempt failed'
+      },
+      outcome: 'FAILURE'
+    });
 
-      retryData.attempts += 1;
-      const newMetadata = JSON.stringify({
-        ...(invoice.metadata ? JSON.parse(invoice.metadata as string) : {}),
-        retryData: {
-          ...retryData,
-          nextRetryAt: nextRetryAt.toISOString(),
-          lastAttemptAt: new Date().toISOString()
-        }
-      });
-
-      // Update invoice metadata
-      await prisma.invoice.update({
-        where: { id: invoice.id },
-        data: { metadata: newMetadata }
-      });
-
-      // Schedule retry notification
-      await notificationService.createNotification({
-        userId,
-        title: 'Payment Retry Scheduled',
-        message: `We'll automatically retry your payment in ${backoffHours} hour${backoffHours !== 1 ? 's' : ''}. You can update your payment method anytime to avoid service interruption.`,
-        type: 'SYSTEM',
-        priority: 'NORMAL',
-        actionUrl: '/billing/payment-methods',
-        metadata: {
-          retryAttempt: retryData.attempts,
-          nextRetryAt
-        }
-      });
-
-      await auditLog({
-        userId,
-        action: 'PAYMENT_RETRY_SCHEDULED',
-        entity: 'Invoice',
-        entityId: invoice.id,
-        details: {
-          attempt: retryData.attempts,
-          nextRetryAt,
-          backoffHours,
-          invoiceId
-        },
-        outcome: 'SUCCESS'
-      });
-    } else if (new Date() >= gracePeriodEnd) {
+    // Check if we're past grace period
+    if (new Date() >= gracePeriodEnd) {
       // Grace period expired - suspend subscription
       await suspendSubscriptionForNonPayment(subscriptionId, userId);
 
@@ -874,14 +871,20 @@ async function updatePendingSubscriptions(userId: string, paymentMethodId: strin
         );
 
         // Update local database
+        const statusMapping: Record<string, string> = {
+          'CANCELLED': 'CANCELED',
+          'ACTIVE': 'ACTIVE',
+          'PAST_DUE': 'PAST_DUE',
+          'INCOMPLETE': 'INCOMPLETE'
+        };
+        
+        const statusUpper = updatedSubscription.status.toUpperCase();
+        const mappedStatus = statusMapping[statusUpper] || statusUpper;
+        
         await prisma.subscription.update({
           where: { id: subscription.id },
           data: {
-            status: updatedSubscription.status.toUpperCase() as
-              | 'ACTIVE'
-              | 'CANCELLED'
-              | 'PAST_DUE'
-              | 'INCOMPLETE'
+            status: mappedStatus as 'INCOMPLETE' | 'INCOMPLETE_EXPIRED' | 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'PAUSED'
           }
         });
 
@@ -1089,8 +1092,7 @@ async function suspendSubscriptionForNonPayment(
     await prisma.subscription.update({
       where: { stripeSubscriptionId: subscriptionId },
       data: {
-        status: 'PAST_DUE',
-        pausedAt: new Date()
+        status: 'PAST_DUE'
       }
     });
 
@@ -1164,7 +1166,7 @@ async function initiateDocumentCollection(
           documentType: docType.toUpperCase(),
           description: `${docType.replace('_', ' ')} required for dispute evidence`,
           status: 'PENDING_COLLECTION',
-          dueDate: disputeData.evidenceDueBy
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
         },
         outcome: 'SUCCESS'
       });

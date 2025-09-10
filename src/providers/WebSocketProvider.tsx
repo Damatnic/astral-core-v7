@@ -26,7 +26,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   // Handle connection state changes
   useEffect(() => {
     if (websocket.isConnected) {
-      logSystemEvent('realtime-connect', 'Connected to real-time server');
+      logSystemEvent('websocket' as const, 'Connected to real-time server');
     } else if (websocket.connectionError) {
       logError('WebSocket error', websocket.connectionError, 'WebSocketProvider');
     }
@@ -36,28 +36,30 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   useEffect(() => {
     if (!websocket.on) return;
 
-    const unsubscribe = websocket.on('notification:new', notification => {
+    const unsubscribe = websocket.on('notification:new', (notification: unknown) => {
+      const data = notification as Record<string, unknown>;
       // Show toast notification
-      switch (notification.type) {
+      switch (data?.['type']) {
         case 'message':
-          toast(`New message from ${notification.senderName}`, {
+          toast(`New message from ${data['senderName'] || 'Unknown'}`, {
             icon: '💬',
             duration: 4000
           });
           break;
         case 'appointment':
-          toast(`Appointment reminder: ${notification.message}`, {
+          toast(`Appointment reminder: ${data['message'] || 'Upcoming appointment'}`, {
             icon: '📅',
-            duration: 5000
+            duration: 6000
           });
           break;
-        case 'crisis':
-          toast.error(notification.message, {
-            duration: 0 // Don't auto-dismiss crisis notifications
+        case 'alert':
+          toast.error(String(data['message'] || 'Alert notification'), {
+            icon: '⚠️',
+            duration: 8000
           });
           break;
         default:
-          toast(notification.message, {
+          toast(String(data?.['message'] || 'New notification'), {
             duration: 4000
           });
       }
@@ -70,18 +72,12 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   useEffect(() => {
     if (!websocket.on) return;
 
-    const unsubscribe = websocket.on('crisis:new', data => {
+    const unsubscribe = websocket.on('crisis:new', (data: unknown) => {
+      const crisisData = data as Record<string, unknown>;
       // For therapists - show crisis alert
       if (session?.user?.role === 'THERAPIST') {
-        toast.error(`Crisis Alert: User needs immediate assistance (${data.severity})`, {
-          duration: 0,
-          action: {
-            label: 'Respond',
-            onClick: () => {
-              // Navigate to crisis response page
-              window.location.href = `/crisis/respond/${data.interventionId}`;
-            }
-          }
+        toast.error(`Crisis Alert: User needs immediate assistance (${crisisData['severity'] || 'HIGH'})`, {
+          duration: 0
         });
       }
     });
@@ -93,16 +89,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   useEffect(() => {
     if (!websocket.on || session?.user?.role !== 'THERAPIST') return;
 
-    const unsubscribe = websocket.on('session:request', data => {
-      toast(`Session request from client for appointment ${data.appointmentId}`, {
+    const unsubscribe = websocket.on('session:request', (data: unknown) => {
+      const sessionData = data as Record<string, unknown>;
+      toast(`Session request from client for appointment ${sessionData['appointmentId'] || 'Unknown'}`, {
         icon: '🎥',
-        duration: 6000,
-        action: {
-          label: 'Join',
-          onClick: () => {
-            window.location.href = `/therapy/session/${data.appointmentId}`;
-          }
-        }
+        duration: 6000
       });
     });
 

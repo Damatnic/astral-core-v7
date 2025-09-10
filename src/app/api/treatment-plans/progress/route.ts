@@ -11,7 +11,7 @@ const progressSchema = z.object({
   objectiveId: z.string().optional(),
   progress: z.number().min(0).max(100),
   notes: z.string().optional(),
-  evidenceData: z.record(z.unknown()).optional()
+  evidenceData: z.record(z.string(), z.unknown()).optional()
 });
 
 // POST /api/treatment-plans/progress - Update progress
@@ -35,10 +35,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Filter out undefined values for exactOptionalPropertyTypes
+    const progressData = {
+      planId: validated.planId,
+      progress: validated.progress,
+      ...(validated.goalId && { goalId: validated.goalId }),
+      ...(validated.objectiveId && { objectiveId: validated.objectiveId }),
+      ...(validated.notes && { notes: validated.notes }),
+      ...(validated.evidenceData && { evidenceData: validated.evidenceData })
+    };
+
     const updatedPlan = await treatmentPlanService.updateProgress(
-      validated.planId,
+      progressData.planId,
       session.user.id,
-      validated
+      progressData
     );
 
     return NextResponse.json({

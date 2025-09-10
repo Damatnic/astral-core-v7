@@ -7,7 +7,7 @@
 
 import React, { Suspense } from 'react';
 import LoadingFallback from '@/components/ui/LoadingFallback';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Create lazy loading wrappers for page components
 const createLazyPageComponent = (

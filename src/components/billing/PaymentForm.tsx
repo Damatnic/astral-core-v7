@@ -17,7 +17,7 @@ import { PaymentFormSkeleton } from '@/components/ui/SkeletonLoader';
 import { clsx } from 'clsx';
 
 // Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = loadStripe(process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY']!);
 
 interface PaymentFormProps {
   clientSecret?: string;
@@ -105,8 +105,8 @@ const PaymentFormContent = ({
     // Validate billing details if required
     if (requiresBillingDetails) {
       const errors: Record<string, string> = {};
-      if (!billingDetails.name.trim()) errors.name = 'Name is required';
-      if (!billingDetails.email.trim()) errors.email = 'Email is required';
+      if (!billingDetails['name'].trim()) errors['name'] = 'Name is required';
+      if (!billingDetails['email'].trim()) errors['email'] = 'Email is required';
       if (!billingDetails.address.line1.trim()) errors['address.line1'] = 'Address is required';
       if (!billingDetails.address.city.trim()) errors['address.city'] = 'City is required';
       if (!billingDetails.address.state.trim()) errors['address.state'] = 'State is required';
@@ -404,7 +404,7 @@ const PaymentFormContent = ({
 
 const PaymentForm = (props: PaymentFormProps) => {
   const options: StripeElementsOptions = {
-    clientSecret: props.clientSecret,
+    ...(props.clientSecret && { clientSecret: props.clientSecret }),
     appearance: {
       theme: 'stripe',
       variables: {

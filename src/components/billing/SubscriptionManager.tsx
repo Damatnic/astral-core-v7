@@ -14,7 +14,7 @@ import PaymentForm from './PaymentForm';
 import { clsx } from 'clsx';
 
 // Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = loadStripe(process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY']!);
 
 interface TherapyPlan {
   id: string;
@@ -153,7 +153,7 @@ const TherapyPlanCard = ({
           fullWidth
           onClick={() => onSelect(plan)}
           disabled={isCurrentPlan || isLoading}
-          isLoading={isLoading}
+          {...(isLoading !== undefined && { isLoading })}
         >
           {isCurrentPlan ? 'Current Plan' : 'Select Plan'}
         </Button>

@@ -71,7 +71,7 @@ class BundleAnalyzer {
   private trackChunkLoad(entry: PerformanceResourceTiming) {
     const chunkName = this.extractChunkName(entry.name);
     const size = entry.transferSize || entry.encodedBodySize || 0;
-    const loadTime = entry.loadEventEnd - entry.loadEventStart;
+    const loadTime = entry.duration;
 
     this.chunks.set(chunkName, {
       name: chunkName,
@@ -87,7 +87,7 @@ class BundleAnalyzer {
   }
 
   private trackPageLoad(entry: PerformanceNavigationTiming) {
-    const loadTime = entry.loadEventEnd - entry.navigationStart;
+    const loadTime = entry.duration;
     const components = Array.from(this.chunks.keys());
 
     this.metrics.push({
@@ -104,7 +104,7 @@ class BundleAnalyzer {
 
   private extractChunkName(url: string): string {
     const match = url.match(/([^\/]+)\.chunk\.js$/);
-    return match ? match[1] : 'unknown';
+    return match?.[1] ?? 'unknown';
   }
 
   private getTotalBundleSize(): number {

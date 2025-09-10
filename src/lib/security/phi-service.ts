@@ -83,13 +83,17 @@ export class PHIService {
   ): Promise<T> {
     const fields = PHI_FIELDS[model];
     const encryptedData = fields
-      ? this.encryption.encryptObject(data, fields as (keyof T)[])
+      ? this.encryption.encryptObject(data as T, fields as (keyof T)[])
       : data;
 
     try {
-      const result = await (this.prisma as unknown as Record<string, { create: (args: { data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()].create({
+      const result = await (this.prisma as unknown as Record<string, { create: (args: { data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()]?.create({
         data: encryptedData
       });
+      
+      if (!result) {
+        throw new Error(`Failed to create ${model} record`);
+      }
 
       await audit.logSuccess(
         'CREATE',
@@ -99,7 +103,7 @@ export class PHIService {
         context?.userId
       );
 
-      return this.decryptIfNeeded(model, result);
+      return this.decryptIfNeeded(model, result) as T;
     } catch (error) {
       await audit.logError('CREATE', model, error, context?.userId);
       throw error;
@@ -129,7 +133,11 @@ export class PHIService {
     context?: PHIContext
   ): Promise<T[]> {
     try {
-      const results = await (this.prisma as unknown as Record<string, { findMany: (args: unknown) => Promise<PHIRecord[]> }>)[model.toLowerCase()].findMany(args);
+      const results = await (this.prisma as unknown as Record<string, { findMany: (args: unknown) => Promise<PHIRecord[]> }>)[model.toLowerCase()]?.findMany(args);
+
+      if (!results) {
+        throw new Error(`Failed to find ${model} records`);
+      }
 
       await audit.logSuccess(
         'READ_MANY',
@@ -139,7 +147,7 @@ export class PHIService {
         context?.userId
       );
 
-      return results.map((result: T) => this.decryptIfNeeded(model, result));
+      return results.map((result: PHIRecord) => this.decryptIfNeeded(model, result) as T);
     } catch (error) {
       await audit.logError('READ_MANY', model, error, context?.userId);
       throw error;
@@ -168,7 +176,7 @@ export class PHIService {
     context?: PHIContext
   ): Promise<T | null> {
     try {
-      const result = await (this.prisma as unknown as Record<string, { findUnique: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[model.toLowerCase()].findUnique({ where });
+      const result = await (this.prisma as unknown as Record<string, { findUnique: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[model.toLowerCase()]?.findUnique({ where });
 
       if (result) {
         await audit.logSuccess(
@@ -179,7 +187,7 @@ export class PHIService {
           context?.userId
         );
 
-        return this.decryptIfNeeded(model, result);
+        return this.decryptIfNeeded(model, result) as T;
       }
 
       return null;
@@ -216,14 +224,18 @@ export class PHIService {
   ): Promise<T> {
     const fields = PHI_FIELDS[model];
     const encryptedData = fields
-      ? this.encryption.encryptObject(data, fields as (keyof T)[])
+      ? this.encryption.encryptObject(data as T, fields as (keyof T)[])
       : data;
 
     try {
-      const result = await (this.prisma as unknown as Record<string, { update: (args: { where: unknown; data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()].update({
+      const result = await (this.prisma as unknown as Record<string, { update: (args: { where: unknown; data: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()]?.update({
         where,
         data: encryptedData
       });
+
+      if (!result) {
+        throw new Error(`Failed to update ${model} record`);
+      }
 
       await audit.logSuccess(
         'UPDATE',
@@ -233,7 +245,7 @@ export class PHIService {
         context?.userId
       );
 
-      return this.decryptIfNeeded(model, result);
+      return this.decryptIfNeeded(model, result) as T;
     } catch (error) {
       await audit.logError('UPDATE', model, error, context?.userId);
       throw error;
@@ -258,7 +270,11 @@ export class PHIService {
    */
   async delete(model: ResourceType, where: PrismaWhereInput, context?: PHIContext): Promise<void> {
     try {
-      const result = await (this.prisma as unknown as Record<string, { delete: (args: { where: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()].delete({ where });
+      const result = await (this.prisma as unknown as Record<string, { delete: (args: { where: unknown }) => Promise<PHIRecord> }>)[model.toLowerCase()]?.delete({ where });
+
+      if (!result) {
+        throw new Error(`Failed to delete ${model} record`);
+      }
 
       await audit.logSuccess(
         'DELETE',
@@ -337,7 +353,7 @@ export class PHIService {
         case 'WellnessData':
         case 'JournalEntry':
           // Users can access their own data
-          const resource = await (this.prisma as unknown as Record<string, { findFirst: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[resourceType.toLowerCase()].findFirst({
+          const resource = await (this.prisma as unknown as Record<string, { findFirst: (args: { where: unknown }) => Promise<PHIRecord | null> }>)[resourceType.toLowerCase()]?.findFirst({
             where: { id: resourceId, userId }
           });
           return !!resource;
@@ -439,7 +455,7 @@ export class PHIService {
       }
 
       // Decrypt all PHI fields
-      const decrypted: UserDataExport = { ...userData } as UserDataExport;
+      const decrypted: UserDataExport = { ...userData } as unknown as UserDataExport;
 
       if (decrypted.profile) {
         decrypted.profile = this.decryptIfNeeded('Profile', decrypted.profile);

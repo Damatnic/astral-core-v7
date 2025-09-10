@@ -82,25 +82,19 @@ export class AnalyticsService {
     aggregateLevel: 'user' | 'therapist' | 'system' = 'user'
   ): Promise<WellnessMetrics> {
     try {
-      const where: {
-        date: {
-          gte: Date;
-          lte: Date;
-        };
-        userId?: string;
-        user?: {
-          therapistId: string;
-        };
-      } = {
+      // Build where clause dynamically to handle different user filtering scenarios
+      const baseWhere = {
         date: {
           gte: dateRange.startDate,
           lte: dateRange.endDate
         }
       };
 
+      let where: Record<string, unknown> = baseWhere;
+
       // Apply user filtering based on access level
       if (aggregateLevel === 'user' && userId) {
-        where.userId = userId;
+        where = { ...baseWhere, userId };
       } else if (aggregateLevel === 'therapist' && userId) {
         // Get clients for this therapist
         const therapistProfile = await prisma.therapistProfile.findUnique({
@@ -109,8 +103,11 @@ export class AnalyticsService {
         });
 
         if (therapistProfile) {
-          where.userId = {
-            in: therapistProfile.clients.map(c => c.userId)
+          where = {
+            ...baseWhere,
+            userId: {
+              in: therapistProfile.clients.map(c => c.userId)
+            }
           };
         }
       }
@@ -192,6 +189,7 @@ export class AnalyticsService {
         };
         clientId?: string;
         therapistId?: string;
+        userId?: string;
       } = {
         scheduledAt: {
           gte: dateRange.startDate,
@@ -200,7 +198,7 @@ export class AnalyticsService {
       };
 
       if (role === 'CLIENT' && userId) {
-        where.userId = userId;
+        where.clientId = userId;
       } else if (role === 'THERAPIST' && userId) {
         where.therapistId = userId;
       }
@@ -292,10 +290,11 @@ export class AnalyticsService {
           }
         },
         select: {
+          id: true,
           severity: true,
           status: true,
           createdAt: true,
-          responderId: true,
+          startTime: true,
           updatedAt: true
         },
         orderBy: { createdAt: 'desc' }
@@ -314,8 +313,8 @@ export class AnalyticsService {
 
       // Calculate response times (time from creation to first response)
       const responseTimes = interventions
-        .filter(i => i.responderId && i.updatedAt)
-        .map(i => i.updatedAt!.getTime() - i.createdAt.getTime());
+        .filter(i => i.updatedAt && i.updatedAt.getTime() > i.startTime.getTime())
+        .map(i => i.updatedAt!.getTime() - i.startTime.getTime());
 
       const averageResponseTime =
         responseTimes.length > 0
@@ -331,8 +330,13 @@ export class AnalyticsService {
       const escalationRate =
         totalInterventions > 0 ? (escalatedInterventions / totalInterventions) * 100 : 0;
 
-      // Get recent alerts (last 10)
-      const recentAlerts = interventions.slice(0, 10);
+      // Get recent alerts (last 10) and map to expected format
+      const recentAlerts = interventions.slice(0, 10).map(intervention => ({
+        id: intervention.id,
+        severity: intervention.severity.toString(),
+        timestamp: intervention.startTime,
+        status: intervention.status.toString()
+      }));
 
       return {
         totalInterventions,
@@ -477,18 +481,18 @@ export class AnalyticsService {
       // In production, these would come from monitoring services like New Relic, DataDog, etc.
       const auditLogs = await prisma.auditLog.findMany({
         where: {
-          timestamp: {
+          createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
           }
         },
         select: {
-          success: true,
-          metadata: true
+          outcome: true,
+          details: true
         }
       });
 
       const totalRequests = auditLogs.length;
-      const errors = auditLogs.filter(log => !log.success).length;
+      const errors = auditLogs.filter(log => log.outcome !== 'SUCCESS').length;
       const errorRate = totalRequests > 0 ? (errors / totalRequests) * 100 : 0;
 
       return {
@@ -517,14 +521,14 @@ export class AnalyticsService {
       const [auditLogs, files] = await Promise.all([
         prisma.auditLog.findMany({
           where: {
-            timestamp: {
+            createdAt: {
               gte: dateRange.startDate,
               lte: dateRange.endDate
             }
           },
           select: {
             action: true,
-            success: true
+            outcome: true
           }
         }),
         prisma.file.findMany({
@@ -537,7 +541,7 @@ export class AnalyticsService {
       // Count HIPAA-related actions
       const hipaaActions = ['PHI_ACCESS', 'PHI_UPDATE', 'PHI_DELETE', 'UNAUTHORIZED_ACCESS'];
       const hipaaViolationAlerts = auditLogs.filter(
-        log => !log.success && hipaaActions.some(action => log.action.includes(action))
+        log => log.outcome !== 'SUCCESS' && hipaaActions.some(action => log.action.includes(action))
       ).length;
 
       // GDPR requests would be tracked separately
@@ -719,23 +723,7 @@ export class AnalyticsService {
     return insights;
   }
 
-  private generateWellnessRecommendations(analytics: WellnessMetrics): string[] {
-    const recommendations: string[] = [];
 
-    if (analytics.averageStressLevel > 6) {
-      recommendations.push('Consider incorporating daily meditation or deep breathing exercises.');
-      recommendations.push('Try progressive muscle relaxation techniques before bed.');
-    }
-
-    if (analytics.moodTrend === 'declining') {
-      recommendations.push('Schedule a check-in with your therapist to discuss recent changes.');
-      recommendations.push('Consider behavioral activation techniques to improve mood.');
-    }
-
-    recommendations.push('Continue tracking your wellness metrics to identify patterns.');
-
-    return recommendations;
-  }
 }
 
 export const analyticsService = new AnalyticsService();

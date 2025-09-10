@@ -5,10 +5,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/config';
 import { StripeService } from '@/lib/services/stripe-service';
 import { prisma } from '@/lib/db';
-import { rateLimit } from '@/lib/security/rate-limit';
+import { rateLimiter } from '@/lib/security/rate-limit';
 import { auditLog } from '@/lib/security/audit';
 import { z } from 'zod';
 
@@ -31,11 +31,11 @@ const updatePaymentMethodSchema = z.object({
  * GET /api/payments/payment-methods
  * Get user's saved payment methods
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'payment-methods-read', 20, 60000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimiter.check('payment-methods-read');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         id: dbMethod.id,
         stripePaymentMethodId: dbMethod.stripePaymentMethodId,
         type: dbMethod.type,
-        card: dbMethod.card ? JSON.parse(dbMethod.card) : null,
+        card: dbMethod.card ? JSON.parse(dbMethod.card as string) : null,
         isDefault: dbMethod.isDefault,
         isActive: dbMethod.isActive,
         createdAt: dbMethod.createdAt,
@@ -128,8 +128,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'setup-intent-create', 10, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimiter.check('setup-intent-create');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many setup attempts' }, { status: 429 });
     }
 
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       const customerResult = await StripeService.createCustomer({
         userId: user.id,
         email: user.email,
-        name: user.name || undefined
+        ...((user.name) && { name: user.name })
       });
       customer = customerResult.customer;
     }
@@ -220,8 +220,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'payment-method-update', 10, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimiter.check('payment-method-update');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many update attempts' }, { status: 429 });
     }
 
@@ -242,7 +242,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Invalid request data',
-            details: validationResult.error.errors
+            details: validationResult.error.issues
           },
           { status: 400 }
         );
@@ -304,7 +304,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Invalid request data',
-            details: validationResult.error.errors
+            details: validationResult.error.issues
           },
           { status: 400 }
         );
@@ -392,8 +392,8 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'payment-method-delete', 5, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimiter.check('payment-method-delete');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many delete attempts' }, { status: 429 });
     }
 

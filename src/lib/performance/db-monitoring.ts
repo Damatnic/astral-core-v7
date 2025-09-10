@@ -162,7 +162,7 @@ class DatabaseMonitor {
         averageDuration: metric.duration,
         slowestDuration: metric.duration,
         operation: metric.operation,
-        table: metric.table,
+        table: metric.table || 'unknown',
         firstOccurrence: metric.timestamp,
         lastOccurrence: metric.timestamp
       });
@@ -190,13 +190,13 @@ class DatabaseMonitor {
       duration: queryData.duration || 0,
       timestamp: queryData.timestamp || Date.now(),
       rows: queryData.rows || 0,
-      table: queryData.table || this.extractTable(queryData.query || ''),
-      userId: queryData.userId,
-      endpoint: queryData.endpoint,
       success: queryData.success !== undefined ? queryData.success : true,
-      errorMessage: queryData.errorMessage,
-      executionPlan: queryData.executionPlan,
-      cacheHit: queryData.cacheHit
+      ...(queryData.table ? { table: queryData.table } : this.extractTable(queryData.query || '') ? { table: this.extractTable(queryData.query || '')! } : {}),
+      ...(queryData.userId && { userId: queryData.userId }),
+      ...(queryData.endpoint && { endpoint: queryData.endpoint }),
+      ...(queryData.errorMessage && { errorMessage: queryData.errorMessage }),
+      ...(queryData.executionPlan && { executionPlan: queryData.executionPlan }),
+      ...(queryData.cacheHit !== undefined && { cacheHit: queryData.cacheHit })
     };
 
     this.queries.push(metric);
@@ -271,14 +271,18 @@ class DatabaseMonitor {
       .sort((a, b) => b.duration - a.duration)
       .slice(0, 10);
 
-    const queryDistribution = this.queries.reduce((acc, query) => {
-      acc[query.operation] = (acc[query.operation] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const queryDistribution = {
+      SELECT: 0,
+      INSERT: 0,
+      UPDATE: 0,
+      DELETE: 0,
+      UPSERT: 0,
+      CREATE: 0,
+      DROP: 0
+    };
 
-    // Ensure all operations are represented
-    ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'UPSERT', 'CREATE', 'DROP'].forEach(op => {
-      if (!queryDistribution[op]) queryDistribution[op] = 0;
+    this.queries.forEach(query => {
+      queryDistribution[query.operation]++;
     });
 
     const tableStats = new Map<string, { queries: number; totalDuration: number; averageDuration: number }>();
@@ -368,8 +372,10 @@ class DatabaseMonitor {
     const recentQueries = this.getRecentQueries(200);
     const groupedByEndpoint = recentQueries.reduce((acc, query) => {
       if (query.endpoint) {
-        if (!acc[query.endpoint]) acc[query.endpoint] = [];
-        acc[query.endpoint].push(query);
+        if (!acc[query.endpoint]) {
+          acc[query.endpoint] = [];
+        }
+        acc[query.endpoint]!.push(query);
       }
       return acc;
     }, {} as Record<string, QueryMetric[]>);

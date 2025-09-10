@@ -33,7 +33,7 @@ interface PushNotification {
  */
 export class NotificationService {
   private readonly batchSize = 100;
-  private readonly retryAttempts = 3;
+
   private notificationQueue: NotificationPayload[] = [];
   private processingQueue = false;
 
@@ -126,7 +126,15 @@ export class NotificationService {
 
       // Send email for high priority notifications
       if (payload.priority === 'HIGH' || payload.priority === 'URGENT') {
-        await this.sendEmailNotification(payload.userId, notification);
+        await this.sendEmailNotification(payload.userId, {
+          userId: payload.userId,
+          title: payload.title,
+          message: payload.message,
+          type: payload.type,
+          priority: payload.priority,
+          ...(notification.actionUrl && { actionUrl: notification.actionUrl }),
+          ...(payload.metadata && { metadata: payload.metadata })
+        });
       }
 
       // Audit log
@@ -180,13 +188,22 @@ export class NotificationService {
             type: n.type,
             priority: n.priority || 'NORMAL',
             actionUrl: n.actionUrl || null,
-            metadata: n.metadata
+            ...(n.metadata && { metadata: n.metadata })
           }))
         });
 
         // Send WebSocket notifications
         batch.forEach(notification => {
-          websocketServer.sendToUser(notification.userId, 'notification:new', notification);
+          websocketServer.sendToUser(notification.userId, 'notification:new', {
+            type: 'notification',
+            notificationId: `notification_${Date.now()}`,
+            title: notification.title,
+            message: notification.message,
+            priority: (notification.priority === 'NORMAL' ? 'MEDIUM' : notification.priority) as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+            ...(notification.actionUrl && { actionUrl: notification.actionUrl }),
+            timestamp: Date.now(),
+            userId: notification.userId
+          });
         });
       } catch (error) {
         logError('Batch notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');
@@ -230,8 +247,13 @@ export class NotificationService {
     // Update unread count via WebSocket
     const unreadCount = await this.getUnreadCount(userId);
     websocketServer.sendToUser(userId, 'notification:read', {
-      notificationId,
-      unreadCount
+      type: 'data',
+      data: {
+        notificationId,
+        unreadCount
+      },
+      timestamp: Date.now(),
+      userId
     });
   }
 
@@ -258,7 +280,10 @@ export class NotificationService {
     });
 
     websocketServer.sendToUser(userId, 'notification:all_read', {
-      timestamp: new Date()
+      type: 'data',
+      data: {},
+      timestamp: Date.now(),
+      userId
     });
   }
 
@@ -363,7 +388,12 @@ export class NotificationService {
     });
 
     websocketServer.sendToUser(userId, 'notification:deleted', {
-      notificationId
+      type: 'data',
+      data: {
+        notificationId
+      },
+      timestamp: Date.now(),
+      userId
     });
   }
 
@@ -416,7 +446,8 @@ export class NotificationService {
       // In production, integrate with FCM/APNS
       // For now, just log
       logInfo('Push notification would be sent in production', 'notification-service', {
-        type: notification.type
+        userId: notification.userId,
+        title: notification.title
       });
     } catch (error) {
       logError('Push notification error', error instanceof Error ? error : new Error(String(error)), 'notification-service');

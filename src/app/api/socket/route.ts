@@ -10,7 +10,7 @@ export async function GET() {
   if (!isInitialized && process.env.NODE_ENV === 'development') {
     // In development, we'll use a simple approach
     // In production, use a custom server setup
-    logSystemEvent('websocket-init', 'WebSocket server initialization requested');
+    logSystemEvent('websocket', 'WebSocket server initialization requested');
     isInitialized = true;
 
     return NextResponse.json({

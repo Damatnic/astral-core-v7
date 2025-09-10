@@ -7,7 +7,7 @@
 
 import React, { Suspense } from 'react';
 import LoadingFallback from '@/components/ui/LoadingFallback';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Lazy load the analytics dashboard
 const AnalyticsDashboard = React.lazy(() => import('@/components/AnalyticsDashboard'));

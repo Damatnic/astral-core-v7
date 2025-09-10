@@ -35,7 +35,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentWillUnmount() {
+  override componentWillUnmount() {
     if (this.retryTimeout) {
       clearTimeout(this.retryTimeout);
     }
@@ -46,7 +46,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, isRetrying: false };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error securely
     logError('Enhanced Error Boundary caught an error', error, this.props.context || 'EnhancedErrorBoundary', {
       componentStack: errorInfo.componentStack,
@@ -74,8 +74,6 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     this.retryTimeout = setTimeout(() => {
       this.setState({
         hasError: false,
-        error: undefined,
-        errorInfo: undefined,
         retryCount: this.state.retryCount + 1,
         isRetrying: false
       });
@@ -101,7 +99,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     }
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // Render custom fallback UI or default error UI
       if (this.props.fallback) {
@@ -234,7 +232,7 @@ export class CompactErrorBoundary extends Component<CompactErrorBoundaryProps, C
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logError('Compact Error Boundary caught an error', error, this.props.context || 'CompactErrorBoundary', {
       componentStack: errorInfo.componentStack
     });
@@ -242,7 +240,7 @@ export class CompactErrorBoundary extends Component<CompactErrorBoundaryProps, C
     this.props.onError?.(error);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -311,7 +309,7 @@ export const withErrorBoundary = <P extends object>(
     return (
       <ErrorBoundaryComponent 
         fallback={options?.fallback}
-        enableRetry={options?.enableRetry}
+        enableRetry={options?.enableRetry ?? true}
         context={options?.context || Component.displayName || Component.name}
       >
         <Component {...props} />

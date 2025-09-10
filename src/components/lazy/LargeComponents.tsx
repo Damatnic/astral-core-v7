@@ -7,7 +7,7 @@
 
 import React, { Suspense } from 'react';
 import LoadingFallback from '@/components/ui/LoadingFallback';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Lazy load large components
 const MfaSetup = React.lazy(() => import('@/components/MfaSetup'));

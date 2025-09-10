@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { notificationService } from '@/lib/services/notification-service';
 import { rateLimiter } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { NotificationType } from '@prisma/client';
 
 // GET /api/notifications - Get user notifications
 export async function GET(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Rate limiting
-    const allowed = await rateLimiter.checkLimit(`notifications:${session.user.id}`, 30, 60000);
+    const allowed = await rateLimiter.check(`notifications:${session.user.id}`);
     if (!allowed) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.RATE_LIMIT },
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       limit,
       offset,
       unreadOnly,
-      type
+      ...(type && { type: type as NotificationType })
     });
 
     return NextResponse.json({

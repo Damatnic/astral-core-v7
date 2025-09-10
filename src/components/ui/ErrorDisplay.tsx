@@ -180,9 +180,9 @@ export const NetworkError = ({ onRetry, isRetrying, className }: NetworkErrorPro
     error="Unable to connect to the server. Please check your internet connection and try again."
     title="Connection Error"
     variant="card"
-    onRetry={onRetry}
-    isRetrying={isRetrying}
-    className={className}
+    {...(onRetry && { onRetry })}
+    {...(isRetrying !== undefined && { isRetrying })}
+    {...(className && { className })}
     context="Network"
   />
 );
@@ -198,7 +198,7 @@ export const PermissionError = ({ action = 'perform this action', className }: P
     error={`You don't have permission to ${action}. Please contact your administrator if you believe this is an error.`}
     title="Access Denied"
     variant="card"
-    className={className}
+    {...(className && { className })}
     context="Permissions"
   />
 );

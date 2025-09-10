@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error securely
     logError('React Error Boundary caught an error', error, 'ErrorBoundary', {
       componentStack: errorInfo.componentStack,
@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // Render custom fallback UI or default error UI
       if (this.props.fallback) {
@@ -71,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   <button
                     type='button'
                     onClick={() => {
-                      this.setState({ hasError: false, error: undefined });
+                      this.setState({ hasError: false, error: new Error('Reset') });
                       window.location.reload();
                     }}
                     className='inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'

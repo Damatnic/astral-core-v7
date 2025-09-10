@@ -178,7 +178,7 @@ export class FileUploadService {
         });
       }
 
-      return {
+      const result: ProcessedFile = {
         id: fileId,
         filename,
         originalName: metadata.originalName,
@@ -186,9 +186,14 @@ export class FileUploadService {
         size: buffer.length,
         mimeType: metadata.mimeType,
         category: metadata.category,
-        isEncrypted,
-        thumbnailUrl
+        isEncrypted
       };
+
+      if (thumbnailUrl) {
+        result.thumbnailUrl = thumbnailUrl;
+      }
+
+      return result;
     } catch (error) {
       logError('Error uploading file', error, 'file-upload-service');
       throw error;
@@ -223,14 +228,14 @@ export class FileUploadService {
         throw new Error('File not found on disk');
       }
 
-      let stream = createReadStream(fullPath);
+      let stream: NodeJS.ReadableStream = createReadStream(fullPath);
 
       // Decrypt if needed
       if (fileRecord.isEncrypted) {
         const encryptedBuffer = await fs.readFile(fullPath);
         const decryptedBuffer = await this.decryptFile(encryptedBuffer);
         const { Readable } = await import('stream');
-        stream = Readable.from(decryptedBuffer);
+        stream = Readable.from(decryptedBuffer) as NodeJS.ReadableStream;
       }
 
       // Audit log
@@ -275,7 +280,7 @@ export class FileUploadService {
 
       if (user?.role !== 'ADMIN') {
         // Non-admin users can only see their own files or public files they have access to
-        where.OR = [
+        where['OR'] = [
           { userId },
           {
             AND: [
@@ -287,7 +292,7 @@ export class FileUploadService {
       }
 
       if (filters.category) {
-        where.category = filters.category;
+        where['category'] = filters.category;
       }
 
       if (filters.isPrivate !== undefined) {
@@ -356,7 +361,7 @@ export class FileUploadService {
 
       // Delete thumbnail if exists
       const metadata = fileRecord.metadata as Record<string, unknown>;
-      if (metadata?.thumbnailUrl) {
+      if (metadata?.['thumbnailUrl']) {
         const thumbnailPath = join(
           this.baseUploadDir,
           config.uploadDir,
@@ -522,7 +527,7 @@ export class FileUploadService {
         .toBuffer();
     } catch (error) {
       logWarning('Image optimization failed, using original', 'file-upload-service', {
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
       return buffer;
     }
@@ -549,7 +554,9 @@ export class FileUploadService {
 
       return `/api/files/${fileId}/thumbnail`;
     } catch (error) {
-      logWarning('Thumbnail generation failed', 'file-upload-service', { error: error.message });
+      logWarning('Thumbnail generation failed', 'file-upload-service', { 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
       return '';
     }
   }
@@ -575,7 +582,7 @@ export class FileUploadService {
     }
 
     // Users can access their own files
-    if (fileRecord.userId === userId) {
+    if (fileRecord['userId'] === userId) {
       return;
     }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { toast } from 'react-hot-toast';
@@ -117,7 +117,7 @@ export default function FileUpload({
   const onDrop = useCallback(
     (
       acceptedFiles: File[],
-      rejectedFiles: { file: File; errors: { code: string; message: string }[] }[]
+      rejectedFiles: FileRejection[]
     ) => {
       // Handle rejected files
       rejectedFiles.forEach(({ file, errors }) => {
@@ -137,12 +137,12 @@ export default function FileUpload({
       // Add accepted files
       const newFiles = acceptedFiles.map(file => {
         const fileWithPreview = Object.assign(file, {
-          preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+          ...(file.type.startsWith('image/') ? { preview: URL.createObjectURL(file) } : {}),
           id: Math.random().toString(36).substr(2, 9),
           progress: 0,
           uploading: false
         });
-        return fileWithPreview;
+        return fileWithPreview as FileWithPreview;
       });
 
       setFiles(prev => [...prev, ...newFiles].slice(0, maxFiles));
@@ -202,10 +202,11 @@ export default function FileUpload({
 
           toast.success(`${file.name} uploaded successfully`);
         } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           setFiles(prev =>
-            prev.map(f => (f.id === file.id ? { ...f, error: error.message, uploading: false } : f))
+            prev.map(f => (f.id === file.id ? { ...f, error: errorMessage, uploading: false } : f))
           );
-          toast.error(`Failed to upload ${file.name}: ${error.message}`);
+          toast.error(`Failed to upload ${file.name}: ${errorMessage}`);
         }
       }
 

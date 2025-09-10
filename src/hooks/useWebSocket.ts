@@ -67,7 +67,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   useEffect(() => {
     if (!session?.user || !options.autoConnect) return;
 
-    const socket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3000', {
+    const socket = io(process.env['NEXT_PUBLIC_WS_URL'] || 'http://localhost:3000', {
       auth: {
         token: session.user.id // In production, use actual session token
       },

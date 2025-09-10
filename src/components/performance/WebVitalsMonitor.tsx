@@ -114,25 +114,23 @@ interface InsightCardProps {
 }
 
 const InsightCard: React.FC<InsightCardProps> = ({ insight }) => {
-  const severityColors = {
+  const impactColors = {
     low: 'border-blue-200 bg-blue-50',
     medium: 'border-yellow-200 bg-yellow-50',
-    high: 'border-orange-200 bg-orange-50',
-    critical: 'border-red-200 bg-red-50'
+    high: 'border-red-200 bg-red-50'
   };
 
-  const severityIcons = {
+  const impactIcons = {
     low: <CheckCircle className="w-4 h-4 text-blue-600" />,
     medium: <AlertCircle className="w-4 h-4 text-yellow-600" />,
-    high: <AlertCircle className="w-4 h-4 text-orange-600" />,
-    critical: <AlertCircle className="w-4 h-4 text-red-600" />
+    high: <AlertCircle className="w-4 h-4 text-red-600" />
   };
 
   return (
-    <div className={`p-4 rounded-lg border ${severityColors[insight.severity]}`}>
+    <div className={`p-4 rounded-lg border ${impactColors[insight.impact]}`}>
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0 mt-0.5">
-          {severityIcons[insight.severity]}
+          {impactIcons[insight.impact]}
         </div>
         
         <div className="flex-1">

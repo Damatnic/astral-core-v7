@@ -63,9 +63,22 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const validated = preferencesSchema.parse(body);
 
+    // Filter out undefined values for exactOptionalPropertyTypes compatibility
+    const cleanedPreferences = Object.fromEntries(
+      Object.entries(validated).filter(([, value]) => value !== undefined)
+    ) as {
+      email?: boolean;
+      push?: boolean;
+      sms?: boolean;
+      appointments?: boolean;
+      messages?: boolean;
+      wellness?: boolean;
+      crisis?: boolean;
+    };
+
     const updated = await notificationService.updateNotificationPreferences(
       session.user.id,
-      validated
+      cleanedPreferences
     );
 
     return NextResponse.json({

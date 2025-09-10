@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
     const planId = searchParams.get('planId');
 
     // Rate limiting
-    const allowed = await rateLimiter.checkLimit(`treatment-plans:${session.user.id}`, 30, 60000);
+    const rateLimitResult = await rateLimiter.check(`treatment-plans:${session.user.id}`);
+    const allowed = rateLimitResult.allowed;
     if (!allowed) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.RATE_LIMIT },

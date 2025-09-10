@@ -13,6 +13,7 @@ import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import { rateLimiters } from '@/lib/security/rate-limit';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import type { PHIRecord } from '@/lib/types/phi';
 import type { CrisisSeverity, InterventionType } from '@prisma/client';
 
 // Crisis hotline numbers
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
       resourcesProvided: CRISIS_RESOURCES.resources.map(r => r.name)
     };
 
-    const intervention = await phiService.create('CrisisIntervention', interventionData, {
+    const intervention = await phiService.create('CrisisIntervention', interventionData as unknown as Partial<PHIRecord>, {
       userId: session.user.id,
       userRole: session.user.role,
       resourceType: 'CrisisIntervention'

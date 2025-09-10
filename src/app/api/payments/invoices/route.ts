@@ -5,11 +5,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/config';
 import { StripeService } from '@/lib/services/stripe-service';
 import { prisma } from '@/lib/db';
-import { rateLimit } from '@/lib/security/rate-limit';
+import { rateLimiter } from '@/lib/security/rate-limit';
 import { auditLog } from '@/lib/security/audit';
+import Stripe from 'stripe';
 
 /**
  * GET /api/payments/invoices
@@ -18,8 +19,8 @@ import { auditLog } from '@/lib/security/audit';
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'invoices-read', 20, 60000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimiter.check('invoices-read');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get fresh invoices from Stripe if needed
-    let stripeInvoices = [];
+    let stripeInvoices: Stripe.Invoice[] = [];
     try {
       stripeInvoices = await StripeService.getInvoices(customer.id, limit);
     } catch (error) {
@@ -93,14 +94,15 @@ export async function GET(request: NextRequest) {
 
     // Add fresh Stripe invoices (overwrite if exists)
     stripeInvoices.forEach(stripeInvoice => {
+      const stripeInvoiceAny = stripeInvoice as Stripe.Invoice & { tax?: number };
       invoicesMap.set(stripeInvoice.id, {
         id: `stripe_${stripeInvoice.id}`,
         stripeInvoiceId: stripeInvoice.id,
         number: stripeInvoice.number,
-        status: stripeInvoice.status.toUpperCase(),
+        status: (stripeInvoice.status || 'draft').toUpperCase(),
         total: stripeInvoice.total / 100,
         subtotal: stripeInvoice.subtotal / 100,
-        tax: stripeInvoice.tax ? stripeInvoice.tax / 100 : 0,
+        tax: stripeInvoiceAny.tax ? stripeInvoiceAny.tax / 100 : 0,
         amountPaid: stripeInvoice.amount_paid / 100,
         amountDue: stripeInvoice.amount_due / 100,
         currency: stripeInvoice.currency,

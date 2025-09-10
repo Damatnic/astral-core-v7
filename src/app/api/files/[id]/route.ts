@@ -5,7 +5,7 @@ import { fileUploadService } from '@/lib/services/file-upload-service';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 
 // GET /api/files/[id] - Download a file
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -15,7 +15,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const fileId = params.id;
+    const { id } = await context.params;
+    const fileId = id;
     const { searchParams } = new URL(request.url);
     const download = searchParams.get('download') === 'true';
     const thumbnail = searchParams.get('thumbnail') === 'true';
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     );
 
     // Create response with proper headers
-    const response = new NextResponse(stream as ReadableStream);
+    const response = new NextResponse(stream as unknown as ReadableStream<Uint8Array>);
 
     response.headers.set('Content-Type', mimeType);
     response.headers.set('Content-Length', size.toString());
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/files/[id] - Delete a file
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -79,7 +80,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
-    await fileUploadService.deleteFile(params.id, session.user.id);
+    const { id } = await context.params;
+    await fileUploadService.deleteFile(id, session.user.id);
 
     return NextResponse.json({
       success: true,

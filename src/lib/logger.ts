@@ -40,7 +40,7 @@ class Logger {
   }
 
   private getLogLevel(): LogLevel {
-    const level = process.env.LOG_LEVEL?.toLowerCase();
+    const level = process.env['LOG_LEVEL']?.toLowerCase();
     switch (level) {
       case 'error':
         return LogLevel.ERROR;
@@ -224,14 +224,29 @@ class Logger {
 // Export singleton instance
 export const logger = Logger.getInstance();
 
+// Utility function to safely convert unknown errors to Error objects
+export const toError = (error: unknown): Error => {
+  if (error instanceof Error) {
+    return error;
+  }
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return new Error(String((error as { message: unknown }).message));
+  }
+  return new Error('Unknown error occurred');
+};
+
 // Convenience functions for common patterns
 export const logError = (
   message: string,
-  error?: Error,
+  error?: Error | unknown,
   context?: string,
   metadata?: Record<string, unknown>
 ) => {
-  logger.error(message, context, metadata, error);
+  const errorObj = error ? toError(error) : undefined;
+  logger.error(message, context, metadata, errorObj);
 };
 
 export const logWarning = (message: string, context?: string, metadata?: Record<string, unknown>) => {

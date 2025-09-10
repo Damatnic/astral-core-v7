@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting - 10 uploads per hour per user
-    const allowed = await rateLimiter.checkLimit(`file-upload:${session.user.id}`, 10, 3600000);
+    const allowed = await rateLimiter.check(`file-upload:${session.user.id}`);
     if (!allowed) {
       return NextResponse.json(
         { error: 'Upload limit exceeded. Please try again later.' },
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       size: file.size,
       userId: session.user.id,
       category,
-      description: description || undefined,
+      ...(description && { description }),
       isPrivate
     });
 

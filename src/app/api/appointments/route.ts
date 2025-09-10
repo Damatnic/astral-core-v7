@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import prisma from '@/lib/db/prisma';
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { AppointmentStatus } from '@prisma/client';
 
 // GET /api/appointments - Get user's appointments
 export async function GET(request: NextRequest) {
@@ -21,16 +22,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const where: {
-      userId: string;
-      status?: string;
-    } = {
-      userId: session.user.id
+    const where = {
+      userId: session.user.id,
+      ...(status && { status: status as AppointmentStatus })
     };
-
-    if (status) {
-      where.status = status;
-    }
 
     const [appointments, total] = await Promise.all([
       prisma.appointment.findMany({

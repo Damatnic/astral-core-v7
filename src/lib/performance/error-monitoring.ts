@@ -32,7 +32,6 @@ interface PerformanceMetrics {
     totalJSHeapSize: number;
   };
   timing?: {
-    navigationStart: number;
     loadEventEnd: number;
   };
   resourceCount?: number;
@@ -114,7 +113,7 @@ class ErrorMonitor {
     // Resource loading errors
     window.addEventListener('error', (event) => {
       const target = event.target as HTMLElement;
-      if (target && target !== window) {
+      if (target && target instanceof HTMLElement) {
         this.captureError({
           message: `Failed to load resource: ${(target as HTMLImageElement).src || (target as HTMLAnchorElement).href}`,
           filename: (target as HTMLImageElement).src || (target as HTMLAnchorElement).href,
@@ -229,7 +228,6 @@ class ErrorMonitor {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
     if (navigation) {
       metrics.timing = {
-        navigationStart: navigation.navigationStart,
         loadEventEnd: navigation.loadEventEnd
       };
     }
@@ -245,17 +243,17 @@ class ErrorMonitor {
     const errorEvent: ErrorEvent = {
       id: this.generateErrorId(),
       message: errorData.message || 'Unknown error',
-      stack: errorData.stack,
-      filename: errorData.filename,
-      lineno: errorData.lineno,
-      colno: errorData.colno,
+      stack: errorData.stack || '',
+      filename: errorData.filename || '',
+      lineno: errorData.lineno || 0,
+      colno: errorData.colno || 0,
       timestamp: Date.now(),
       url: window.location.href,
       userAgent: navigator.userAgent,
       sessionId: this.sessionId,
       type: errorData.type || 'custom',
       severity: errorData.severity || 'medium',
-      context: errorData.context,
+      context: errorData.context || {},
       performanceImpact: {
         beforeError: beforeMetrics,
         afterError: {} // Will be populated later
@@ -375,21 +373,24 @@ class ErrorMonitor {
   private executeAlertAction(action: AlertAction, rule: AlertRule) {
     switch (action.type) {
       case 'console':
-        const level = action.config.level || 'log';
-        console[level as keyof Console](`Alert triggered: ${rule.name}`);
+        const level = action.config['level'] as string || 'log';
+        if (level === 'log') console.log(`Alert triggered: ${rule.name}`);
+        else if (level === 'warn') console.warn(`Alert triggered: ${rule.name}`);
+        else if (level === 'error') console.error(`Alert triggered: ${rule.name}`);
+        else console.log(`Alert triggered: ${rule.name}`);
         break;
       
       case 'notification':
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(action.config.title || rule.name, {
-            body: action.config.body || `Alert rule "${rule.name}" has been triggered`,
-            icon: action.config.icon
+          new Notification(action.config['title'] as string || rule.name, {
+            body: action.config['body'] as string || `Alert rule "${rule.name}" has been triggered`,
+            icon: action.config['icon'] as string
           });
         }
         break;
       
       case 'webhook':
-        fetch(action.config.url, {
+        fetch(action.config['url'] as string, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -535,8 +536,8 @@ export function captureCustomError(message: string, context?: Record<string, unk
   const monitor = getErrorMonitor();
   monitor.captureError({
     message,
-    context,
-    severity,
+    context: context || {},
+    severity: severity || 'medium',
     type: 'custom'
   });
 }

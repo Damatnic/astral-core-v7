@@ -265,7 +265,7 @@ export function useKeyboardNavigation() {
     
     if (newIndex !== currentIndex && items[newIndex]) {
       onIndexChange(newIndex);
-      items[newIndex].focus();
+      items[newIndex]?.focus();
     }
   }, []);
 

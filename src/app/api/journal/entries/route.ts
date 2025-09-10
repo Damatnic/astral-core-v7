@@ -28,16 +28,16 @@ export async function GET(request: NextRequest) {
     const where: {
       userId: string;
       OR?: Array<{
-        title?: { contains: string; mode: string };
-        content?: { contains: string; mode: string };
+        title?: { contains: string; mode: 'insensitive' };
+        content?: { contains: string; mode: 'insensitive' };
       }>;
       tags?: { has: string };
     } = { userId: session.user.id };
 
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } }
+        { title: { contains: search, mode: 'insensitive' as const } },
+        { content: { contains: search, mode: 'insensitive' as const } }
       ];
     }
 

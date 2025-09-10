@@ -11,12 +11,12 @@ interface SessionData {
 
 // Enhanced AI Therapy Assistant - Better than v5
 export class AITherapyAssistant {
-  private readonly ethicalBoundaries = {
-    maxSessionDuration: 60 * 60 * 1000, // 1 hour
-    minHumanCheckInterval: 15 * 60 * 1000, // 15 minutes
-    crisisEscalationThreshold: 0.8,
-    confidenceThreshold: 0.7
-  };
+  // private readonly ethicalBoundaries = {
+  //   maxSessionDuration: 60 * 60 * 1000, // 1 hour
+  //   minHumanCheckInterval: 15 * 60 * 1000, // 15 minutes
+  //   crisisEscalationThreshold: 0.8,
+  //   confidenceThreshold: 0.7
+  // };
 
   private readonly interventionStrategies = {
     CBT: ['thought-challenging', 'behavioral-activation', 'cognitive-restructuring'],
@@ -218,7 +218,7 @@ export class AITherapyAssistant {
   }
 
   async generateTherapeuticResponse(
-    userId: string,
+    _userId: string,
     message: string
   ): Promise<{
     response: string;

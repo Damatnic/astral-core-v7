@@ -48,16 +48,16 @@ export async function POST(request: NextRequest) {
     // Store performance data
     const performanceRecord = await prisma.performanceMetric.create({
       data: {
-        url,
-        timestamp,
-        userAgent,
-        clientIP,
-        sessionId: body.sessionId,
-        userId: body.userId,
-        vitals: body.vitals ? JSON.stringify(body.vitals) : null,
-        metadata: {
-          vitalsCount: body.vitals ? Object.keys(body.vitals).length : 0,
-          hasWebVitals: Boolean(body.vitals)
+          url,
+          timestamp,
+          userAgent,
+          clientIP,
+          sessionId: typeof body.sessionId === 'string' ? body.sessionId : null,
+          userId: typeof body.userId === 'string' ? body.userId : null,
+          vitals: body.vitals ? JSON.stringify(body.vitals) : null,
+          metadata: {
+            vitalsCount: body.vitals ? Object.keys(body.vitals).length : 0,
+            hasWebVitals: Boolean(body.vitals)
         }
       }
     });
@@ -101,13 +101,13 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {};
     
     if (url) {
-      where.url = {
+      where['url'] = {
         contains: url
       };
     }
     
     if (since) {
-      where.timestamp = {
+      where['timestamp'] = {
         gte: new Date(since)
       };
     }

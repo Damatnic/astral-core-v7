@@ -37,7 +37,9 @@ export const ERROR_MESSAGES = {
 export const SUCCESS_MESSAGES = {
   REGISTER: 'Registration successful',
   LOGIN: 'Login successful',
-  LOGOUT: 'Logout successful'
+  LOGOUT: 'Logout successful',
+  PROFILE_UPDATED: 'Profile updated successfully',
+  DATA_SAVED: 'Data saved successfully'
 };
 
 export const ROUTES = {

@@ -280,15 +280,8 @@ export class MfaService {
         };
       } else {
         this.verificationAttempts.set(userId, attempts + 1);
-
-        await audit.logFailure(
-          'MFA_VERIFICATION_FAILED',
-          'User',
-          userId,
-          'Invalid MFA code',
-          { attemptsRemaining: this.MAX_VERIFICATION_ATTEMPTS - attempts - 1 },
-          userId
-        );
+        
+        await audit.logFailure('MFA_VERIFICATION_FAILED', 'User', 'Invalid MFA code', userId);
 
         return {
           success: false,
@@ -479,8 +472,10 @@ export class MfaService {
 
       // Check if code matches any stored backup code
       for (let i = 0; i < user.mfaBackupCodes.length; i++) {
-        const isMatch = await this.compareBackupCode(code, user.mfaBackupCodes[i]);
-        if (isMatch) {
+        const backupCode = user.mfaBackupCodes[i];
+        if (backupCode) {
+          const isMatch = await this.compareBackupCode(code, backupCode);
+          if (isMatch) {
           // Remove used backup code
           const newBackupCodes = [...user.mfaBackupCodes];
           newBackupCodes.splice(i, 1);
@@ -499,7 +494,8 @@ export class MfaService {
             priority: 'HIGH'
           });
 
-          return true;
+            return true;
+          }
         }
       }
 
@@ -734,9 +730,7 @@ export class MfaService {
     await audit.logFailure(
       'MFA_EXCESSIVE_ATTEMPTS',
       'User',
-      userId,
       'Account locked due to excessive MFA attempts',
-      { lockedUntil: lockUntil },
       userId
     );
 

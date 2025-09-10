@@ -2,6 +2,10 @@
  * Billing Dashboard Component
  * Comprehensive billing and payment management interface
  */
+/**
+ * Billing Dashboard Component
+ * Comprehensive billing and payment management interface
+ */
 
 'use client';
 
@@ -312,7 +316,7 @@ const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDas
           {tabs.map(tab => (
             <Tab
               key={tab.id}
-              className={({ selected }) =>
+              className={({ selected }: { selected: boolean }) =>
                 clsx(
                   'flex items-center space-x-2 w-full rounded-md py-2.5 px-4 text-sm font-medium leading-5 transition-all',
                   'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-blue-400 ring-white ring-opacity-60',
@@ -331,7 +335,7 @@ const BillingDashboard = ({ className, defaultTab = 'subscription' }: BillingDas
         <Tab.Panels className='mt-6'>
           {/* Subscription Tab */}
           <Tab.Panel className='focus:outline-none'>
-            <SubscriptionManager onDataUpdate={handleDataUpdate} />
+            <SubscriptionManager />
           </Tab.Panel>
 
           {/* Payment Methods Tab */}

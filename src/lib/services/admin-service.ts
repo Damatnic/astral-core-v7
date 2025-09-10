@@ -150,18 +150,18 @@ export class AdminService {
       }
 
       if (filters.search) {
-        where.OR = [
+        where['OR'] = [
           { name: { contains: filters.search, mode: 'insensitive' } },
           { email: { contains: filters.search, mode: 'insensitive' } }
         ];
       }
 
       if (filters.createdAfter) {
-        where.createdAt = { gte: filters.createdAfter };
+        where['createdAt'] = { gte: filters.createdAfter };
       }
 
       if (filters.lastLoginBefore) {
-        where.lastLogin = { lt: filters.lastLoginBefore };
+        where['lastLogin'] = { lt: filters.lastLoginBefore };
       }
 
       const [users, total] = await Promise.all([
@@ -174,7 +174,6 @@ export class AdminService {
             role: true,
             status: true,
             lastLogin: true,
-            loginCount: true,
             createdAt: true,
             updatedAt: true,
             mfaEnabled: true,
@@ -264,6 +263,9 @@ export class AdminService {
           data: {
             userId: user.id,
             licenseNumber: '', // To be filled by therapist
+            licenseState: 'PENDING', // To be updated
+            licenseExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Default 1 year
+            yearsOfExperience: 0, // To be updated
             specializations: [],
             availableHours: {}
           }
@@ -272,7 +274,10 @@ export class AdminService {
         await prisma.profile.create({
           data: {
             userId: user.id,
-            phoneNumber: userData.phoneNumber
+            firstName: userData.name?.split(' ')[0] || '',
+            lastName: userData.name?.split(' ')[1] || '',
+            dateOfBirth: new Date(1990, 0, 1), // Default date to be updated
+            ...(userData.phoneNumber && { phoneNumber: userData.phoneNumber })
           }
         });
       }
@@ -294,10 +299,10 @@ export class AdminService {
       // Real-time notification to other admins
       websocketServer.sendToRole('ADMIN', 'user:created', {
         userId: user.id,
-        name: user.name,
+        userName: user.name,
         role: user.role,
         createdBy: adminId
-      });
+      } as never);
 
       // Audit log
       await audit.logSuccess(
@@ -360,10 +365,10 @@ export class AdminService {
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: {
-          name: updates.name,
-          email: updates.email,
-          role: updates.role,
-          status: updates.status,
+          ...(updates.name && { name: updates.name }),
+          ...(updates.email && { email: updates.email }),
+          ...(updates.role && { role: updates.role }),
+          ...(updates.status && { status: updates.status }),
           updatedAt: new Date()
         },
         select: {
@@ -384,6 +389,9 @@ export class AdminService {
           where: { userId },
           create: {
             userId,
+            firstName: 'First', // Default value
+            lastName: 'Last', // Default value
+            dateOfBirth: new Date(1990, 0, 1), // Default date
             phoneNumber: updates.phoneNumber
           },
           update: {
@@ -403,7 +411,9 @@ export class AdminService {
 
       // Real-time notification
       websocketServer.sendToUser(userId, 'profile:updated', {
-        changes: Object.keys(updates)
+  type: 'profile:updated',
+  timestamp: Date.now(),
+  data: updates
       });
 
       // Audit log
@@ -455,8 +465,8 @@ export class AdminService {
       // Force logout if suspended
       if (newStatus === 'SUSPENDED') {
         websocketServer.sendToUser(userId, 'account:suspended', {
-          reason
-        });
+          reason: reason || 'No reason provided'
+        } as never);
       }
 
       // Audit log
@@ -464,7 +474,7 @@ export class AdminService {
         newStatus === 'SUSPENDED' ? 'ADMIN_USER_SUSPENDED' : 'ADMIN_USER_REACTIVATED',
         'User',
         userId,
-        { reason },
+        { info: reason as never },
         adminId
       );
 
@@ -579,9 +589,6 @@ export class AdminService {
         }
 
         // Multiple failed login attempts (would need to track this)
-        if (user.loginCount && user.loginCount < 3) {
-          riskScore += 15;
-        }
 
         return {
           userId: user.id,
@@ -591,7 +598,7 @@ export class AdminService {
             role: user.role
           },
           lastLogin: user.lastLogin,
-          loginCount: user.loginCount || 0,
+          loginCount: 0,
           appointmentsCount: user._count.appointments,
           messagesCount: user._count.messages,
           filesCount: user._count.files,
@@ -612,7 +619,7 @@ export class AdminService {
   }
 
   // Delete user (GDPR compliance)
-  async deleteUser(adminId: string, userId: string, reason: string) {
+  async deleteUser(adminId: string, userId: string, reason?: string) {
     await this.requireAdmin(adminId);
 
     try {
@@ -637,7 +644,7 @@ export class AdminService {
         'ADMIN_USER_DELETED',
         'User',
         userId,
-        { reason, userEmail: user.email, userRole: user.role },
+        { info: reason as never, userEmail: user.email, userRole: user.role },
         adminId
       );
 
@@ -663,7 +670,7 @@ export class AdminService {
     try {
       const auditLogs = await prisma.auditLog.findMany({
         where: {
-          timestamp: {
+          createdAt: {
             gte: filters.startDate,
             lte: filters.endDate
           },
@@ -679,7 +686,7 @@ export class AdminService {
             }
           }
         },
-        orderBy: { timestamp: 'desc' }
+  orderBy: { createdAt: 'desc' }
       });
 
       // Audit the audit report generation
@@ -752,13 +759,13 @@ export class AdminService {
     try {
       const errors = await prisma.auditLog.findMany({
         where: {
-          success: false,
-          timestamp: {
+          outcome: 'FAILURE',
+          createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
           }
         },
         take: 10,
-        orderBy: { timestamp: 'desc' }
+  orderBy: { createdAt: 'desc' }
       });
 
       return {

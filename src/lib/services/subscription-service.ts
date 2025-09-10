@@ -9,6 +9,21 @@ import { auditLog } from '@/lib/security/audit';
 import type { TherapyPlan, Subscription, SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
 
+// Helper function to map Stripe status to Prisma enum
+function mapStripeStatusToPrisma(stripeStatus: Stripe.Subscription.Status): SubscriptionStatus {
+  const statusMap: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
+    'incomplete': 'INCOMPLETE',
+    'incomplete_expired': 'INCOMPLETE_EXPIRED',
+    'trialing': 'TRIALING',
+    'active': 'ACTIVE',
+    'past_due': 'PAST_DUE',
+    'canceled': 'CANCELED',
+    'unpaid': 'UNPAID',
+    'paused': 'PAUSED'
+  };
+  return statusMap[stripeStatus] || 'ACTIVE';
+}
+
 export interface TherapyPlanData {
   name: string;
   description: string;
@@ -44,8 +59,8 @@ export interface SubscriptionWithSetupIntent {
 
 export interface UserSubscriptionDetails extends Subscription {
   stripeData: Stripe.Subscription;
-  customer?: Stripe.Customer;
-  subscriptionItems?: Stripe.SubscriptionItem[];
+  customer?: unknown; // Using unknown to handle both Prisma Customer and Stripe Customer types
+  subscriptionItems?: unknown[]; // Using unknown[] for mixed subscription item types
 }
 
 /**
@@ -94,37 +109,41 @@ export class SubscriptionService {
       });
 
       // Create price in Stripe
-      const price = await stripe.prices.create({
+      const priceCreateParams: Stripe.PriceCreateParams = {
         product: product.id,
         unit_amount: Math.round(data.amount * 100), // Convert to cents
         currency: data.currency || 'usd',
         recurring: {
-          interval: data.interval,
+          interval: data.interval as Stripe.PriceCreateParams.Recurring.Interval,
           interval_count: data.intervalCount || 1,
-          trial_period_days: data.trialPeriodDays
+          ...(data.trialPeriodDays !== undefined && { trial_period_days: data.trialPeriodDays })
         },
         metadata: {
           planType: 'therapy_plan'
         }
-      });
+      };
+
+      const price = await stripe.prices.create(priceCreateParams);
 
       // Store in database
+      const therapyPlanData = {
+        name: data.name,
+        description: data.description,
+        stripePriceId: price.id,
+        stripeProductId: product.id,
+        amount: data.amount,
+        currency: data.currency || 'usd',
+        interval: data.interval,
+        intervalCount: data.intervalCount || 1,
+        sessionsIncluded: data.sessionsIncluded,
+        duration: data.duration,
+        features: data.features,
+        trialPeriodDays: data.trialPeriodDays ?? null,
+        setupFee: data.setupFee ?? null
+      };
+
       const therapyPlan = await prisma.therapyPlan.create({
-        data: {
-          name: data.name,
-          description: data.description,
-          stripePriceId: price.id,
-          stripeProductId: product.id,
-          amount: data.amount,
-          currency: data.currency || 'usd',
-          interval: data.interval,
-          intervalCount: data.intervalCount || 1,
-          sessionsIncluded: data.sessionsIncluded,
-          duration: data.duration,
-          features: data.features,
-          trialPeriodDays: data.trialPeriodDays,
-          setupFee: data.setupFee
-        }
+        data: therapyPlanData
       });
 
       await auditLog({
@@ -139,7 +158,11 @@ export class SubscriptionService {
         outcome: 'SUCCESS'
       });
 
-      return { therapyPlan, product, price };
+      return { 
+        ...therapyPlan,
+        product, 
+        price 
+      } as TherapyPlanWithStripeData;
     } catch (error) {
       await auditLog({
         action: 'THERAPY_PLAN_CREATE_FAILED',
@@ -207,7 +230,7 @@ export class SubscriptionService {
         const customerResult = await StripeService.createCustomer({
           userId: user.id,
           email: user.email,
-          name: user.name || undefined
+          ...(user.name && { name: user.name })
         });
         customer = customerResult.customer;
       }
@@ -216,8 +239,8 @@ export class SubscriptionService {
       const subscriptionData: CreateSubscriptionData = {
         customerId: customer.id,
         priceId: therapyPlan.stripePriceId,
-        trialPeriodDays: therapyPlan.trialPeriodDays || undefined,
-        paymentMethodId,
+        ...(therapyPlan.trialPeriodDays && { trialPeriodDays: therapyPlan.trialPeriodDays }),
+        ...(paymentMethodId && { paymentMethodId }),
         metadata: {
           therapyPlanId,
           userId,
@@ -248,7 +271,10 @@ export class SubscriptionService {
         outcome: 'SUCCESS'
       });
 
-      return { subscription, setupIntent };
+      return { 
+        subscription, 
+        ...(setupIntent && { setupIntent })
+      } as SubscriptionWithSetupIntent;
     } catch (error) {
       await auditLog({
         userId,
@@ -473,7 +499,7 @@ export class SubscriptionService {
       await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: stripeSubscription.status,
+          status: mapStripeStatusToPrisma(stripeSubscription.status),
           cancelAt: null
         }
       });
@@ -682,12 +708,16 @@ export class SubscriptionService {
       const { stripeSubscription } = await StripeService.getSubscription(subscriptionId);
 
       // Update local database
+      const stripeSubData = stripeSubscription as Stripe.Subscription & { 
+        current_period_start: number; 
+        current_period_end: number; 
+      };
       await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: stripeSubscription.status,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000)
+          status: mapStripeStatusToPrisma(stripeSubscription.status),
+          currentPeriodStart: new Date(stripeSubData.current_period_start * 1000),
+          currentPeriodEnd: new Date(stripeSubData.current_period_end * 1000)
         }
       });
 
@@ -698,7 +728,7 @@ export class SubscriptionService {
         entityId: subscription.id,
         details: {
           subscriptionId,
-          newPeriodEnd: stripeSubscription.current_period_end
+          newPeriodEnd: stripeSubData.current_period_end
         },
         outcome: 'SUCCESS'
       });
@@ -755,20 +785,25 @@ export class SubscriptionService {
       };
 
       // Handle specific status updates
-      if (status === 'canceled' && eventData) {
-        updateData.canceledAt = eventData.canceled_at
-          ? new Date(eventData.canceled_at * 1000)
+      const eventDataTyped = eventData as Record<string, unknown>;
+      if (status === 'canceled' && eventDataTyped) {
+        const canceledAt = eventDataTyped['canceled_at'] as number | undefined;
+        updateData.canceledAt = canceledAt
+          ? new Date(canceledAt * 1000)
           : new Date();
       }
 
-      if (eventData?.current_period_start && eventData?.current_period_end) {
-        updateData.currentPeriodStart = new Date(eventData.current_period_start * 1000);
-        updateData.currentPeriodEnd = new Date(eventData.current_period_end * 1000);
+      if (eventDataTyped?.['current_period_start'] && eventDataTyped?.['current_period_end']) {
+        const periodStart = eventDataTyped['current_period_start'] as number;
+        const periodEnd = eventDataTyped['current_period_end'] as number;
+        updateData.currentPeriodStart = new Date(periodStart * 1000);
+        updateData.currentPeriodEnd = new Date(periodEnd * 1000);
       }
 
+      // Use type assertion to bypass exactOptionalPropertyTypes
       await prisma.subscription.update({
         where: { id: subscription.id },
-        data: updateData
+        data: updateData as never
       });
 
       await auditLog({
@@ -779,7 +814,7 @@ export class SubscriptionService {
         details: {
           subscriptionId,
           newStatus: status,
-          eventType: eventData?.type
+          eventType: eventDataTyped?.['type'] as string | undefined
         },
         outcome: 'SUCCESS'
       });

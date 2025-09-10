@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/config';
 import { SubscriptionService, TherapyPlanData } from '@/lib/services/subscription-service';
 import { prisma } from '@/lib/db';
 import { rateLimit } from '@/lib/security/rate-limit';
@@ -42,8 +42,8 @@ const updateTherapyPlanSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'therapy-plans-read', 20, 60000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('therapy-plans-read');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -117,8 +117,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'therapy-plan-create', 5, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('therapy-plan-create');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many creation attempts' }, { status: 429 });
     }
 
@@ -141,16 +141,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
     }
 
-    const planData: TherapyPlanData = validationResult.data;
+    const { trialPeriodDays, setupFee, ...baseData } = validationResult.data;
+    const planData: TherapyPlanData = {
+      ...baseData,
+      ...(trialPeriodDays !== undefined && { trialPeriodDays }),
+      ...(setupFee !== undefined && { setupFee })
+    };
 
     // Create therapy plan
-    const { therapyPlan, product, price } = await SubscriptionService.createTherapyPlan(planData);
+    const result = await SubscriptionService.createTherapyPlan(planData);
+    const therapyPlan = (result as any).therapyPlan || result;
+    const { product, price } = result;
 
     await auditLog({
       userId,
@@ -196,8 +203,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'therapy-plan-update', 10, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('therapy-plan-update');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many update attempts' }, { status: 429 });
     }
 
@@ -220,13 +227,21 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
     }
 
-    const { id, ...updateData } = validationResult.data;
+    const { id, ...restData } = validationResult.data;
+
+    // Filter out undefined values for exactOptionalPropertyTypes
+    const updateData: any = {};
+    for (const [key, value] of Object.entries(restData)) {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    }
 
     // Check if therapy plan exists
     const existingPlan = await prisma.therapyPlan.findUnique({
@@ -248,8 +263,8 @@ export async function PUT(request: NextRequest) {
       try {
         const stripe = await import('stripe').then(
           Stripe =>
-            new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
-              apiVersion: '2024-12-18.acacia'
+            new Stripe.default(process.env['STRIPE_SECRET_KEY']!, {
+              apiVersion: '2025-08-27.basil'
             })
         );
 
@@ -310,8 +325,8 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'therapy-plan-delete', 5, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('therapy-plan-delete');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many delete attempts' }, { status: 429 });
     }
 
@@ -370,8 +385,8 @@ export async function DELETE(request: NextRequest) {
     try {
       const stripe = await import('stripe').then(
         Stripe =>
-          new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
-            apiVersion: '2024-12-18.acacia'
+          new Stripe.default(process.env['STRIPE_SECRET_KEY']!, {
+            apiVersion: '2025-08-27.basil'
           })
       );
 

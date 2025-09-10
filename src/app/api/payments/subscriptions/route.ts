@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/config';
 import { SubscriptionService } from '@/lib/services/subscription-service';
 import { rateLimit } from '@/lib/security/rate-limit';
 import { auditLog } from '@/lib/security/audit';
@@ -33,11 +33,11 @@ const cancelSubscriptionSchema = z.object({
  * GET /api/payments/subscriptions
  * Get user's current subscription
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'subscription-read', 10, 60000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('subscription-read');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -87,8 +87,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'subscription-create', 3, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('subscription-create');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many subscription attempts' }, { status: 429 });
     }
 
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
@@ -176,8 +176,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'subscription-update', 5, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('subscription-update');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many update attempts' }, { status: 429 });
     }
 
@@ -196,7 +196,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
@@ -253,8 +253,8 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, 'subscription-cancel', 3, 300000);
-    if (!rateLimitResult.success) {
+    const rateLimitResult = await rateLimit.check('subscription-cancel');
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Too many cancellation attempts' }, { status: 429 });
     }
 
@@ -273,7 +273,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
