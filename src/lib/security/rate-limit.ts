@@ -223,3 +223,6 @@ export const rateLimiters = {
 
 // Export default rate limiter instance for general use
 export const rateLimiter = rateLimiters.api;
+
+// Alias for backward compatibility
+export const rateLimit = rateLimiter;

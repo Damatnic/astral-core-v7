@@ -244,5 +244,4 @@ async function calculateVitalsStats(where: Record<string, unknown>) {
   }
 }
 
-// Export for other parts of the application
-export { calculateVitalsStats };
+// Helper function is only used internally in this route

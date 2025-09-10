@@ -39,3 +39,27 @@ export const SUCCESS_MESSAGES = {
   LOGIN: 'Login successful',
   LOGOUT: 'Logout successful'
 };
+
+export const ROUTES = {
+  auth: {
+    login: '/auth/login',
+    register: '/auth/register',
+    logout: '/auth/logout',
+    forgotPassword: '/auth/forgot-password',
+    resetPassword: '/auth/reset-password'
+  },
+  dashboard: {
+    home: '/dashboard',
+    profile: '/dashboard/profile',
+    settings: '/dashboard/settings'
+  },
+  wellness: {
+    home: '/wellness',
+    mood: '/wellness/mood',
+    journal: '/wellness/journal'
+  },
+  crisis: {
+    assessment: '/crisis/assessment',
+    resources: '/crisis/resources'
+  }
+};
