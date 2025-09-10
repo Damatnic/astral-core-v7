@@ -248,7 +248,7 @@ jobs:
           args: --severity-threshold=medium --file=Dockerfile
 
       - name: 'Run Anchore Grype Scan'
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v6
         id: grype-scan
         with:
           image: astral-core-v7:security-scan
