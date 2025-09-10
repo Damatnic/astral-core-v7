@@ -1,7 +1,7 @@
 # Astral Core v7 Multi-stage Docker Build
 # Optimized for production deployment with security best practices
 
-FROM node:18.17-alpine AS base
+FROM node:24.7-alpine AS base
 
 # Install security updates and required packages
 RUN apk update && apk upgrade && \
@@ -87,7 +87,7 @@ RUN npm run build && \
 # ============================================
 # Production stage
 # ============================================
-FROM node:18.17-alpine AS production
+FROM node:24.7-alpine AS production
 
 # Install security updates and minimal runtime dependencies
 RUN apk update && apk upgrade && \
