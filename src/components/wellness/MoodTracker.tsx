@@ -33,8 +33,8 @@ interface MoodStats {
 const MoodTracker: React.FC = () => {
   const [entries, setEntries] = useState<MoodEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<Partial<MoodEntry>>({
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0, 5),
+    date: new Date().toISOString().split('T')[0] || '',
+    time: new Date().toTimeString().slice(0, 5) || '',
     mood: 5,
     emotions: [],
     energy: 5,
@@ -197,8 +197,8 @@ const MoodTracker: React.FC = () => {
 
     // Reset form
     setCurrentEntry({
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().slice(0, 5),
+      date: new Date().toISOString().split('T')[0] || '',
+      time: new Date().toTimeString().slice(0, 5) || '',
       mood: 5,
       emotions: [],
       energy: 5,

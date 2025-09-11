@@ -59,7 +59,10 @@
       "Bash(del \"src\\app\\api\\appointments\\route.ts\")",
       "Bash(npm ci:*)",
       "Read(//h/**)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

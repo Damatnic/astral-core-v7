@@ -33,7 +33,7 @@ const JournalEntry: React.FC = () => {
   const [currentEntry, setCurrentEntry] = useState<Partial<JournalEntry>>({
     title: '',
     content: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0] || '',
     mood: 'neutral',
     tags: [],
     isPrivate: false,
@@ -182,7 +182,7 @@ const JournalEntry: React.FC = () => {
     setCurrentEntry({
       title: '',
       content: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split('T')[0] || '',
       mood: 'neutral',
       tags: [],
       isPrivate: false,
@@ -401,7 +401,7 @@ const JournalEntry: React.FC = () => {
                       setCurrentEntry({
                         title: '',
                         content: '',
-                        date: new Date().toISOString().split('T')[0],
+                        date: new Date().toISOString().split('T')[0] || '',
                         mood: 'neutral',
                         tags: [],
                         isPrivate: false,
@@ -548,7 +548,7 @@ const JournalEntry: React.FC = () => {
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-orange-600">
-                    {entries.filter(e => e.date === new Date().toISOString().split('T')[0]).length}
+                    {entries.filter(e => e.date === new Date().toISOString().split('T')[0] || '').length}
                   </p>
                   <p className="text-sm text-gray-600">Today's Entries</p>
                 </div>
