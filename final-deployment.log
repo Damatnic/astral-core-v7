@@ -1,0 +1,72 @@
+Vercel CLI 47.0.5
+Retrieving project…
+The `name` property in vercel.json is deprecated (https://vercel.link/name-prop)
+Deploying astral-productions/astral-core-v7
+Uploading [--------------------] (0.0B/65.9KB)
+Uploading [=======-------------] (26.1KB/65.9KB)
+Uploading [============--------] (41.0KB/65.9KB)
+Uploading [=================---] (57.0KB/65.9KB)
+Uploading [====================] (65.9KB/65.9KB)
+Inspect: https://vercel.com/astral-productions/astral-core-v7/Eysz1mLSBcrLwXzQvY7zBtmhAgfw [3s]
+Production: https://astral-core-v7-qdfot9s4y-astral-productions.vercel.app [3s]
+https://astral-core-v7-qdfot9s4y-astral-productions.vercel.appBuilding
+Building
+Error: Command "npm run build" exited with 1
+
+2025-09-11T20:16:40.028Z  Running build in Washington, D.C., USA (East) – iad1
+2025-09-11T20:16:40.029Z  Build machine configuration: 4 cores, 8 GB
+2025-09-11T20:16:40.043Z  Retrieving list of deployment files...
+2025-09-11T20:16:40.570Z  Downloading 265 deployment files...
+2025-09-11T20:16:41.745Z  Restored build cache from previous deployment (HarkwYRKmyR1kmLr5m1F5QuPYtDg)
+2025-09-11T20:16:43.013Z  Running "vercel build"
+2025-09-11T20:16:43.416Z  Vercel CLI 47.1.1
+2025-09-11T20:16:43.766Z  Running "install" command: `npm install`...
+2025-09-11T20:16:45.352Z  
+2025-09-11T20:16:45.352Z  > astral-core-v7@0.1.0 prepare
+2025-09-11T20:16:45.352Z  > node -e "if (process.env.NODE_ENV !== 'production' && !process.env.CI) { require('child_process').execSync('husky install', {stdio: 'inherit'}); }"
+2025-09-11T20:16:45.353Z  
+2025-09-11T20:16:45.402Z  
+2025-09-11T20:16:45.402Z  up to date, audited 254 packages in 1s
+2025-09-11T20:16:45.402Z  
+2025-09-11T20:16:45.402Z  42 packages are looking for funding
+2025-09-11T20:16:45.402Z    run `npm fund` for details
+2025-09-11T20:16:45.403Z  
+2025-09-11T20:16:45.403Z  found 0 vulnerabilities
+2025-09-11T20:16:45.436Z  Detected Next.js version: 15.5.2
+2025-09-11T20:16:45.436Z  Running "npm run build"
+2025-09-11T20:16:45.561Z  
+2025-09-11T20:16:45.561Z  > astral-core-v7@0.1.0 build
+2025-09-11T20:16:45.561Z  > npx prisma generate && next build
+2025-09-11T20:16:45.561Z  
+2025-09-11T20:16:47.487Z  Environment variables loaded from .env
+2025-09-11T20:16:47.488Z  Prisma schema loaded from prisma/schema.prisma
+2025-09-11T20:16:48.140Z  
+2025-09-11T20:16:48.140Z  ✔ Generated Prisma Client (v6.15.0) to ./node_modules/@prisma/client in 333ms
+2025-09-11T20:16:48.140Z  
+2025-09-11T20:16:48.140Z  Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+2025-09-11T20:16:48.140Z  
+2025-09-11T20:16:48.140Z  Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+2025-09-11T20:16:48.140Z  
+2025-09-11T20:16:48.913Z     ▲ Next.js 15.5.2
+2025-09-11T20:16:48.913Z     - Environments: .env.production, .env
+2025-09-11T20:16:48.913Z     - Experiments (use with caution):
+2025-09-11T20:16:48.913Z       ✓ forceSwcTransforms
+2025-09-11T20:16:48.914Z  
+2025-09-11T20:16:48.947Z     Creating an optimized production build ...
+2025-09-11T20:17:03.105Z   ✓ Compiled successfully in 13.6s
+2025-09-11T20:17:03.106Z     Skipping linting
+2025-09-11T20:17:03.107Z     Checking validity of types ...
+2025-09-11T20:17:18.251Z  Failed to compile.
+2025-09-11T20:17:18.251Z  
+2025-09-11T20:17:18.252Z  ./src/components/wellness/JournalEntry.tsx:252:9
+2025-09-11T20:17:18.252Z  Type error: 'addArrayItem' is declared but its value is never read.
+2025-09-11T20:17:18.252Z  
+2025-09-11T20:17:18.252Z  [0m [90m 250 |[39m   [36mconst[39m allTags [33m=[39m [33mArray[39m[33m.[39m[36mfrom[39m([36mnew[39m [33mSet[39m(entries[33m.[39mflatMap(entry [33m=>[39m entry[33m.[39mtags)))[33m;[39m
+2025-09-11T20:17:18.252Z   [90m 251 |[39m
+2025-09-11T20:17:18.252Z  [31m[1m>[22m[39m[90m 252 |[39m   [36mconst[39m addArrayItem [33m=[39m (field[33m:[39m [32m'gratitude'[39m [33m|[39m [32m'goals'[39m [33m|[39m [32m'challenges'[39m [33m|[39m [32m'achievements'[39m[33m,[39m value[33m:[39m string) [33m=>[39m {
+2025-09-11T20:17:18.252Z   [90m     |[39m         [31m[1m^[22m[39m
+2025-09-11T20:17:18.252Z   [90m 253 |[39m     [36mif[39m (value[33m.[39mtrim()) {
+2025-09-11T20:17:18.253Z   [90m 254 |[39m       [36mconst[39m currentArray [33m=[39m currentEntry[field] [33m||[39m [][33m;[39m
+2025-09-11T20:17:18.253Z   [90m 255 |[39m       setCurrentEntry(prev [33m=>[39m ({[0m
+2025-09-11T20:17:18.301Z  Next.js build worker exited with code: 1 and signal: null
+2025-09-11T20:17:18.356Z  Error: Command "npm run build" exited with 1

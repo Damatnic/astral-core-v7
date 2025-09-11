@@ -249,16 +249,6 @@ const JournalEntry: React.FC = () => {
 
   const allTags = Array.from(new Set(entries.flatMap(entry => entry.tags)));
 
-  const addArrayItem = (field: 'gratitude' | 'goals' | 'challenges' | 'achievements', value: string) => {
-    if (value.trim()) {
-      const currentArray = currentEntry[field] || [];
-      setCurrentEntry(prev => ({
-        ...prev,
-        [field]: [...currentArray, value.trim()]
-      }));
-    }
-  };
-
   const removeArrayItem = (field: 'gratitude' | 'goals' | 'challenges' | 'achievements', index: number) => {
     const currentArray = currentEntry[field] || [];
     setCurrentEntry(prev => ({
