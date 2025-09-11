@@ -183,7 +183,7 @@ export const createAuth0Provider = (config?: Partial<Auth0Config>) => {
       url: `https://${auth0Config.domain}/authorize`,
       params: {
         scope: 'openid email profile',
-        audience: auth0Config.audience,
+        ...(auth0Config.audience && { audience: auth0Config.audience }),
         prompt: 'consent',
         response_type: 'code',
       },
