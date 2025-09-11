@@ -1,247 +1,225 @@
 /**
- * Accessibility Utilities
- * Comprehensive utilities for WCAG 2.1 AA compliance and enhanced accessibility
+ * Accessibility utilities for WCAG 2.1 AA compliance
  */
 
-import { useRef, useEffect, useCallback } from 'react';
-
-// WCAG 2.1 AA color contrast ratios
-export const COLOR_CONTRAST = {
-  NORMAL_TEXT: 4.5,
-  LARGE_TEXT: 3,
-  GRAPHICAL_OBJECTS: 3,
-  UI_COMPONENTS: 3
-} as const;
-
 /**
- * Calculate relative luminance of a color
- * Used for contrast ratio calculations per WCAG guidelines
- */
-export function getRelativeLuminance(color: string): number {
-  // Convert hex to RGB
-  const hex = color.replace('#', '');
-  const r = parseInt(hex.substr(0, 2), 16) / 255;
-  const g = parseInt(hex.substr(2, 2), 16) / 255;
-  const b = parseInt(hex.substr(4, 2), 16) / 255;
-
-  // Apply gamma correction
-  const toLinear = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  
-  const rLinear = toLinear(r);
-  const gLinear = toLinear(g);
-  const bLinear = toLinear(b);
-
-  // Calculate relative luminance
-  return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
-}
-
-/**
- * Calculate contrast ratio between two colors
- * Returns ratio between 1 and 21 (higher is better contrast)
+ * Calculate color contrast ratio between two colors
+ * @param color1 - First color in hex format
+ * @param color2 - Second color in hex format
+ * @returns Contrast ratio
  */
 export function getContrastRatio(color1: string, color2: string): number {
-  const luminance1 = getRelativeLuminance(color1);
-  const luminance2 = getRelativeLuminance(color2);
+  const rgb1 = hexToRgb(color1);
+  const rgb2 = hexToRgb(color2);
   
-  const lighter = Math.max(luminance1, luminance2);
-  const darker = Math.min(luminance1, luminance2);
+  if (!rgb1 || !rgb2) return 1;
+  
+  const l1 = getRelativeLuminance(rgb1);
+  const l2 = getRelativeLuminance(rgb2);
+  
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
   
   return (lighter + 0.05) / (darker + 0.05);
 }
 
 /**
- * Check if color combination meets WCAG contrast requirements
+ * Check if contrast meets WCAG AA standards
+ * @param ratio - Contrast ratio
+ * @param largeText - Whether the text is large (18pt+ or 14pt+ bold)
+ * @returns Whether the contrast meets AA standards
  */
-export function meetsContrastRequirement(
-  foreground: string,
-  background: string,
-  level: 'AA' | 'AAA' = 'AA',
-  isLargeText = false
-): boolean {
-  const ratio = getContrastRatio(foreground, background);
-  
-  if (level === 'AAA') {
-    return isLargeText ? ratio >= 4.5 : ratio >= 7;
-  }
-  
-  return isLargeText ? ratio >= COLOR_CONTRAST.LARGE_TEXT : ratio >= COLOR_CONTRAST.NORMAL_TEXT;
+export function meetsWCAGAA(ratio: number, largeText = false): boolean {
+  return largeText ? ratio >= 3 : ratio >= 4.5;
 }
 
 /**
- * Generate accessible color suggestions
+ * Check if contrast meets WCAG AAA standards
+ * @param ratio - Contrast ratio
+ * @param largeText - Whether the text is large (18pt+ or 14pt+ bold)
+ * @returns Whether the contrast meets AAA standards
  */
-export function getAccessibleColorSuggestions(
-  baseColor: string,
-  targetBackground: string,
-  level: 'AA' | 'AAA' = 'AA'
-): string[] {
-  const suggestions: string[] = [];
-  const targetRatio = level === 'AAA' ? 7 : 4.5;
-  
-  // This is a simplified implementation - in production you'd want more sophisticated color generation
-  const variations = ['#000000', '#333333', '#666666', '#ffffff', '#f5f5f5'];
-  
-  variations.forEach(color => {
-    if (meetsContrastRequirement(color, targetBackground, level)) {
-      suggestions.push(color);
-    }
-  });
-  
-  return suggestions;
+export function meetsWCAGAAA(ratio: number, largeText = false): boolean {
+  return largeText ? ratio >= 4.5 : ratio >= 7;
 }
 
 /**
- * Generate unique ID for accessibility purposes
+ * Convert hex color to RGB
+ * @param hex - Hex color string
+ * @returns RGB values or null if invalid
  */
-export function generateA11yId(prefix = 'a11y'): string {
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
+/**
+ * Get relative luminance of RGB color
+ * @param rgb - RGB color values
+ * @returns Relative luminance
+ */
+function getRelativeLuminance(rgb: { r: number; g: number; b: number }): number {
+  const { r, g, b } = rgb;
+  
+  const rsRGB = r / 255;
+  const gsRGB = g / 255;
+  const bsRGB = b / 255;
+  
+  const rL = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+  const gL = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+  const bL = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+  
+  return 0.2126 * rL + 0.7152 * gL + 0.0722 * bL;
+}
+
+/**
+ * Get ARIA attributes for form controls
+ * @param props - Input properties
+ * @returns ARIA attributes
+ */
+export function getAriaAttributes(props: {
+  error?: string;
+  required?: boolean;
+  disabled?: boolean;
+  description?: string;
+  id?: string;
+}) {
+  const { error, required, disabled, description, id } = props;
+  
+  return {
+    'aria-invalid': error ? 'true' : undefined,
+    'aria-required': required ? 'true' : undefined,
+    'aria-disabled': disabled ? 'true' : undefined,
+    'aria-describedby': description && id ? `${id}-description` : undefined,
+    'aria-errormessage': error && id ? `${id}-error` : undefined,
+  };
+}
+
+/**
+ * Generate unique ID for accessibility
+ * @param prefix - Prefix for the ID
+ * @returns Unique ID
+ */
+export function generateId(prefix = 'a11y'): string {
   return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**
- * Check if element is focusable
+ * Check if user prefers reduced motion
+ * @returns Whether reduced motion is preferred
  */
-export function isFocusable(element: HTMLElement): boolean {
-  if (element.tabIndex < 0) return false;
-  if (element.hasAttribute('disabled')) return false;
-  if (element.hasAttribute('aria-hidden') && element.getAttribute('aria-hidden') === 'true') return false;
-  
-  const focusableSelectors = [
-    'a[href]',
-    'button:not([disabled])',
-    'input:not([disabled])',
-    'select:not([disabled])',
-    'textarea:not([disabled])',
-    '[tabindex]:not([tabindex="-1"])',
-    '[contenteditable="true"]'
-  ];
-  
-  return focusableSelectors.some(selector => element.matches(selector));
+export function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**
- * Get all focusable elements within a container
+ * Get keyboard navigation attributes
+ * @param role - Element role
+ * @param selected - Whether element is selected
+ * @returns Keyboard navigation attributes
  */
-export function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  const selector = [
-    'a[href]:not([tabindex="-1"])',
-    'button:not([disabled]):not([tabindex="-1"])',
-    'input:not([disabled]):not([tabindex="-1"])',
-    'select:not([disabled]):not([tabindex="-1"])',
-    'textarea:not([disabled]):not([tabindex="-1"])',
-    '[tabindex]:not([tabindex="-1"])',
-    '[contenteditable="true"]:not([tabindex="-1"])'
-  ].join(',');
+export function getKeyboardNavigationAttributes(role: string, selected?: boolean) {
+  const attrs: Record<string, string | undefined> = {
+    role,
+    tabIndex: '0',
+  };
   
-  return Array.from(container.querySelectorAll(selector)) as HTMLElement[];
+  if (selected !== undefined) {
+    attrs['aria-selected'] = selected ? 'true' : 'false';
+  }
+  
+  return attrs;
+}
+
+/**
+ * Format text for screen readers
+ * @param text - Text to format
+ * @param type - Type of formatting
+ * @returns Formatted text
+ */
+export function formatForScreenReader(text: string, type: 'date' | 'time' | 'number' | 'currency' = 'number'): string {
+  switch (type) {
+    case 'date':
+      return new Date(text).toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    case 'time':
+      return new Date(text).toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: 'numeric' 
+      });
+    case 'currency':
+      return `${text} dollars`;
+    case 'number':
+    default:
+      return text.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+}
+
+/**
+ * Trap focus within an element
+ * @param element - Element to trap focus in
+ * @returns Cleanup function
+ */
+export function trapFocus(element: HTMLElement): () => void {
+  const focusableElements = element.querySelectorAll(
+    'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+  );
+  
+  const firstFocusable = focusableElements[0] as HTMLElement;
+  const lastFocusable = focusableElements[focusableElements.length - 1] as HTMLElement;
+  
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== 'Tab') return;
+    
+    if (e.shiftKey) {
+      if (document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable?.focus();
+      }
+    } else {
+      if (document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable?.focus();
+      }
+    }
+  };
+  
+  element.addEventListener('keydown', handleKeyDown);
+  firstFocusable?.focus();
+  
+  return () => {
+    element.removeEventListener('keydown', handleKeyDown);
+  };
 }
 
 /**
  * Announce message to screen readers
+ * @param message - Message to announce
+ * @param priority - Priority level (polite or assertive)
  */
-export function announce(message: string, priority: 'polite' | 'assertive' = 'polite'): void {
-  const announcer = document.getElementById('announcements') || createAnnouncerElement();
+export function announceToScreenReader(message: string, priority: 'polite' | 'assertive' = 'polite'): void {
+  if (typeof document === 'undefined') return;
   
-  // Clear previous message and set new one
-  announcer.textContent = '';
-  announcer.setAttribute('aria-live', priority);
+  const announcement = document.createElement('div');
+  announcement.setAttribute('aria-live', priority);
+  announcement.setAttribute('aria-atomic', 'true');
+  announcement.setAttribute('class', 'sr-only');
+  announcement.textContent = message;
   
-  // Use setTimeout to ensure screen readers pick up the change
+  document.body.appendChild(announcement);
+  
   setTimeout(() => {
-    announcer.textContent = message;
-  }, 100);
-  
-  // Clear the message after it's been announced
-  setTimeout(() => {
-    announcer.textContent = '';
+    document.body.removeChild(announcement);
   }, 1000);
-}
-
-/**
- * Create announcer element if it doesn't exist
- */
-function createAnnouncerElement(): HTMLElement {
-  const announcer = document.createElement('div');
-  announcer.id = 'announcements';
-  announcer.className = 'sr-only';
-  announcer.setAttribute('aria-live', 'polite');
-  announcer.setAttribute('aria-atomic', 'true');
-  document.body.appendChild(announcer);
-  return announcer;
-}
-
-/**
- * Keyboard navigation constants
- */
-export const KEYBOARD_KEYS = {
-  ARROW_UP: 'ArrowUp',
-  ARROW_DOWN: 'ArrowDown',
-  ARROW_LEFT: 'ArrowLeft',
-  ARROW_RIGHT: 'ArrowRight',
-  ENTER: 'Enter',
-  ESCAPE: 'Escape',
-  SPACE: ' ',
-  TAB: 'Tab',
-  HOME: 'Home',
-  END: 'End',
-  PAGE_UP: 'PageUp',
-  PAGE_DOWN: 'PageDown'
-} as const;
-
-/**
- * Mental health specific accessibility considerations
- */
-export const MENTAL_HEALTH_A11Y = {
-  // Reduced motion preferences for anxiety/seizure disorders
-  PREFERS_REDUCED_MOTION: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  
-  // High contrast for visual impairments
-  PREFERS_HIGH_CONTRAST: window.matchMedia('(prefers-contrast: high)').matches,
-  
-  // Recommended focus timeout for mental health apps (longer than typical)
-  FOCUS_TIMEOUT: 30000, // 30 seconds
-  
-  // Calming color palette recommendations
-  CALMING_COLORS: {
-    primary: '#4A90E2',
-    secondary: '#7ED321',
-    background: '#F8F9FA',
-    text: '#2C3E50'
-  },
-  
-  // Crisis-safe colors (avoiding triggering reds)
-  CRISIS_SAFE_COLORS: {
-    warning: '#F39C12',
-    info: '#3498DB',
-    success: '#27AE60'
-  }
-} as const;
-
-/**
- * Validation for mental health form inputs
- */
-export function validateSensitiveInput(value: string, type: 'mood' | 'crisis' | 'general'): {
-  isValid: boolean;
-  suggestions: string[];
-} {
-  const suggestions: string[] = [];
-  
-  // Check for crisis indicators
-  const crisisKeywords = ['hurt', 'harm', 'end it all', 'suicide', 'kill'];
-  const hasCrisisIndicators = crisisKeywords.some(keyword => 
-    value.toLowerCase().includes(keyword)
-  );
-  
-  if (hasCrisisIndicators && type !== 'crisis') {
-    suggestions.push('This content may indicate you need immediate support. Consider contacting a crisis helpline.');
-  }
-  
-  // Encourage positive framing without censoring
-  if (type === 'mood' && value.length > 10) {
-    suggestions.push('Consider adding what helped or what you\'re grateful for today.');
-  }
-  
-  return {
-    isValid: !hasCrisisIndicators || type === 'crisis',
-    suggestions
-  };
 }
