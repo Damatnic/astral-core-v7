@@ -79,7 +79,6 @@ class PreloadingService {
             () => import('@/components/AnalyticsDashboard')
           ],
           onIdle: [
-            () => import('@/components/billing/BillingDashboard'),
             () => import('@/components/performance/PerformanceDashboard'),
             () => import('@/components/performance/DatabaseMonitor')
           ],
@@ -88,8 +87,8 @@ class PreloadingService {
             () => import('@/components/performance/WebVitalsMonitor')
           ],
           onUserIntent: [
-            () => import('@/components/billing/PaymentHistory'),
-            () => import('@/components/billing/SubscriptionManager')
+            () => import('@/components/admin/UserManagement'),
+            () => import('@/components/admin/SystemSettings')
           ]
         };
 
@@ -101,15 +100,16 @@ class PreloadingService {
             () => import('@/components/dashboards/TherapistDashboard')
           ],
           onIdle: [
-            () => import('@/components/billing/AppointmentPayment'),
-            () => import('@/components/FileUpload')
+            () => import('@/components/FileUpload'),
+            () => import('@/components/appointments/AppointmentScheduler')
           ],
           onVisible: [
             () => import('@/components/NotificationBell'),
             () => import('@/components/PresenceIndicator')
           ],
           onUserIntent: [
-            () => import('@/components/billing/PaymentMethods')
+            () => import('@/components/therapy/TherapyNotes'),
+            () => import('@/components/appointments/AppointmentHistory')
           ]
         };
 
@@ -128,8 +128,8 @@ class PreloadingService {
             () => import('@/components/PresenceIndicator')
           ],
           onUserIntent: [
-            () => import('@/components/billing/PaymentForm'),
-            () => import('@/components/billing/PaymentMethods')
+            () => import('@/components/wellness/MoodTracker'),
+            () => import('@/components/wellness/JournalEntry')
           ]
         };
 
@@ -255,9 +255,6 @@ class PreloadingService {
       '/dashboard': [
         () => import('@/components/dashboards/lazy')
       ],
-      '/billing': [
-        () => import('@/components/billing/lazy')
-      ],
       '/analytics': [
         () => import('@/components/lazy/AnalyticsLazy')
       ],
@@ -289,11 +286,6 @@ class PreloadingService {
     // Preload components for frequent features
     frequentFeatures.forEach(feature => {
       switch (feature) {
-        case 'billing':
-          this.executePreloads([
-            () => import('@/components/billing/lazy')
-          ]);
-          break;
         case 'analytics':
           this.executePreloads([
             () => import('@/components/lazy/AnalyticsLazy')
