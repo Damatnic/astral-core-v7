@@ -16,7 +16,7 @@ interface User {
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [_selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Placeholder for user data loading
