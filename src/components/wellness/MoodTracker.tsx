@@ -63,12 +63,6 @@ const MoodTracker: React.FC = () => {
     'grateful', 'irritated', 'confident', 'fearful', 'relaxed'
   ];
 
-  const commonTriggers = [
-    'work stress', 'relationships', 'health issues', 'financial concerns',
-    'family issues', 'sleep problems', 'social situations', 'weather',
-    'medication changes', 'hormonal changes', 'major life events'
-  ];
-
   const commonActivities = [
     'exercise', 'meditation', 'socializing', 'reading', 'music',
     'art/crafts', 'outdoor activities', 'therapy session', 'journaling',
