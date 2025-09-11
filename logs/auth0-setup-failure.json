@@ -1,0 +1,381 @@
+{
+  "timestamp": "2025-09-11T23:01:20.072Z",
+  "success": false,
+  "error": "HTTP 403: {\"error\":\"unauthorized_client\",\"error_description\":\"Grant type 'client_credentials' not allowed for the client.\",\"error_uri\":\"https://auth0.com/docs/clients/client-grant-types\"}",
+  "stack": "Error: HTTP 403: {\"error\":\"unauthorized_client\",\"error_description\":\"Grant type 'client_credentials' not allowed for the client.\",\"error_uri\":\"https://auth0.com/docs/clients/client-grant-types\"}\n    at IncomingMessage.<anonymous> (H:\\Astral Core\\astral-core-v7\\scripts\\auth0-management-api.js:102:22)\n    at IncomingMessage.emit (node:events:530:35)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)",
+  "duration": 7421,
+  "steps": [
+    {
+      "name": "Pre-flight checks",
+      "success": true,
+      "duration": 405,
+      "result": {
+        "nodeVersion": "v22.17.0",
+        "workingDirectory": "H:\\Astral Core\\astral-core-v7",
+        "logDirectory": "H:\\Astral Core\\astral-core-v7\\logs",
+        "networkConnectivity": true,
+        "auth0Connectivity": true
+      }
+    },
+    {
+      "name": "URL Detection",
+      "success": true,
+      "duration": 1565,
+      "result": {
+        "timestamp": "2025-09-11T23:01:14.620Z",
+        "projectName": "astral-core-v7",
+        "detection": {
+          "urls": [
+            "https://astral-core-v7.vercel.app",
+            "https://astral-core-v7-git-main.vercel.app",
+            "https://astral-core-v7-git-master.vercel.app",
+            "https://astral-core-v7-git-production.vercel.app",
+            "https://astral-core-v7-team.vercel.app",
+            "https://astral-core-v7-prod.vercel.app",
+            "https://astral-core.vercel.app",
+            "https://astral-core-git-main.vercel.app",
+            "https://astral-core-git-master.vercel.app",
+            "https://astral-core-git-production.vercel.app",
+            "https://astral-core-team.vercel.app",
+            "https://astral-core-prod.vercel.app",
+            "https://astralcore.vercel.app",
+            "https://astralcore-git-main.vercel.app",
+            "https://astralcore-git-master.vercel.app",
+            "https://astralcore-git-production.vercel.app",
+            "https://astralcore-team.vercel.app",
+            "https://astralcore-prod.vercel.app",
+            "https://mental-health-platform.vercel.app",
+            "https://mental-health-platform-git-main.vercel.app",
+            "https://mental-health-platform-git-master.vercel.app",
+            "https://mental-health-platform-git-production.vercel.app",
+            "https://mental-health-platform-team.vercel.app",
+            "https://mental-health-platform-prod.vercel.app",
+            "https://astral-core-v7-ixslsqyy1-astral-productions.vercel.app",
+            "https://astral-core-v7-qdfot9s4y-astral-productions.vercel.app"
+          ],
+          "strategies": [
+            {
+              "strategy": 1,
+              "urls": [],
+              "success": false
+            },
+            {
+              "strategy": 2,
+              "urls": [
+                "https://astral-core-v7.vercel.app",
+                "https://astral-core-v7-git-main.vercel.app",
+                "https://astral-core-v7-git-master.vercel.app"
+              ],
+              "success": true
+            },
+            {
+              "strategy": 3,
+              "urls": [
+                "https://astral-core-v7.vercel.app",
+                "https://astral-core-v7-git-main.vercel.app",
+                "https://astral-core-v7-git-master.vercel.app"
+              ],
+              "success": true
+            },
+            {
+              "strategy": 4,
+              "urls": [
+                "https://astral-core-v7.vercel.app",
+                "https://astral-core-v7-git-main.vercel.app",
+                "https://astral-core-v7-git-master.vercel.app",
+                "https://astral-core-v7-git-production.vercel.app",
+                "https://astral-core-v7-team.vercel.app",
+                "https://astral-core-v7-prod.vercel.app",
+                "https://astral-core.vercel.app",
+                "https://astral-core-git-main.vercel.app",
+                "https://astral-core-git-master.vercel.app",
+                "https://astral-core-git-production.vercel.app",
+                "https://astral-core-team.vercel.app",
+                "https://astral-core-prod.vercel.app",
+                "https://astralcore.vercel.app",
+                "https://astralcore-git-main.vercel.app",
+                "https://astralcore-git-master.vercel.app",
+                "https://astralcore-git-production.vercel.app",
+                "https://astralcore-team.vercel.app",
+                "https://astralcore-prod.vercel.app",
+                "https://mental-health-platform.vercel.app",
+                "https://mental-health-platform-git-main.vercel.app",
+                "https://mental-health-platform-git-master.vercel.app",
+                "https://mental-health-platform-git-production.vercel.app",
+                "https://mental-health-platform-team.vercel.app",
+                "https://mental-health-platform-prod.vercel.app"
+              ],
+              "success": true
+            },
+            {
+              "strategy": 5,
+              "urls": [],
+              "success": false
+            },
+            {
+              "strategy": 6,
+              "urls": [
+                "https://astral-core-v7-ixslsqyy1-astral-productions.vercel.app",
+                "https://astral-core-v7-qdfot9s4y-astral-productions.vercel.app"
+              ],
+              "success": true
+            }
+          ],
+          "summary": {
+            "total": 26,
+            "successful_strategies": 4,
+            "failed_strategies": 2
+          }
+        },
+        "validation": {
+          "valid": [
+            "https://astral-core-v7.vercel.app"
+          ],
+          "invalid": [
+            "https://astral-core-v7-git-main.vercel.app",
+            "https://astral-core-v7-git-master.vercel.app",
+            "https://astral-core-v7-git-production.vercel.app",
+            "https://astral-core-v7-team.vercel.app",
+            "https://astral-core-v7-prod.vercel.app",
+            "https://astral-core.vercel.app",
+            "https://astral-core-git-main.vercel.app",
+            "https://astral-core-git-master.vercel.app",
+            "https://astral-core-git-production.vercel.app",
+            "https://astral-core-team.vercel.app",
+            "https://astral-core-prod.vercel.app",
+            "https://astralcore.vercel.app",
+            "https://astralcore-git-main.vercel.app",
+            "https://astralcore-git-master.vercel.app",
+            "https://astralcore-git-production.vercel.app",
+            "https://astralcore-team.vercel.app",
+            "https://astralcore-prod.vercel.app",
+            "https://mental-health-platform.vercel.app",
+            "https://mental-health-platform-git-main.vercel.app",
+            "https://mental-health-platform-git-master.vercel.app",
+            "https://mental-health-platform-git-production.vercel.app",
+            "https://mental-health-platform-team.vercel.app",
+            "https://mental-health-platform-prod.vercel.app",
+            "https://astral-core-v7-ixslsqyy1-astral-productions.vercel.app",
+            "https://astral-core-v7-qdfot9s4y-astral-productions.vercel.app"
+          ],
+          "results": [
+            {
+              "url": "https://astral-core-v7.vercel.app",
+              "accessible": true,
+              "statusCode": 307,
+              "responseTime": 1757631673585
+            },
+            {
+              "url": "https://astral-core-v7-git-main.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673555
+            },
+            {
+              "url": "https://astral-core-v7-git-master.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631674455
+            },
+            {
+              "url": "https://astral-core-v7-git-production.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631674214
+            },
+            {
+              "url": "https://astral-core-v7-team.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673610
+            },
+            {
+              "url": "https://astral-core-v7-prod.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673620
+            },
+            {
+              "url": "https://astral-core.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673629
+            },
+            {
+              "url": "https://astral-core-git-main.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631674380
+            },
+            {
+              "url": "https://astral-core-git-master.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673669
+            },
+            {
+              "url": "https://astral-core-git-production.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673744
+            },
+            {
+              "url": "https://astral-core-team.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631674454
+            },
+            {
+              "url": "https://astral-core-prod.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673817
+            },
+            {
+              "url": "https://astralcore.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673750
+            },
+            {
+              "url": "https://astralcore-git-main.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631674196
+            },
+            {
+              "url": "https://astralcore-git-master.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673782
+            },
+            {
+              "url": "https://astralcore-git-production.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673804
+            },
+            {
+              "url": "https://astralcore-team.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673826
+            },
+            {
+              "url": "https://astralcore-prod.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673862
+            },
+            {
+              "url": "https://mental-health-platform.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631674219
+            },
+            {
+              "url": "https://mental-health-platform-git-main.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673875
+            },
+            {
+              "url": "https://mental-health-platform-git-master.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631674619
+            },
+            {
+              "url": "https://mental-health-platform-git-production.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673951
+            },
+            {
+              "url": "https://mental-health-platform-team.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673988
+            },
+            {
+              "url": "https://mental-health-platform-prod.vercel.app",
+              "accessible": false,
+              "statusCode": 404,
+              "responseTime": 1757631673990
+            },
+            {
+              "url": "https://astral-core-v7-ixslsqyy1-astral-productions.vercel.app",
+              "accessible": false,
+              "statusCode": 401,
+              "responseTime": 1757631674167
+            },
+            {
+              "url": "https://astral-core-v7-qdfot9s4y-astral-productions.vercel.app",
+              "accessible": false,
+              "statusCode": 401,
+              "responseTime": 1757631674225
+            }
+          ]
+        },
+        "callbackConfig": {
+          "callbacks": [
+            "https://astral-core-v7.vercel.app/api/auth/callback/auth0",
+            "https://astral-core-v7.vercel.app/api/auth/callback",
+            "http://localhost:3000/api/auth/callback/auth0",
+            "http://localhost:3000/api/auth/callback",
+            "http://localhost:3001/api/auth/callback/auth0",
+            "http://localhost:3001/api/auth/callback",
+            "http://127.0.0.1:3000/api/auth/callback/auth0",
+            "http://127.0.0.1:3000/api/auth/callback"
+          ],
+          "logoutUrls": [
+            "https://astral-core-v7.vercel.app",
+            "https://astral-core-v7.vercel.app/",
+            "https://astral-core-v7.vercel.app/login",
+            "https://astral-core-v7.vercel.app/auth/logout",
+            "http://localhost:3000",
+            "http://localhost:3000/",
+            "http://localhost:3000/login",
+            "http://localhost:3001",
+            "http://localhost:3001/",
+            "http://localhost:3001/login",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3000/",
+            "http://127.0.0.1:3000/login"
+          ],
+          "webOrigins": [
+            "https://astral-core-v7.vercel.app",
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3000"
+          ],
+          "allowedOrigins": [
+            "https://astral-core-v7.vercel.app",
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3000"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Configuration Backup",
+      "success": true,
+      "duration": 14,
+      "result": "H:\\Astral Core\\astral-core-v7\\logs\\backups\\pre-setup-backup-1757631674636.json"
+    },
+    {
+      "name": "Auth0 Configuration",
+      "success": false,
+      "duration": 5434,
+      "error": "HTTP 403: {\"error\":\"unauthorized_client\",\"error_description\":\"Grant type 'client_credentials' not allowed for the client.\",\"error_uri\":\"https://auth0.com/docs/clients/client-grant-types\"}"
+    }
+  ],
+  "troubleshooting": [
+    "Check network connectivity",
+    "Verify Auth0 credentials",
+    "Ensure Management API permissions",
+    "Check Auth0 service status",
+    "Review detailed logs"
+  ]
+}

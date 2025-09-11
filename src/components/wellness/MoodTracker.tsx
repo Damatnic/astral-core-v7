@@ -33,7 +33,7 @@ interface MoodStats {
 const MoodTracker: React.FC = () => {
   const [entries, setEntries] = useState<MoodEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<Partial<MoodEntry>>({
-    date: new Date().toISOString().split('T')[0] || '',
+    date: new Date().toISOString().split('T')[0] ?? '',
     time: new Date().toTimeString().slice(0, 5) || '',
     mood: 5,
     emotions: [],
@@ -61,12 +61,6 @@ const MoodTracker: React.FC = () => {
     'happy', 'sad', 'anxious', 'calm', 'angry', 'frustrated', 'excited', 
     'peaceful', 'worried', 'content', 'overwhelmed', 'hopeful', 'lonely', 
     'grateful', 'irritated', 'confident', 'fearful', 'relaxed'
-  ];
-
-  const commonActivities = [
-    'exercise', 'meditation', 'socializing', 'reading', 'music',
-    'art/crafts', 'outdoor activities', 'therapy session', 'journaling',
-    'cooking', 'gaming', 'watching movies', 'shopping', 'cleaning'
   ];
 
   useEffect(() => {
@@ -153,7 +147,11 @@ const MoodTracker: React.FC = () => {
     const today = new Date();
     
     for (let i = 0; i < sortedDates.length; i++) {
-      const entryDate = new Date(sortedDates[i]);
+      const dateString = sortedDates[i];
+      // TypeScript strict null check: ensure dateString exists before proceeding
+      if (!dateString) continue;
+      
+      const entryDate = new Date(dateString);
       const expectedDate = new Date(today);
       expectedDate.setDate(today.getDate() - i);
       
@@ -191,7 +189,7 @@ const MoodTracker: React.FC = () => {
 
     // Reset form
     setCurrentEntry({
-      date: new Date().toISOString().split('T')[0] || '',
+      date: new Date().toISOString().split('T')[0] ?? '',
       time: new Date().toTimeString().slice(0, 5) || '',
       mood: 5,
       emotions: [],

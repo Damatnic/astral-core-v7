@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Simplified middleware to fix deployment issues
-export function middleware(request: NextRequest) {
+export function middleware(_request: NextRequest) {
   // For now, just pass through all requests
   // This allows the deployment to succeed
   return NextResponse.next();

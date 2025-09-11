@@ -34,7 +34,8 @@ const TherapyNotes: React.FC = () => {
   const [filterClient, setFilterClient] = useState('');
   const [newNote, setNewNote] = useState<Partial<TherapyNote>>({
     clientId: '',
-    sessionDate: new Date().toISOString().split('T')[0] || '',
+    // TypeScript strict null check: ensure sessionDate is never undefined
+    sessionDate: new Date().toISOString().split('T')[0] ?? new Date().toISOString().substring(0, 10),
     sessionTime: new Date().toTimeString().slice(0, 5) || '',
     duration: 60,
     sessionType: 'individual',
@@ -130,7 +131,8 @@ const TherapyNotes: React.FC = () => {
     // Reset form
     setNewNote({
       clientId: '',
-      sessionDate: new Date().toISOString().split('T')[0] || '',
+      // TypeScript strict null check: ensure sessionDate is never undefined
+      sessionDate: new Date().toISOString().split('T')[0] ?? new Date().toISOString().substring(0, 10),
       sessionTime: new Date().toTimeString().slice(0, 5) || '',
       duration: 60,
       sessionType: 'individual',
@@ -446,7 +448,8 @@ const TherapyNotes: React.FC = () => {
                       setSelectedNote(null);
                       setNewNote({
                         clientId: '',
-                        sessionDate: new Date().toISOString().split('T')[0] || '',
+                        // TypeScript strict null check: ensure sessionDate is never undefined
+                        sessionDate: new Date().toISOString().split('T')[0] ?? new Date().toISOString().substring(0, 10),
                         sessionTime: new Date().toTimeString().slice(0, 5) || '',
                         duration: 60,
                         sessionType: 'individual',

@@ -1,0 +1,67 @@
+[2025-09-11T21:22:08.077Z] [INFO] === Auth0 Verification System Initialized ===
+[2025-09-11T21:22:08.081Z] [INFO] Target Application: https://astral-core-v7-55voj7wz3-astral-productions.vercel.app
+[2025-09-11T21:22:08.086Z] [INFO] Auth0 Domain: dev-ac3ajs327vs5vzhk.us.auth0.com
+[2025-09-11T21:22:08.090Z] [INFO] Client ID: uGv7ns4HVxnKn5ofBdnaKqCKue1JUvZG
+[2025-09-11T21:22:08.094Z] [INFO] Start Time: 2025-09-11T21:22:08.077Z
+[2025-09-11T21:22:08.098Z] [INFO] Starting comprehensive Auth0 verification...
+[2025-09-11T21:22:08.103Z] [INFO] Initializing verification agents...
+[2025-09-11T21:22:08.109Z] [INFO] Created agent script: auth0-environment-cleanup-agent.js
+[2025-09-11T21:22:08.115Z] [INFO] Created agent script: auth0-config-presence-agent.js
+[2025-09-11T21:22:08.121Z] [INFO] Created agent script: auth0-multi-profile-agent.js
+[2025-09-11T21:22:08.128Z] [INFO] Created agent script: auth0-redirect-callback-agent.js
+[2025-09-11T21:22:08.134Z] [INFO] Created agent script: auth0-cors-cookie-agent.js
+[2025-09-11T21:22:08.141Z] [INFO] Created agent script: auth0-documentation-agent.js
+[2025-09-11T21:22:08.145Z] [INFO] Initialized 6 verification agents
+[2025-09-11T21:22:08.149Z] [INFO] Starting agent: Environment Cleanup Agent
+[2025-09-11T21:22:08.159Z] [INFO] Starting agent: Script & Config Presence Agent
+[2025-09-11T21:22:08.168Z] [INFO] Starting agent: Multi-Profile Login Flow Agent
+[2025-09-11T21:22:08.177Z] [INFO] Starting agent: Redirect & Callback Validation Agent
+[2025-09-11T21:22:08.186Z] [INFO] Starting agent: CORS and Cookie Interference Agent
+[2025-09-11T21:22:08.195Z] [INFO] Starting agent: Documentation and Result Aggregation Agent
+[2025-09-11T21:22:08.205Z] [INFO] Agent completed successfully: Environment Cleanup Agent
+[2025-09-11T21:22:08.212Z] [INFO] Agent completed successfully: Multi-Profile Login Flow Agent
+[2025-09-11T21:22:08.233Z] [ERROR] Agent failed: Documentation and Result Aggregation Agent (exit code: 1)
+[2025-09-11T21:22:08.237Z] [ERROR] Error output: H:\Astral Core\astral-core-v7\scripts\auth0-documentation-agent.js:62
+In your Auth0 dashboard (`https://${domain}`), ensure the following settings:
+                          ^^^^^
+
+SyntaxError: Unexpected identifier 'https'
+    at wrapSafe (node:internal/modules/cjs/loader:1662:18)
+    at Module._compile (node:internal/modules/cjs/loader:1704:20)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)
+    at Function._load (node:internal/modules/cjs/loader:1282:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.17.0
+
+[2025-09-11T21:22:08.423Z] [ERROR] Agent failed: Script & Config Presence Agent (exit code: 1)
+[2025-09-11T21:22:08.425Z] [ERROR] Error output: ❌ Config presence validation failed: Auth0 domain returned status: 404
+
+[2025-09-11T21:22:08.548Z] [INFO] Agent completed successfully: Redirect & Callback Validation Agent
+[2025-09-11T21:22:08.837Z] [INFO] Agent completed successfully: CORS and Cookie Interference Agent
+[2025-09-11T21:22:08.842Z] [INFO] Processing agent results...
+[2025-09-11T21:22:08.846Z] [INFO] ✅ Environment Cleanup Agent: PASSED
+[2025-09-11T21:22:08.850Z] [INFO] ❌ Script & Config Presence Agent: FAILED
+[2025-09-11T21:22:08.855Z] [INFO] ✅ Multi-Profile Login Flow Agent: PASSED
+[2025-09-11T21:22:08.859Z] [INFO] ✅ Redirect & Callback Validation Agent: PASSED
+[2025-09-11T21:22:08.863Z] [INFO] ✅ CORS and Cookie Interference Agent: PASSED
+[2025-09-11T21:22:08.865Z] [INFO] ❌ Documentation and Result Aggregation Agent: FAILED
+[2025-09-11T21:22:08.866Z] [INFO] 
+=== Verification Summary ===
+[2025-09-11T21:22:08.868Z] [INFO] Total Agents: 6
+[2025-09-11T21:22:08.869Z] [INFO] Successful: 4
+[2025-09-11T21:22:08.870Z] [INFO] Failed: 2
+[2025-09-11T21:22:08.872Z] [INFO] Success Rate: 66.7%
+[2025-09-11T21:22:08.874Z] [INFO] Generating comprehensive verification report...
+[2025-09-11T21:22:08.877Z] [INFO] Comprehensive report generated: H:\Astral Core\astral-core-v7\AUTH0_VERIFICATION_REPORT.md
+[2025-09-11T21:22:08.881Z] [INFO] === Auth0 Verification Complete ===
+[2025-09-11T21:27:08.168Z] [WARNING] Agent timeout: Environment Cleanup Agent
+[2025-09-11T21:27:08.172Z] [WARNING] Agent timeout: Script & Config Presence Agent
+[2025-09-11T21:27:08.184Z] [WARNING] Agent timeout: Multi-Profile Login Flow Agent
+[2025-09-11T21:27:08.188Z] [WARNING] Agent timeout: Redirect & Callback Validation Agent
+[2025-09-11T21:27:08.200Z] [WARNING] Agent timeout: CORS and Cookie Interference Agent
+[2025-09-11T21:27:08.204Z] [WARNING] Agent timeout: Documentation and Result Aggregation Agent

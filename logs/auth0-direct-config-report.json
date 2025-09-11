@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-09-11T23:36:19.992Z",
+  "domain": "dev-ac3ajs327vs5vzhk.us.auth0.com",
+  "clientId": "7ivKaost2wsuV47x6dAyj11Eo7jpcctX",
+  "configuration": {
+    "name": "Astral Core v7 (Direct Config)",
+    "app_type": "spa",
+    "callbacks_count": 11,
+    "logout_urls_count": 12,
+    "web_origins_count": 4,
+    "grant_types": [
+      "authorization_code",
+      "refresh_token"
+    ],
+    "token_endpoint_auth_method": "none",
+    "oidc_conformant": true,
+    "cross_origin_auth": true
+  },
+  "urls": {
+    "production": "https://astral-core-v7.vercel.app",
+    "login": "https://astral-core-v7.vercel.app/api/auth/login",
+    "callback": "https://astral-core-v7.vercel.app/api/auth/callback/auth0"
+  }
+}
