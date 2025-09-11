@@ -14,11 +14,11 @@ interface SkipNavigationProps {
   links?: Array<{
     href: string;
     label: string;
-  }>;
+  }> | undefined;
   /**
    * Additional class names
    */
-  className?: string;
+  className?: string | undefined;
 }
 
 const defaultLinks = [
@@ -30,7 +30,7 @@ const defaultLinks = [
 
 export function SkipNavigation({ 
   links = defaultLinks, 
-  className,
+  className = '',
   ...props 
 }: SkipNavigationProps & React.HTMLAttributes<HTMLDivElement>) {
   return (

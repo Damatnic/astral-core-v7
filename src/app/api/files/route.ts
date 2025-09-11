@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     
     // Find the most recent file modification date
     const lastModified = result.files?.length > 0 
-      ? new Date(Math.max(...result.files.map((file: any) => new Date(file.updatedAt).getTime())))
+      ? new Date(Math.max(...result.files.map((file: { uploadedAt: Date }) => file.uploadedAt.getTime())))
       : new Date();
 
     // Check for conditional requests

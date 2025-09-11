@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
-import { logInfo, logError } from '@/lib/logger';
+import prisma from '@/lib/db/prisma';
+import { logInfo, logError, toError } from '@/lib/logger';
 
 /**
  * Health Check API Endpoint
@@ -12,7 +12,7 @@ interface HealthCheckResult {
   service: string;
   status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' | 'UNKNOWN';
   responseTime: number;
-  details?: any;
+  details?: Record<string, unknown>;
   error?: string;
 }
 
@@ -119,8 +119,8 @@ export async function GET(request: NextRequest) {
                 service: check.service,
                 status: check.status,
                 responseTime: check.responseTime,
-                details: check.details ? JSON.stringify(check.details) : null,
-                errorMessage: check.error || null,
+                ...(check.details && { details: JSON.stringify(check.details) }),
+                ...(check.error && { errorMessage: check.error }),
                 metadata: JSON.stringify({
                   overallStatus,
                   environment: process.env['NODE_ENV'],
@@ -131,9 +131,7 @@ export async function GET(request: NextRequest) {
           )
         );
       } catch (dbError) {
-        logError('Failed to store health check results', 'HealthCheck', {
-          error: dbError instanceof Error ? dbError.message : 'Unknown error'
-        });
+        logError('Failed to store health check results', toError(dbError), 'HealthCheck');
       }
     }
 
@@ -156,8 +154,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    logError('Health check failed', 'HealthCheck', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+    logError('Health check failed', toError(error), 'HealthCheck', {
       duration: Date.now() - startTime
     });
 
@@ -198,7 +195,7 @@ async function checkDatabase(): Promise<HealthCheckResult> {
   
   try {
     // Simple query to test database connectivity
-    const result = await prisma.$queryRaw`SELECT 1 as health_check`;
+    await prisma.$queryRaw`SELECT 1 as health_check`;
     const responseTime = Date.now() - startTime;
 
     // Additional database health metrics

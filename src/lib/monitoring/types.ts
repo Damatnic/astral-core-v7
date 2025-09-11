@@ -14,7 +14,7 @@ export interface LogEntry {
   sessionId: string;
   userAgent?: string;
   url?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   stack?: string;
   fingerprint?: string; // For error deduplication
   environment: string;
@@ -41,7 +41,7 @@ export interface PerformanceMetric {
   duration: number;
   startTime: number;
   endTime: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   userId?: string;
   sessionId: string;
   url?: string;
@@ -81,7 +81,7 @@ export interface UserActivityMetric {
   element?: string;
   value?: string | number;
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   url?: string;
   route?: string;
 }
@@ -95,7 +95,7 @@ export interface HealthMetric {
   value?: number;
   scale?: string; // e.g., "1-10", "likert-5"
   category?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   tags?: string[];
   isPrivate: boolean; // Extra privacy protection for mental health data
   encrypted?: boolean;
@@ -122,7 +122,7 @@ export interface SecurityEvent {
   sessionId: string;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   blocked: boolean;
   environment: string;
 }
@@ -241,7 +241,7 @@ export interface MonitoringAlert {
   title: string;
   description: string;
   metrics?: Record<string, number>;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   resolved: boolean;
   resolvedAt?: number;
   resolvedBy?: string;
@@ -356,6 +356,6 @@ export interface EventPayload {
   timestamp: number;
   userId?: string;
   sessionId: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   sensitive?: boolean; // Flag for mental health sensitive data
 }

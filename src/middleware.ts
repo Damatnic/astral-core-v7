@@ -149,7 +149,7 @@ export async function middleware(request: NextRequest) {
     try {
       const { headers: csrfHeaders } = generateCSRFToken(
         token.id as string,
-        token.sessionId as string
+        token['sessionId'] as string
       );
       
       // Add CSRF token to response headers

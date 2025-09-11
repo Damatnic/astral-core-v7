@@ -64,7 +64,7 @@ jest.mock('stripe', () => {
 });
 
 jest.mock('@/lib/db/prisma', () => ({
-  default: require('../../mocks/prisma').mockPrisma
+  default: mockPrisma
 }));
 
 jest.mock('@/lib/security/encryption', () => ({

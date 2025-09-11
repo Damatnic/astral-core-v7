@@ -5,6 +5,7 @@
  * This script clears existing demo accounts and creates fresh ones with complete data
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 

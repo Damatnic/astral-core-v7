@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/db/prisma';
 import { logInfo } from '@/lib/logger';
 
 /**
@@ -47,7 +47,7 @@ interface PublicIncident {
 }
 
 // GET: Public status information
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const startTime = Date.now();
 
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
         name: monitor.name,
         status: serviceStatus,
         description: getServiceDescription(monitor.name),
-        lastIncident: hasActiveIncident ? monitor.incidents[0].startTime.toISOString() : undefined
+        lastIncident: hasActiveIncident ? monitor.incidents[0]!.startTime.toISOString() : ''
       };
     });
 
@@ -175,24 +175,32 @@ export async function GET(request: NextRequest) {
 
     // Format incidents for public consumption
     const publicIncidents: PublicIncident[] = [...activeIncidents, ...recentIncidents]
-      .map(incident => ({
-        id: incident.id,
-        title: incident.title,
-        status: incident.status,
-        severity: incident.severity,
-        startTime: incident.startTime.toISOString(),
-        endTime: incident.endTime?.toISOString(),
-        lastUpdate: incident.statusUpdates && (incident.statusUpdates as any[]).length > 0 
-          ? (incident.statusUpdates as any[])[(incident.statusUpdates as any[]).length - 1].timestamp
-          : incident.startTime.toISOString(),
-        affectedServices: incident.affectedServices,
-        updates: incident.statusUpdates 
-          ? (incident.statusUpdates as any[]).map((update: any) => ({
-              timestamp: update.timestamp,
-              message: update.message
-            }))
-          : []
-      }))
+      .map(incident => {
+        const publicIncident: PublicIncident = {
+          id: incident.id,
+          title: incident.title,
+          status: incident.status,
+          severity: incident.severity,
+          startTime: incident.startTime.toISOString(),
+          lastUpdate: incident.statusUpdates && (incident.statusUpdates as Array<{ timestamp: string; message: string; author: string }>).length > 0 
+            ? (incident.statusUpdates as Array<{ timestamp: string; message: string; author: string }>)[(incident.statusUpdates as Array<{ timestamp: string; message: string; author: string }>).length - 1]!.timestamp
+            : incident.startTime.toISOString(),
+          affectedServices: incident.affectedServices,
+          updates: incident.statusUpdates 
+            ? (incident.statusUpdates as Array<{ timestamp: string; message: string; author: string }>).map((update: { timestamp: string; message: string; author: string }) => ({
+                timestamp: update.timestamp,
+                message: update.message
+              }))
+            : []
+        };
+        
+        // Add endTime only if it exists
+        if (incident.endTime) {
+          publicIncident.endTime = incident.endTime.toISOString();
+        }
+        
+        return publicIncident;
+      })
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
     const statusData: StatusPageData = {
@@ -220,7 +228,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch {
     const errorResponse = {
       status: 'MAJOR_OUTAGE' as const,
       lastUpdated: new Date().toISOString(),
@@ -274,10 +282,8 @@ function getServiceDescription(serviceName: string): string {
 }
 
 // Helper function to calculate uptime statistics
-function calculateUptimeStats(monitors: any[]) {
+function calculateUptimeStats(monitors: Array<{ uptime?: number }>) {
   // Simplified calculation - in production, you'd query actual uptime data
-  const now = Date.now();
-  const day = 24 * 60 * 60 * 1000;
   
   // Simulate uptime calculations based on monitor data
   const avgUptime24h = monitors.length > 0 
@@ -292,10 +298,10 @@ function calculateUptimeStats(monitors: any[]) {
 }
 
 // Helper function to calculate response time statistics
-function calculateResponseTimeStats(monitors: any[]) {
+function calculateResponseTimeStats(monitors: Array<{ lastResponseTime?: number | null }>) {
   const responseTimes = monitors
-    .filter(m => m.lastResponseTime)
-    .map(m => m.lastResponseTime);
+    .filter(m => m.lastResponseTime !== null && m.lastResponseTime !== undefined)
+    .map(m => m.lastResponseTime!);
 
   if (responseTimes.length === 0) {
     return { average: 0, p95: 0 };
@@ -304,7 +310,7 @@ function calculateResponseTimeStats(monitors: any[]) {
   const sorted = responseTimes.sort((a: number, b: number) => a - b);
   const average = responseTimes.reduce((sum: number, time: number) => sum + time, 0) / responseTimes.length;
   const p95Index = Math.floor(sorted.length * 0.95);
-  const p95 = sorted[p95Index] || sorted[sorted.length - 1];
+  const p95 = sorted[p95Index] || sorted[sorted.length - 1] || 0;
 
   return {
     average: Math.round(average),

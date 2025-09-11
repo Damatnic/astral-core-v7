@@ -3,11 +3,10 @@
  * Cleans up test environment and resources
  */
 
-import { FullConfig } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-async function globalTeardown(config: FullConfig) {
+async function globalTeardown() {
   console.log('Starting global teardown...');
   
   // Clean up authentication state files

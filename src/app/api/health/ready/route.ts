@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
+import prisma from '@/lib/db/prisma';
 
 /**
  * Readiness Probe Endpoint
@@ -17,7 +17,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         status: 'not ready',

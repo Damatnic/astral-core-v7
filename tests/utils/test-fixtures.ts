@@ -432,7 +432,6 @@ export const generateJournalEntry = (overrides: Partial<JournalEntry> = {}): Jou
 
 // Helper functions for test data
 export const createTestUser = (role: User['role'] = 'CLIENT'): User => {
-  const baseUser = mockUsers[role.toLowerCase() as keyof typeof mockUsers] || mockUsers.client;
   return generateUser({ role });
 };
 

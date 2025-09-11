@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { 
   LogEntry, 
   LogLevel, 
@@ -306,9 +308,9 @@ export class Logger {
       message,
       category,
       sessionId: getSessionId(),
-      url: typeof window !== 'undefined' ? window.location.href : undefined,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      metadata,
+      ...(typeof window !== 'undefined' && { url: window.location.href }),
+      ...(typeof navigator !== 'undefined' && { userAgent: navigator.userAgent }),
+      ...(metadata !== undefined && { metadata }),
       environment: this.config.environment,
       version: this.config.version
     };
@@ -334,15 +336,15 @@ export class Logger {
       timestamp: Date.now(),
       name: error.name,
       message: error.message,
-      stack: error.stack,
+      ...(error.stack && { stack: error.stack }),
       fingerprint,
       occurences: currentCount + 1,
       severity: this.determineErrorSeverity(error, context),
       category: this.determineErrorCategory(error, context),
-      userId: context?.userId,
+      ...(context?.['userId'] && { userId: context['userId'] }),
       sessionId: getSessionId(),
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      url: typeof window !== 'undefined' ? window.location.href : undefined,
+      ...(typeof navigator !== 'undefined' && { userAgent: navigator.userAgent }),
+      ...(typeof window !== 'undefined' && { url: window.location.href }),
       environment: this.config.environment,
       resolved: false,
       ...context
@@ -361,10 +363,10 @@ export class Logger {
       duration,
       startTime: Date.now() - duration,
       endTime: Date.now(),
-      metadata,
+      ...(metadata !== undefined && { metadata }),
       sessionId: getSessionId(),
-      url: typeof window !== 'undefined' ? window.location.href : undefined,
-      route: metadata?.route || window.location.pathname
+      ...(typeof window !== 'undefined' && { url: window.location.href }),
+      ...(metadata?.['route'] ? { route: metadata['route'] } : typeof window !== 'undefined' ? { route: window.location.pathname } : {})
     };
     
     this.addToBuffer(metric);
@@ -384,9 +386,9 @@ export class Logger {
       sessionId: getSessionId(),
       action,
       category: this.determineActivityCategory(action),
-      metadata,
-      url: typeof window !== 'undefined' ? window.location.href : undefined,
-      route: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      ...(metadata !== undefined && { metadata }),
+      ...(typeof window !== 'undefined' && { url: window.location.href }),
+      ...(typeof window !== 'undefined' && { route: window.location.pathname }),
       ...metadata
     };
     
@@ -401,8 +403,8 @@ export class Logger {
       timestamp: Date.now(),
       sessionId: getSessionId(),
       type,
-      value,
-      metadata,
+      ...(value !== undefined && { value }),
+      ...(metadata !== undefined && { metadata }),
       isPrivate: true, // Always private for mental health data
       encrypted: this.config.healthMetrics.encryptSensitiveData,
       ...metadata
@@ -420,7 +422,7 @@ export class Logger {
       type,
       severity,
       sessionId: getSessionId(),
-      metadata,
+      ...(metadata !== undefined && { metadata }),
       blocked: false,
       environment: this.config.environment,
       ...metadata
@@ -446,7 +448,7 @@ export class Logger {
   }
 
   private determineErrorSeverity(error: Error, context?: Record<string, any>): ErrorMetric['severity'] {
-    if (context?.severity) return context.severity;
+    if (context?.['severity']) return context['severity'];
     
     // Crisis-related errors are always critical
     if (error.message.toLowerCase().includes('crisis') || 
@@ -466,7 +468,7 @@ export class Logger {
   }
 
   private determineErrorCategory(error: Error, context?: Record<string, any>): ErrorMetric['category'] {
-    if (context?.category) return context.category;
+    if (context?.['category']) return context['category'];
     
     if (error.message.includes('fetch') || error.message.includes('network')) {
       return 'network';

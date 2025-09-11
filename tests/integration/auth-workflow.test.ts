@@ -3,23 +3,15 @@
  * Tests complete authentication flows end-to-end
  */
 
-import { describe, test, expect, jest, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import { setupIntegrationTests, teardownIntegrationTests, getTestPrisma } from '../setup/integration-setup';
-import { mockUsers, mockProfiles } from '../utils/test-fixtures';
-import { createMockRequest, createMockResponse } from '../utils/test-helpers';
+import { mockUsers } from '../utils/test-fixtures';
 
 // Import the actual API handlers
 // These would be the actual imports in a real implementation
-const mockAuthHandlers = {
-  register: jest.fn(),
-  login: jest.fn(),
-  logout: jest.fn(),
-  mfaSetup: jest.fn(),
-  mfaVerify: jest.fn()
-};
 
 describe('Authentication Workflow Integration Tests', () => {
-  let prisma: any;
+  let prisma: ReturnType<typeof getTestPrisma>;
 
   beforeAll(async () => {
     await setupIntegrationTests();
@@ -209,7 +201,7 @@ describe('Authentication Workflow Integration Tests', () => {
       for (let i = 1; i <= maxAttempts; i++) {
         currentAttempts++;
         
-        const updateData: any = { loginAttempts: currentAttempts };
+        const updateData: { loginAttempts: number; lockedUntil?: Date } = { loginAttempts: currentAttempts };
         
         // Lock account on max attempts
         if (currentAttempts >= maxAttempts) {
@@ -340,13 +332,6 @@ describe('Authentication Workflow Integration Tests', () => {
       });
 
       // In real implementation, sessions would be handled by NextAuth
-      // Here we simulate session creation
-      const sessionData = {
-        userId: user.id,
-        sessionToken: 'session_token_123',
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-      };
-
       // Simulate session lookup
       const userWithSession = await prisma.user.findUnique({
         where: { id: user.id },
@@ -365,7 +350,7 @@ describe('Authentication Workflow Integration Tests', () => {
 
     test('should handle session expiration', async () => {
       // Arrange
-      const user = await prisma.user.create({
+      await prisma.user.create({
         data: {
           ...mockUsers.client,
           id: 'expired_session_123',
@@ -533,7 +518,7 @@ describe('Authentication Workflow Integration Tests', () => {
       });
 
       // Simulate concurrent failed login attempts
-      const promises = Array.from({ length: 3 }, async (_, index) => {
+      const promises = Array.from({ length: 3 }, async () => {
         const currentUser = await prisma.user.findUnique({
           where: { id: user.id }
         });

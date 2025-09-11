@@ -3,6 +3,8 @@
  * Configures database, authentication, and external services for integration testing
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { PrismaClient } from '@prisma/client';
 import { setupTestEnvironment } from '../utils/test-helpers';
 import { mockUsers, mockProfiles, cleanupTestData } from '../utils/test-fixtures';

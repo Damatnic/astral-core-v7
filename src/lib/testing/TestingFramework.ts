@@ -1,6 +1,8 @@
 // Comprehensive Testing Framework for Mental Health Platform
 // Includes accessibility testing, performance testing, and mental health specific validations
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export interface TestConfig {
   accessibility: {
     enabled: boolean;
@@ -215,7 +217,7 @@ export class TestingFramework {
         mentalHealthSpecific: true,
         test: async () => {
           const crisisButtons = document.querySelectorAll('[data-crisis], [aria-label*="crisis"], [aria-label*="emergency"]');
-          let accessibilityIssues: string[] = [];
+          const accessibilityIssues: string[] = [];
 
           crisisButtons.forEach((button, index) => {
             // Check if focusable
@@ -276,12 +278,11 @@ export class TestingFramework {
           // This would require a more sophisticated color contrast calculation
           // For now, we'll check for common issues
           const textElements = document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, button, a');
-          let contrastIssues: string[] = [];
+          const contrastIssues: string[] = [];
 
           textElements.forEach((element, index) => {
             const styles = getComputedStyle(element);
             const color = styles.color;
-            const backgroundColor = styles.backgroundColor;
             
             // Basic check for transparent or very light text
             if (color.includes('rgba') && color.includes('0)')) {
@@ -377,7 +378,10 @@ export class TestingFramework {
           cookies.forEach(cookie => {
             const trimmed = cookie.trim();
             if (trimmed && !trimmed.includes('Secure') && !trimmed.includes('SameSite')) {
-              insecureCookies.push(trimmed.split('=')[0]);
+              const cookieName = trimmed.split('=')[0];
+              if (cookieName) {
+                insecureCookies.push(cookieName);
+              }
             }
           });
 
@@ -517,7 +521,7 @@ export class TestingFramework {
 
           if (hasServiceWorker) {
             try {
-              const registration = await navigator.serviceWorker.ready;
+              await navigator.serviceWorker.ready;
               const cache = await caches.open('astral-core-v7');
               const cachedUrls = await cache.keys();
               
@@ -525,7 +529,7 @@ export class TestingFramework {
                 request.url.includes('emergency') || 
                 request.url.includes('crisis')
               );
-            } catch (error) {
+            } catch {
               // Service worker might not be available
             }
           }
@@ -731,33 +735,9 @@ export class TestingFramework {
       let fid: number | null = null;
       let cls: number = 0;
 
-      // LCP Observer
-      new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        lcp = entries[entries.length - 1].startTime;
-        this.checkAndResolveVitals();
-      }).observe({ entryTypes: ['largest-contentful-paint'] });
-
-      // FID Observer
-      new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        fid = (entries[0] as any).processingStart - entries[0].startTime;
-        this.checkAndResolveVitals();
-      }).observe({ entryTypes: ['first-input'] });
-
-      // CLS Observer
-      new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            cls += (entry as any).value;
-          }
-        }
-        this.checkAndResolveVitals();
-      }).observe({ entryTypes: ['layout-shift'] });
-
       const checkAndResolveVitals = () => {
         const thresholds = this.config.performance.vitalsThresholds;
-        let issues: string[] = [];
+        const issues: string[] = [];
 
         if (lcp !== null && lcp > thresholds.poor.lcp) {
           issues.push(`LCP (${lcp}ms) exceeds threshold`);
@@ -769,21 +749,62 @@ export class TestingFramework {
           issues.push(`CLS (${cls}) exceeds threshold`);
         }
 
-        resolve({
-          id: this.generateId(),
-          timestamp: Date.now(),
-          type: 'performance',
-          category: 'performance',
-          status: issues.length === 0 ? 'passed' : 'failed',
-          title: 'Web Vitals Performance',
-          description: issues.length === 0 ? 'All Web Vitals within thresholds' : issues.join(', '),
-          severity: 'major',
-          impact: 'Poor Web Vitals affect user experience and SEO',
-          fix: 'Optimize images, reduce JavaScript execution time, stabilize layout',
-          metadata: { lcp, fid, cls },
-          duration: 0
-        });
+        if (lcp !== null || fid !== null || cls > 0) {
+          resolve({
+            id: this.generateId(),
+            timestamp: Date.now(),
+            type: 'performance',
+            category: 'performance',
+            status: issues.length === 0 ? 'passed' : 'failed',
+            title: 'Web Vitals Performance',
+            description: issues.length === 0 ? 'All Web Vitals within thresholds' : issues.join(', '),
+            severity: 'major',
+            impact: 'Poor Web Vitals impact user experience and SEO',
+            fix: 'Optimize LCP, FID, and CLS metrics',
+            metadata: {
+              lcp: lcp || 0,
+              fid: fid || 0,
+              cls,
+              thresholds
+            },
+            duration: 0
+          });
+        }
       };
+
+      // LCP Observer
+      new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        if (entries.length > 0) {
+          const lastEntry = entries[entries.length - 1];
+          if (lastEntry) {
+            lcp = lastEntry.startTime;
+            checkAndResolveVitals();
+          }
+        }
+      }).observe({ entryTypes: ['largest-contentful-paint'] });
+
+      // FID Observer
+      new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        if (entries.length > 0) {
+          const firstEntry = entries[0];
+          if (firstEntry) {
+            fid = (firstEntry as any).processingStart - firstEntry.startTime;
+            checkAndResolveVitals();
+          }
+        }
+      }).observe({ entryTypes: ['first-input'] });
+
+      // CLS Observer
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (!(entry as any).hadRecentInput) {
+            cls += (entry as any).value;
+          }
+        }
+        checkAndResolveVitals();
+      }).observe({ entryTypes: ['layout-shift'] });
 
       // Fallback timeout
       setTimeout(checkAndResolveVitals, 10000);
@@ -852,7 +873,7 @@ export class TestingFramework {
         } else {
           failures.push(`${resource} returned ${response.status}`);
         }
-      } catch (error) {
+      } catch {
         failures.push(`${resource} failed to load`);
       }
     }

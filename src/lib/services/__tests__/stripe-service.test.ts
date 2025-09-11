@@ -441,7 +441,7 @@ describe('StripeService', () => {
       mockPrisma.subscription.update.mockResolvedValue(subscription);
 
       // Act
-      const result = await StripeService.cancelSubscription(subscriptionId, true);
+      await StripeService.cancelSubscription(subscriptionId, true);
 
       // Assert
       expect(mockStripe.subscriptions.update).toHaveBeenCalledWith(

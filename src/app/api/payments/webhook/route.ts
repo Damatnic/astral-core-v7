@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     let event: Stripe.Event;
     try {
       event = StripeService.constructWebhookEvent(body, signature);
-    } catch (err) {
+    } catch {
       await auditLog({
         action: 'STRIPE_WEBHOOK_ERROR',
         entity: 'WebhookEvent',

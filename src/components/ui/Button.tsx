@@ -136,7 +136,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             if (e.key === ' ' || e.key === 'Enter') {
               e.preventDefault();
               if (!disabled && !isLoading && props.onClick) {
-                props.onClick(e as any);
+                props.onClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
               }
             }
             props.onKeyDown?.(e);

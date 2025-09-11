@@ -6,6 +6,7 @@
  * Generates WebP and AVIF versions for better performance
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');

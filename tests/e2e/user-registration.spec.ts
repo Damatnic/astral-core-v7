@@ -4,7 +4,6 @@
  */
 
 import { test, expect } from '../setup/e2e-setup';
-import { LoginPage, DashboardPage } from '../setup/e2e-setup';
 
 test.describe('User Registration Flow', () => {
   test('should register new client user successfully', async ({ page }) => {
@@ -162,7 +161,7 @@ test.describe('User Registration Flow', () => {
 
     // Form should remember values (if implemented)
     // Note: This would require local storage or session storage implementation
-    const savedEmail = await page.inputValue('[data-testid="email-input"]');
+    await page.inputValue('[data-testid="email-input"]');
     // In a real implementation, this might be saved in localStorage
     // expect(savedEmail).toBe('partial@example.com');
   });

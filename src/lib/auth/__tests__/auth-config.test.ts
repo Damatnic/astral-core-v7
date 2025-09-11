@@ -3,6 +3,8 @@
  * Tests the NextAuth configuration and authentication flows
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { describe, test, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { compare } from 'bcryptjs';
 import { authOptions } from '../config';

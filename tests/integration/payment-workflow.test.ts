@@ -3,12 +3,12 @@
  * Tests complete payment processing flows including Stripe integration
  */
 
-import { describe, test, expect, jest, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import { setupIntegrationTests, teardownIntegrationTests, getTestPrisma, mockExternalServices } from '../setup/integration-setup';
-import { mockCustomer, mockSubscription, mockPayment, mockUsers } from '../utils/test-fixtures';
+import { mockCustomer, mockUsers } from '../utils/test-fixtures';
 
 describe('Payment Workflow Integration Tests', () => {
-  let prisma: any;
+  let prisma: ReturnType<typeof getTestPrisma>;
 
   beforeAll(async () => {
     await setupIntegrationTests();
@@ -572,7 +572,7 @@ describe('Payment Workflow Integration Tests', () => {
       });
 
       // Create multiple payments
-      const payments = await Promise.all([
+      await Promise.all([
         prisma.payment.create({
           data: {
             customerId: customer.id,
@@ -656,7 +656,7 @@ describe('Payment Workflow Integration Tests', () => {
       });
 
       // Act - Try to create duplicate payment
-      const payment1 = await prisma.payment.create({
+      await prisma.payment.create({
         data: {
           customerId: customer.id,
           stripePaymentIntentId: 'pi_duplicate123',

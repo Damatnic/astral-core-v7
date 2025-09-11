@@ -7,7 +7,7 @@ import { POST as CreatePaymentPOST } from '@/app/api/payments/sessions/route';
 import { POST as CreateSubscriptionPOST } from '@/app/api/payments/therapy-plans/route';
 import { POST as WebhookPOST } from '@/app/api/payments/webhook/route';
 import { mockPrisma, resetPrismaMocks } from '../../mocks/prisma';
-import { createMockRequest, createMockUser } from '../../utils/test-helpers';
+import { createMockRequest } from '../../utils/test-helpers';
 
 // Mock Stripe with comprehensive functionality
 const mockStripe = {
@@ -64,7 +64,7 @@ jest.mock('stripe', () => {
 });
 
 jest.mock('@/lib/db/prisma', () => ({
-  default: require('../../mocks/prisma').mockPrisma
+  default: mockPrisma
 }));
 
 jest.mock('next-auth', () => ({
@@ -254,7 +254,7 @@ describe('Comprehensive Payment Processing', () => {
       });
 
       // Assuming we have a setup intent endpoint
-      const response = await CreatePaymentPOST(request); // Would be different endpoint in real app
+      await CreatePaymentPOST(request); // Would be different endpoint in real app
 
       expect(mockStripe.setupIntents.create).toHaveBeenCalledWith({
         customer: 'cus_stripe123',
@@ -457,7 +457,7 @@ describe('Comprehensive Payment Processing', () => {
       });
 
       // Assuming we have a refund endpoint
-      const response = await CreatePaymentPOST(request); // Would be different endpoint
+      await CreatePaymentPOST(request); // Would be different endpoint
 
       expect(mockStripe.refunds.create).toHaveBeenCalledWith({
         payment_intent: 'pi_test123',
@@ -489,12 +489,6 @@ describe('Comprehensive Payment Processing', () => {
         status: 'succeeded'
       };
       mockStripe.refunds.create.mockResolvedValue(mockRefund);
-
-      const refundData = {
-        paymentIntentId: 'pi_test123',
-        amount: 75.00,
-        reason: 'PARTIAL_SESSION'
-      };
 
       expect(mockStripe.refunds.create).toHaveBeenCalledWith({
         payment_intent: 'pi_test123',
@@ -755,7 +749,7 @@ describe('Comprehensive Payment Processing', () => {
         }
       });
 
-      const response = await CreatePaymentPOST(request);
+      await CreatePaymentPOST(request);
 
       // Verify customer creation
       expect(mockStripe.customers.create).toHaveBeenCalledWith({
@@ -806,7 +800,7 @@ describe('Comprehensive Payment Processing', () => {
       });
 
       // Assuming we have a payment methods endpoint
-      const response = await CreatePaymentPOST(request); // Would be different endpoint
+      await CreatePaymentPOST(request); // Would be different endpoint
 
       expect(mockStripe.paymentMethods.list).toHaveBeenCalledWith({
         customer: 'cus_existing123',
@@ -819,12 +813,6 @@ describe('Comprehensive Payment Processing', () => {
     it('should encrypt sensitive payment data', async () => {
       const { encryption } = await import('@/lib/security/encryption');
       
-      const mockPayment = {
-        customerId: 'cus_test123',
-        amount: 150.00,
-        description: 'Therapy session payment'
-      };
-
       // Verify encryption was called for sensitive data
       expect(encryption.encrypt).toHaveBeenCalled();
     });

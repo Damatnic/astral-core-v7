@@ -3,9 +3,11 @@
  * Configures test environment and shared resources
  */
 
-import { chromium, FullConfig } from '@playwright/test';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-async function globalSetup(config: FullConfig) {
+import { chromium } from '@playwright/test';
+
+async function globalSetup() {
   // Set up test environment variables
   process.env.NODE_ENV = 'test';
   process.env.NEXTAUTH_SECRET = 'test-secret-key-for-e2e-tests';

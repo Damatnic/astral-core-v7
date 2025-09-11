@@ -5,6 +5,7 @@
  * Automatically syncs environment variables with Vercel deployment
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -255,7 +256,7 @@ async function syncEnvironmentVariables() {
         execSync(command, { shell: true, stdio: 'ignore' });
         console.log(`${colors.green}✅ ${key}${colors.reset}`);
         successCount++;
-      } catch (error) {
+      } catch {
         console.log(`${colors.red}❌ ${key}: Failed to sync${colors.reset}`);
         errorCount++;
       }

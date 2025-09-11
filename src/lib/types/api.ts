@@ -208,7 +208,7 @@ export interface SearchResponse {
     snippet: string;
     relevance: number;
     url?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>;
   total: number;
   took: number; // milliseconds

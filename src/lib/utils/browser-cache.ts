@@ -155,7 +155,7 @@ export class BrowserCacheManager {
   /**
    * Cache data in localStorage with expiration
    */
-  setLocalCache(key: string, data: any, expirationMinutes = 60): void {
+  setLocalCache(key: string, data: unknown, expirationMinutes = 60): void {
     if (!this.options.enableLocalStorage) return;
 
     try {
@@ -199,7 +199,7 @@ export class BrowserCacheManager {
   /**
    * Cache data in sessionStorage
    */
-  setSessionCache(key: string, data: any): void {
+  setSessionCache(key: string, data: unknown): void {
     if (!this.options.enableSessionStorage) return;
 
     try {

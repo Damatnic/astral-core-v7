@@ -3,7 +3,7 @@
  * Manages smart preloading of components based on user behavior and patterns
  */
 
-type ComponentPreloader = () => Promise<any>;
+type ComponentPreloader = () => Promise<unknown>;
 type UserRole = 'ADMIN' | 'THERAPIST' | 'CLIENT' | 'CRISIS_RESPONDER' | 'SUPERVISOR';
 
 interface PreloadingStrategy {

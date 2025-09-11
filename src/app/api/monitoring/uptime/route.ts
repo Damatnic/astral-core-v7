@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { prisma } from '@/lib/db/prisma';
-import { logInfo, logError } from '@/lib/logger';
+import prisma from '@/lib/db/prisma';
+import { logInfo, logError, toError } from '@/lib/logger';
 import { z } from 'zod';
 
 /**
@@ -162,9 +162,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    logError('Failed to retrieve uptime data', 'UptimeMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to retrieve uptime data', toError(error), 'UptimeMonitoring');
 
     return NextResponse.json(
       { error: 'Failed to retrieve uptime data' },
@@ -220,7 +218,7 @@ export async function POST(request: NextRequest) {
         data: {
           monitorId: validatedData.monitorId,
           title: validatedData.title,
-          description: validatedData.description,
+          description: validatedData.description ?? null,
           severity: validatedData.severity,
           affectedServices: validatedData.affectedServices
         }
@@ -247,15 +245,13 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    logError('Failed to create uptime resource', 'UptimeMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to create uptime resource', toError(error), 'UptimeMonitoring');
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           error: 'Invalid data format',
-          details: error.errors
+          details: error.issues
         },
         { status: 400 }
       );
@@ -286,7 +282,7 @@ export async function PATCH(request: NextRequest) {
     if (type === 'monitor') {
       const validatedData = UpdateMonitorSchema.parse(body);
       const updateData = Object.fromEntries(
-        Object.entries(validatedData).filter(([_, value]) => value !== undefined)
+        Object.entries(validatedData).filter(([, value]) => value !== undefined)
       );
 
       const monitor = await prisma.uptimeMonitor.update({
@@ -308,7 +304,13 @@ export async function PATCH(request: NextRequest) {
     } else if (type === 'incident') {
       const { status, statusUpdate, resolvedBy, rootCause } = body;
 
-      const updateData: any = {};
+      const updateData: { 
+        status?: string; 
+        endTime?: Date; 
+        resolvedBy?: string; 
+        rootCause?: string; 
+        statusUpdates?: Array<{ timestamp: string; message: string; author: string }> 
+      } = {};
       
       if (status) {
         updateData.status = status;
@@ -326,20 +328,26 @@ export async function PATCH(request: NextRequest) {
           select: { statusUpdates: true }
         });
 
-        const currentUpdates = incident?.statusUpdates as any[] || [];
+        const currentUpdates = (incident?.statusUpdates as Array<{ timestamp: string; message: string; author: string }>) || [];
         updateData.statusUpdates = [
           ...currentUpdates,
           {
             timestamp: new Date().toISOString(),
             message: statusUpdate,
-            updatedBy: token.id
+            author: token.id
           }
         ];
       }
 
       const incident = await prisma.uptimeIncident.update({
         where: { id },
-        data: updateData
+        data: {
+          ...(updateData.status !== undefined && { status: updateData.status as any }),
+          ...(updateData.endTime !== undefined && { endTime: updateData.endTime }),
+          ...(updateData.resolvedBy !== undefined && { resolvedBy: updateData.resolvedBy }),
+          ...(updateData.rootCause !== undefined && { rootCause: updateData.rootCause }),
+          ...(updateData.statusUpdates !== undefined && { statusUpdates: updateData.statusUpdates })
+        }
       });
 
       // Calculate duration if incident is resolved
@@ -374,9 +382,7 @@ export async function PATCH(request: NextRequest) {
     }
 
   } catch (error) {
-    logError('Failed to update uptime resource', 'UptimeMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to update uptime resource', toError(error), 'UptimeMonitoring');
 
     return NextResponse.json(
       { error: 'Failed to update resource' },
@@ -422,9 +428,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
-    logError('Failed to delete monitor', 'UptimeMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to delete monitor', toError(error), 'UptimeMonitoring');
 
     return NextResponse.json(
       { error: 'Failed to delete monitor' },
@@ -434,9 +438,9 @@ export async function DELETE(request: NextRequest) {
 }
 
 // Helper function to simulate recent health checks
-async function getRecentHealthChecks(url: string) {
+async function getRecentHealthChecks(_url: string) {
   // In a real implementation, this would query actual health check results
-  // For now, we'll simulate some data
+  // For now, we'll simulate some data (_url parameter will be used in real implementation)
   const checks = [];
   const now = new Date();
   

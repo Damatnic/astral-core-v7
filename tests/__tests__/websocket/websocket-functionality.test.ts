@@ -7,7 +7,6 @@ import { WebSocketServer } from '@/lib/websocket/server';
 import { MessagingService } from '@/lib/services/messaging-service';
 import {
   createDatabaseMock,
-  createPHIMock,
   createWebSocketMock
 } from '../../utils/api-test-helpers';
 import { Server as HTTPServer } from 'http';
@@ -29,7 +28,7 @@ jest.mock('socket.io', () => ({
 
 // Mock dependencies
 jest.mock('@/lib/db/prisma', () => ({
-  default: require('../../mocks/prisma').mockPrisma
+  default: mockPrisma
 }));
 
 jest.mock('@/lib/security/phi-service', () => ({

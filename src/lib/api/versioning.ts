@@ -1,6 +1,8 @@
 // API Versioning Strategy for Mental Health Platform
 // Supports multiple versioning strategies with backward compatibility
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export type ApiVersion = 'v1' | 'v2' | 'v3';
 export type VersioningStrategy = 'header' | 'path' | 'query' | 'subdomain';
 
@@ -464,11 +466,11 @@ export class ApiVersionManager {
   }
   
   private extractFromQuery(query: Record<string, any>): ApiVersion {
-    return this.validateVersion(query.version || query.v);
+    return this.validateVersion(query['version'] || query['v']);
   }
   
   private extractFromSubdomain(headers: Record<string, string>): ApiVersion {
-    const host = headers.host || '';
+    const host = headers['host'] || '';
     const subdomainMatch = host.match(/^(v\d+)\./);
     return this.validateVersion(subdomainMatch?.[1]);
   }
@@ -506,7 +508,7 @@ export class ApiVersionManager {
       version,
       message: `API version ${version} is deprecated and will be sunset on ${config.sunsetDate}`,
       deprecationDate: config.deprecationDate || '',
-      sunsetDate: config.sunsetDate,
+      sunsetDate: config.sunsetDate || '',
       migrationGuide: `/docs/migration/${version}-to-${this.getRecommendedVersion(version)}`,
       replacement: {
         version: this.getRecommendedVersion(version),
@@ -515,7 +517,8 @@ export class ApiVersionManager {
     };
   }
   
-  private getRecommendedVersion(currentVersion: ApiVersion): ApiVersion {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private getRecommendedVersion(_currentVersion: ApiVersion): ApiVersion {
     // Return the latest non-deprecated version
     const versions = Object.values(API_VERSIONS)
       .filter(config => !config.isDeprecated)
@@ -604,7 +607,10 @@ export class ApiVersionManager {
     
     // Add deprecation warnings
     if (this.isVersionDeprecated(version)) {
-      transformedResponse.deprecationWarning = this.getDeprecationWarning(version) || undefined;
+      const warning = this.getDeprecationWarning(version);
+      if (warning) {
+        transformedResponse.deprecationWarning = warning;
+      }
       transformedResponse.headers['X-API-Deprecated'] = 'true';
       transformedResponse.headers['X-API-Sunset-Date'] = API_VERSIONS[version].sunsetDate || '';
     }
@@ -664,22 +670,25 @@ export class ApiVersionManager {
     const paths: any = {};
     
     for (const [key, endpoint] of Object.entries(endpoints)) {
-      const [method, path] = key.split(' ');
+      const parts = key.split(' ');
+      const method = parts[0];
+      const path = parts[1];
       
-      if (!paths[path]) {
-        paths[path] = {};
-      }
-      
-      paths[path][method.toLowerCase()] = {
-        summary: `${method} ${path}`,
-        description: endpoint.changes.length > 0 
-          ? `Changes: ${endpoint.changes.map(c => c.description).join(', ')}`
-          : 'No recent changes',
-        parameters: endpoint.parameters.map(param => ({
-          name: param.name,
-          in: method === 'GET' ? 'query' : 'body',
-          required: param.required,
-          description: param.description,
+      if (method && path) {
+        if (!paths[path]) {
+          paths[path] = {};
+        }
+        
+        paths[path][method.toLowerCase()] = {
+          summary: `${method} ${path}`,
+          description: endpoint.changes.length > 0 
+            ? `Changes: ${endpoint.changes.map(c => c.description).join(', ')}`
+            : 'No recent changes',
+          parameters: endpoint.parameters.map(param => ({
+            name: param.name,
+            in: method === 'GET' ? 'query' : 'body',
+            required: param.required,
+            description: param.description,
           schema: {
             type: param.type,
             example: param.example
@@ -698,6 +707,7 @@ export class ApiVersionManager {
         },
         security: endpoint.security.map(sec => ({ [sec.type]: sec.scope || [] }))
       };
+      }
     }
     
     return paths;
@@ -711,9 +721,6 @@ export class ApiVersionManager {
     if (!fromConfig || !toConfig) return null;
     
     const breakingChanges = toConfig.breakingChanges || [];
-    const newFeatures = toConfig.features.filter(
-      feature => !fromConfig.features.includes(feature)
-    );
     
     return {
       title: `Migrate from ${fromVersion} to ${toVersion}`,

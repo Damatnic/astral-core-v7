@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { rateLimiters } from '@/lib/security/rate-limit';
-import { logError, logInfo } from '@/lib/logger';
-import { prisma } from '@/lib/db/prisma';
+import { logError, logInfo, toError } from '@/lib/logger';
+import prisma from '@/lib/db/prisma';
 import { z } from 'zod';
+import { ErrorSeverity, ErrorType } from '@prisma/client';
 
 /**
  * Error Tracking API Endpoint
@@ -21,7 +22,7 @@ const ErrorSchema = z.object({
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   url: z.string().url(),
   userAgent: z.string(),
-  context: z.record(z.unknown()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
   performanceImpact: z.object({
     beforeError: z.object({
       memoryUsage: z.object({
@@ -81,8 +82,8 @@ export async function POST(request: NextRequest) {
         filename: validatedData.filename || null,
         lineno: validatedData.lineno || null,
         colno: validatedData.colno || null,
-        type: validatedData.type,
-        severity: validatedData.severity,
+        type: validatedData.type.toUpperCase() as 'JAVASCRIPT' | 'UNHANDLED_REJECTION' | 'RESOURCE' | 'NETWORK' | 'CUSTOM',
+        severity: validatedData.severity.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
         url: validatedData.url,
         userAgent: validatedData.userAgent,
         userId: userId || null,
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     // Log critical errors for immediate attention
     if (validatedData.severity === 'critical') {
-      logError('Critical error reported', 'ErrorTracking', {
+      logInfo('Critical error reported', 'ErrorTracking', {
         errorId: errorRecord.id,
         message: validatedData.message,
         userId,
@@ -128,16 +129,13 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    logError('Failed to log error', 'ErrorTracking', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    logError('Failed to log error', toError(error), 'ErrorTracking');
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           error: 'Invalid error data format',
-          details: error.errors
+          details: error.issues
         },
         { status: 400 }
       );
@@ -190,15 +188,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Build filter conditions
-    const whereClause: any = {
+    const whereClause = {
       timestamp: {
         gte: startTime
-      }
+      },
+      ...(severity && { severity: severity.toUpperCase() as ErrorSeverity })
     };
-
-    if (severity) {
-      whereClause.severity = severity;
-    }
 
     // Get error statistics
     const [totalErrors, errorsBySeverity, errorsByType, recentErrors] = await Promise.all([
@@ -279,16 +274,16 @@ export async function GET(request: NextRequest) {
       timeframe,
       statistics: {
         total: totalErrors,
-        bySeverity: errorsBySeverity.reduce((acc, item) => {
+        bySeverity: errorsBySeverity.reduce((acc: Record<string, number>, item: { severity: ErrorSeverity; _count: { severity: number } }) => {
           acc[item.severity] = item._count.severity;
           return acc;
         }, {} as Record<string, number>),
-        byType: errorsByType.reduce((acc, item) => {
+        byType: errorsByType.reduce((acc: Record<string, number>, item: { type: ErrorType; _count: { type: number } }) => {
           acc[item.type] = item._count.type;
           return acc;
         }, {} as Record<string, number>),
         affectedUsers: affectedUsers.length,
-        topPatterns: errorPatterns.map(pattern => ({
+        topPatterns: errorPatterns.map((pattern: { message: string; _count: { message: number } }) => ({
           message: pattern.message,
           count: pattern._count.message
         }))
@@ -298,9 +293,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    logError('Failed to retrieve error statistics', 'ErrorTracking', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to retrieve error statistics', toError(error), 'ErrorTracking');
 
     return NextResponse.json(
       { error: 'Failed to retrieve error data' },
@@ -357,9 +350,7 @@ export async function PATCH(request: NextRequest) {
     });
 
   } catch (error) {
-    logError('Failed to update error resolution status', 'ErrorTracking', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to update error resolution status', toError(error), 'ErrorTracking');
 
     return NextResponse.json(
       { error: 'Failed to update error status' },

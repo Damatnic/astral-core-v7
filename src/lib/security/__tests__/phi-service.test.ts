@@ -3,10 +3,11 @@
  * Tests HIPAA-compliant Protected Health Information service
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { describe, test, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { PHIService } from '../phi-service';
 import { setupTestEnvironment } from '../../../../tests/utils/test-helpers';
-import { mockUsers, mockProfiles } from '../../../../tests/utils/test-fixtures';
 
 // Mock dependencies
 jest.mock('@prisma/client');
@@ -199,7 +200,7 @@ describe('PHIService', () => {
       mockEncryption.decryptObject.mockReturnValue(appointmentData);
 
       // Act
-      const result = await phiService.create('Appointment', appointmentData);
+      await phiService.create('Appointment', appointmentData);
 
       // Assert
       expect(mockEncryption.encryptObject).not.toHaveBeenCalled();
@@ -223,7 +224,7 @@ describe('PHIService', () => {
       ];
 
       mockPrisma.user.findMany.mockResolvedValue(encryptedUsers);
-      mockEncryption.decryptObject.mockImplementation((user, fields) => {
+      mockEncryption.decryptObject.mockImplementation((user) => {
         if (user.id === 'user_1') return decryptedUsers[0];
         return decryptedUsers[1];
       });
@@ -625,7 +626,7 @@ describe('PHIService', () => {
       };
 
       mockPrisma.user.findUnique.mockResolvedValue(userData);
-      mockEncryption.decryptObject.mockImplementation((data, fields) => {
+      mockEncryption.decryptObject.mockImplementation((data) => {
         if (data.id === 'profile_123') return decryptedUserData.profile;
         if (data.id === 'journal_1') return decryptedUserData.journals[0];
         if (data.id === 'wellness_1') return decryptedUserData.wellnessData[0];

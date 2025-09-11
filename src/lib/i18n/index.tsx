@@ -1,9 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import * as React from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { 
   SupportedLocale, 
-  TranslationNamespace, 
   TranslationFunction,
   LocaleConfig 
 } from './types';
@@ -105,7 +107,7 @@ async function loadTranslation(locale: SupportedLocale, namespace: string): Prom
       
       // Try fallback locale
       const fallbacks = FALLBACK_LOCALES[locale] || [];
-      if (fallbacks.length > 0) {
+      if (fallbacks.length > 0 && fallbacks[0]) {
         return loadTranslation(fallbacks[0], namespace);
       }
       
@@ -221,6 +223,10 @@ export function I18nProvider({ children, initialLocale }: I18nProviderProps) {
     const [namespace, ...pathParts] = key.split('.');
     const path = pathParts.join('.');
     
+    if (!namespace) {
+      return key; // Return key if no namespace provided
+    }
+    
     const namespaceTranslations = translations[namespace];
     if (!namespaceTranslations) {
       return key; // Return key if namespace not loaded
@@ -251,6 +257,9 @@ export function I18nProvider({ children, initialLocale }: I18nProviderProps) {
   };
   
   const formatNumber = (number: number, options?: Intl.NumberFormatOptions) => {
+    if (options) {
+      return new Intl.NumberFormat(locale, options).format(number);
+    }
     return localeConfig.numberFormat.format(number);
   };
   

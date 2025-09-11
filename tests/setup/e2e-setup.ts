@@ -3,7 +3,10 @@
  * Configures Playwright for end-to-end testing of user journeys
  */
 
-import { test as base, expect, Page, BrowserContext } from '@playwright/test';
+/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { test as base, expect, Page } from '@playwright/test';
 import { setupTestEnvironment } from '../utils/test-helpers';
 import { mockUsers } from '../utils/test-fixtures';
 

@@ -24,8 +24,8 @@ const DynamicStripeWrapper: React.FC<DynamicStripeWrapperProps> = ({
   onError
 }) => {
   const [stripeElements, setStripeElements] = useState<{
-    Elements: React.ComponentType<any>;
-    stripe: any;
+    Elements: React.ComponentType<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    stripe: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

@@ -21,7 +21,7 @@ interface VisuallyHiddenProps {
   /**
    * HTML element type to render
    */
-  as?: keyof JSX.IntrinsicElements;
+  as?: React.ElementType;
 }
 
 /**
@@ -34,7 +34,7 @@ export function VisuallyHidden({
   className,
   as: Element = 'span',
   ...props
-}: VisuallyHiddenProps & React.HTMLAttributes<HTMLElement>) {
+}: VisuallyHiddenProps & React.ComponentProps<React.ElementType>) {
   return (
     <Element
       className={clsx(
@@ -74,7 +74,6 @@ export function SkipLink({
   return (
     <VisuallyHidden
       as="a"
-      href={href}
       focusable
       className={clsx(
         'focus:fixed focus:top-4 focus:left-4',
@@ -82,6 +81,7 @@ export function SkipLink({
         'focus:transition-none', // Disable transitions for immediate visibility
         className
       )}
+      href={href}
       {...props}
     >
       {children}

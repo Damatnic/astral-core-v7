@@ -389,6 +389,6 @@ export function getMentalHealthFeatures(locale: SupportedLocale) {
     hasReligiousConsiderations: features.culturalAdaptations.religiousConsiderations.includes(locale),
     requiresFamilyNotification: features.crisisAdaptations.familyNotification.includes(locale),
     hasSpiritualSupport: features.crisisAdaptations.spiritualSupport.includes(locale),
-    colorPreferences: features.culturalAdaptations.colorMeanings[locale]
+    colorPreferences: features.culturalAdaptations.colorMeanings[locale as keyof typeof features.culturalAdaptations.colorMeanings] || undefined
   };
 }

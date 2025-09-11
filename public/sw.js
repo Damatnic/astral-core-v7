@@ -14,17 +14,17 @@ const CRITICAL_RESOURCES = [
   '/api/crisis-resources'
 ];
 
-// Cache strategies configuration
-const CACHE_STRATEGIES = {
-  // Static assets - Cache first with fallback to network
-  STATIC_ASSETS: 'cache-first',
-  // API data - Network first with cache fallback
-  API_DATA: 'network-first',
-  // HTML pages - Stale while revalidate
-  HTML_PAGES: 'stale-while-revalidate',
-  // Images - Cache first with network fallback
-  IMAGES: 'cache-first'
-};
+// Cache strategies configuration (for reference)
+// const CACHE_STRATEGIES = {
+//   // Static assets - Cache first with fallback to network
+//   STATIC_ASSETS: 'cache-first',
+//   // API data - Network first with cache fallback
+//   API_DATA: 'network-first',
+//   // HTML pages - Stale while revalidate
+//   HTML_PAGES: 'stale-while-revalidate',
+//   // Images - Cache first with network fallback
+//   IMAGES: 'cache-first'
+// };
 
 // Define what to cache
 const STATIC_ASSETS = [
@@ -192,7 +192,7 @@ async function networkFirst(request, maxAge) {
 }
 
 // Stale-while-revalidate: Return cache immediately, update in background
-async function staleWhileRevalidate(request, maxAge) {
+async function staleWhileRevalidate(request) {
   const cache = await caches.open(FULL_CACHE_NAME);
   const cachedResponse = await cache.match(request);
   
@@ -567,7 +567,7 @@ async function fetchAndUpdateCache(request, cache) {
     if (networkResponse.ok) {
       cache.put(request, networkResponse.clone());
     }
-  } catch (error) {
+  } catch {
     // Silent fail for background updates
   }
 }

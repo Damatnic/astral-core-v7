@@ -12,8 +12,6 @@ import { compare, hash } from 'bcryptjs';
 import {
   createAPIRequest,
   createAuthenticatedSession,
-  createDatabaseMock,
-  createEncryptionMock,
   createRateLimitMock
 } from '../../utils/api-test-helpers';
 
@@ -28,7 +26,7 @@ jest.mock('bcryptjs', () => ({
 }));
 
 jest.mock('@/lib/db/prisma', () => ({
-  default: require('../../mocks/prisma').mockPrisma
+  default: mockPrisma
 }));
 
 jest.mock('@/lib/security/encryption', () => ({

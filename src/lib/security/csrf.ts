@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
-import { logError, logWarning, logInfo } from '@/lib/logger';
+import { logError, logWarning, logInfo, toError } from '@/lib/logger';
 
 /**
  * CSRF Protection System
@@ -81,8 +81,8 @@ export class CSRFProtection {
     return {
       token,
       expires,
-      userId,
-      sessionId
+      ...(userId && { userId }),
+      ...(sessionId && { sessionId })
     };
   }
 
@@ -133,7 +133,7 @@ export class CSRFProtection {
 
       details.tokenFormat = true;
 
-      const [payloadBase64, signature] = tokenParts;
+      const [payloadBase64, signature] = tokenParts as [string, string];
 
       // Verify signature
       const expectedSignature = this.signPayload(payloadBase64);
@@ -156,7 +156,7 @@ export class CSRFProtection {
       try {
         const payloadString = Buffer.from(payloadBase64, 'base64').toString('utf-8');
         payload = JSON.parse(payloadString);
-      } catch (error) {
+      } catch {
         return {
           valid: false,
           error: 'Invalid token payload',
@@ -207,8 +207,7 @@ export class CSRFProtection {
       };
 
     } catch (error) {
-      logError('CSRF token validation error', 'CSRFProtection', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+      logError('CSRF token validation error', toError(error), 'CSRFProtection', {
         url: request.url,
         method: request.method
       });
@@ -370,7 +369,7 @@ export async function handleCSRFTokenRequest(request: NextRequest) {
 
     const { tokenData, headers } = generateCSRFToken(
       userToken?.id as string,
-      userToken?.sessionId as string
+      userToken?.['sessionId'] as string
     );
 
     return new Response(
@@ -388,9 +387,7 @@ export async function handleCSRFTokenRequest(request: NextRequest) {
     );
 
   } catch (error) {
-    logError('CSRF token generation failed', 'CSRFProtection', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('CSRF token generation failed', toError(error), 'CSRFProtection');
 
     return new Response(
       JSON.stringify({ error: 'Failed to generate CSRF token' }),

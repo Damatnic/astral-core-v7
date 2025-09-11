@@ -15,12 +15,20 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+// Extend ServiceWorkerRegistration to include sync property
+interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
+  sync?: {
+    register(tag: string): Promise<void>;
+    getTags(): Promise<string[]>;
+  };
+}
+
 export function PWAManager({ children }: PWAManagerProps) {
   const [isOnline, setIsOnline] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistrationWithSync | null>(null);
 
   useEffect(() => {
     // Register service worker
@@ -44,6 +52,7 @@ export function PWAManager({ children }: PWAManagerProps) {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const registerServiceWorker = async () => {
@@ -92,8 +101,12 @@ export function PWAManager({ children }: PWAManagerProps) {
     
     // Trigger background sync when back online
     if (swRegistration?.sync) {
-      swRegistration.sync.register('sync-wellness-data');
-      swRegistration.sync.register('sync-journal-entries');
+      try {
+        swRegistration.sync.register('sync-wellness-data');
+        swRegistration.sync.register('sync-journal-entries');
+      } catch (error) {
+        console.error('Background sync failed:', error);
+      }
     }
   };
 
@@ -119,7 +132,7 @@ export function PWAManager({ children }: PWAManagerProps) {
     }
     
     // iOS detection
-    if ((navigator as any).standalone) {
+    if ((navigator as Navigator & { standalone?: boolean }).standalone) {
       setIsInstalled(true);
     }
   };
@@ -136,9 +149,11 @@ export function PWAManager({ children }: PWAManagerProps) {
         console.log('Notification permission granted');
         
         // Subscribe to push notifications
+        const vapidKey = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '';
+        const applicationServerKey = urlBase64ToUint8Array(vapidKey);
         const subscription = await swRegistration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '')
+          applicationServerKey: applicationServerKey.buffer as ArrayBuffer
         });
         
         // Send subscription to server
@@ -226,7 +241,7 @@ export function PWAManager({ children }: PWAManagerProps) {
           aria-live="assertive"
         >
           <p className="text-sm font-medium">
-            📡 You're offline. Some features may be limited, but crisis support is still available.
+            📡 You&apos;re offline. Some features may be limited, but crisis support is still available.
           </p>
         </div>
       )}
@@ -282,7 +297,7 @@ export function usePWA() {
     window.addEventListener('offline', handleOffline);
     
     // Check if installed
-    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone) {
       setIsInstalled(true);
     }
     

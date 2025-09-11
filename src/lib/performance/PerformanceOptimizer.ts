@@ -1,6 +1,8 @@
 // Advanced Performance Optimization System for Mental Health Platform
 // Comprehensive performance monitoring, optimization, and testing
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export interface PerformanceConfig {
   monitoring: {
     enabled: boolean;
@@ -333,7 +335,7 @@ export class PerformanceOptimizer {
       type,
       url: window.location.href,
       userAgent: navigator.userAgent,
-      metadata
+      ...(metadata !== undefined && { metadata })
     };
 
     // Add connection info if available
@@ -492,7 +494,7 @@ export class PerformanceOptimizer {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const img = entry.target as HTMLImageElement;
-            img.src = img.dataset.src!;
+            img.src = img.dataset['src']!;
             img.removeAttribute('data-src');
             imageObserver.unobserve(img);
           }
@@ -789,10 +791,10 @@ export class PerformanceOptimizer {
       if (navEntries.length > 0) {
         const nav = navEntries[0];
         return {
-          type: nav.type,
-          duration: nav.loadEventEnd - nav.fetchStart,
-          domContentLoaded: nav.domContentLoadedEventEnd - nav.fetchStart,
-          loadComplete: nav.loadEventEnd - nav.fetchStart,
+          type: nav?.type || 'navigate',
+          duration: (nav?.loadEventEnd || 0) - (nav?.fetchStart || 0),
+          domContentLoaded: (nav?.domContentLoadedEventEnd || 0) - (nav?.fetchStart || 0),
+          loadComplete: (nav?.loadEventEnd || 0) - (nav?.fetchStart || 0),
           firstPaint: 0, // From paint entries
           firstContentfulPaint: this.webVitals.fcp || 0,
           largestContentfulPaint: this.webVitals.lcp || 0,

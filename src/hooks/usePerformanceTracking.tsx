@@ -21,6 +21,16 @@ interface UsePerformanceTrackingOptions {
   onMetrics?: (metrics: PerformanceMetrics) => void;
 }
 
+interface FirstInputPerformanceEntry extends PerformanceEntry {
+  processingStart: number;
+  startTime: number;
+}
+
+interface LayoutShiftPerformanceEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
 export const usePerformanceTracking = ({
   componentName,
   trackBundleSize = false,
@@ -154,7 +164,7 @@ export const usePerformanceTracking = ({
           performance.clearMarks(`${componentName}-render-end`);
           performance.clearMarks(`${componentName}-interaction`);
           performance.clearMeasures(`${componentName}-load-time`);
-        } catch (error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -232,7 +242,7 @@ export const useWebVitalsTracking = () => {
           const entries = list.getEntries();
           entries.forEach((entry) => {
             if (process.env.NODE_ENV === 'development') {
-              const fidEntry = entry as any; // Type assertion for FID entry
+              const fidEntry = entry as FirstInputPerformanceEntry;
               const fidValue = fidEntry.processingStart - fidEntry.startTime;
               console.log(`FID: ${fidValue}ms`);
             }
@@ -256,7 +266,7 @@ export const useWebVitalsTracking = () => {
         const observer = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           entries.forEach((entry) => {
-            const clsEntry = entry as any; // Type assertion for CLS entry
+            const clsEntry = entry as LayoutShiftPerformanceEntry;
             if (!clsEntry.hadRecentInput) {
               clsValue += clsEntry.value;
             }

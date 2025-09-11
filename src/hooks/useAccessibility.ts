@@ -29,8 +29,8 @@ export function useFocusTrap(isActive: boolean = true) {
 
     if (focusableElements.length === 0) return;
 
-    firstFocusableElementRef.current = focusableElements[0];
-    lastFocusableElementRef.current = focusableElements[focusableElements.length - 1];
+    firstFocusableElementRef.current = focusableElements[0] || null;
+    lastFocusableElementRef.current = focusableElements[focusableElements.length - 1] || null;
 
     // Focus the first element when trap becomes active
     firstFocusableElementRef.current?.focus();
@@ -191,9 +191,9 @@ export function useKeyboardShortcuts(shortcuts: Record<string, () => void>) {
         
         if (
           targetKey === key &&
-          ((modifiers.includes('ctrl') || modifiers.includes('cmd')) === modifierKey) &&
-          (modifiers.includes('shift') === event.shiftKey) &&
-          (modifiers.includes('alt') === event.altKey)
+          ((modifiers?.includes('ctrl') || modifiers?.includes('cmd')) === modifierKey) &&
+          (modifiers?.includes('shift') === event.shiftKey) &&
+          (modifiers?.includes('alt') === event.altKey)
         ) {
           event.preventDefault();
           callback();
@@ -329,6 +329,7 @@ export function useAutoFocus(shouldFocus: boolean = true, delay: number = 100) {
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [shouldFocus, delay]);
 
   return elementRef;

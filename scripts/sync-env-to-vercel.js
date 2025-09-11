@@ -13,6 +13,7 @@
  * 4. Run: node scripts/sync-env-to-vercel.js
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -97,7 +98,7 @@ async function syncEnvToVercel() {
       });
       
       log('\n✅ Successfully synced to Production environment!', 'green');
-    } catch (error) {
+    } catch {
       log('\n⚠️  Some variables may already exist. Continuing...', 'yellow');
     }
 

@@ -14,27 +14,27 @@ interface LiveRegionProps {
   /**
    * Priority of the announcement
    */
-  priority?: 'polite' | 'assertive' | 'off';
+  priority?: 'polite' | 'assertive' | 'off' | undefined;
   /**
    * Whether to clear the message after announcing
    */
-  clearAfterAnnounce?: boolean;
+  clearAfterAnnounce?: boolean | undefined;
   /**
    * Delay before clearing the message (ms)
    */
-  clearDelay?: number;
+  clearDelay?: number | undefined;
   /**
    * Whether the entire region should be announced when changed
    */
-  atomic?: boolean;
+  atomic?: boolean | undefined;
   /**
    * Additional ARIA attributes
    */
-  'aria-relevant'?: string;
+  'aria-relevant'?: string | undefined;
   /**
    * Additional class names
    */
-  className?: string;
+  className?: string | undefined;
 }
 
 export function LiveRegion({
@@ -48,7 +48,7 @@ export function LiveRegion({
   ...props
 }: LiveRegionProps & React.HTMLAttributes<HTMLDivElement>) {
   const regionRef = useRef<HTMLDivElement>(null);
-  const clearTimeoutRef = useRef<NodeJS.Timeout>();
+  const clearTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     if (!regionRef.current || !message) return;

@@ -12,7 +12,7 @@ import { createMockRequest, createMockUser } from '../../utils/test-helpers';
 
 // Mock all external dependencies
 jest.mock('@/lib/db/prisma', () => ({
-  default: require('../../mocks/prisma').mockPrisma
+  default: mockPrisma
 }));
 
 jest.mock('bcryptjs', () => ({
@@ -64,7 +64,7 @@ jest.mock('@/lib/services/notification-service', () => ({
 
 // Import mocked modules
 import { hash, compare } from 'bcryptjs';
-import { sign, verify } from 'jsonwebtoken';
+import { sign } from 'jsonwebtoken';
 import { audit } from '@/lib/security/audit';
 import { notificationService } from '@/lib/services/notification-service';
 
@@ -783,7 +783,7 @@ describe('Complete Authentication Flows', () => {
       });
 
       const response = await ForgotPasswordPOST(request);
-      const data = await response.json();
+      await response.json();
 
       // Should still return success to user but log the error
       expect(response.status).toBe(200);

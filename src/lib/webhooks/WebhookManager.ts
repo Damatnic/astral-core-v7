@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import crypto from 'crypto';
 import {
   WebhookEndpoint,
@@ -8,7 +10,6 @@ import {
   WebhookMetrics,
   WebhookLog,
   WebhookAlert,
-  WebhookSignature,
   CrisisWebhookPayload,
   WellnessWebhookPayload,
   TherapyWebhookPayload
@@ -27,14 +28,6 @@ function generateSignature(payload: string, secret: string, algorithm: string = 
     .digest('hex');
 }
 
-// Verify webhook signature
-function verifySignature(payload: string, secret: string, signature: string, algorithm: string = 'sha256'): boolean {
-  const expectedSignature = generateSignature(payload, secret, algorithm);
-  return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(expectedSignature, 'hex')
-  );
-}
 
 // Exponential backoff calculation
 function calculateBackoff(attempt: number, config: WebhookEndpoint['retryPolicy']): number {
@@ -139,7 +132,7 @@ export class WebhookManager {
       timestamp: Date.now(),
       version: '1.0',
       data,
-      metadata
+      metadata: metadata || {}
     };
 
     const deliveryIds: string[] = [];
@@ -172,6 +165,7 @@ export class WebhookManager {
     const wellnessMetadata: WellnessWebhookPayload['metadata'] = {
       ...metadata,
       userId: data.userId,
+      source: metadata?.source || 'api',
       sensitive: true,
       encrypted: this.config.compliance.enableEncryption,
       environment: metadata?.environment || 'production'
@@ -193,6 +187,7 @@ export class WebhookManager {
     const crisisMetadata: CrisisWebhookPayload['metadata'] = {
       ...metadata,
       userId: data.userId,
+      source: metadata?.source || 'panic_button',
       sensitive: true,
       encrypted: true, // Always encrypt crisis data
       priority: 'critical',
@@ -224,6 +219,7 @@ export class WebhookManager {
     const therapyMetadata: TherapyWebhookPayload['metadata'] = {
       ...metadata,
       userId: data.clientId,
+      source: metadata?.source || 'api',
       sensitive: true,
       encrypted: this.config.compliance.enableEncryption,
       environment: metadata?.environment || 'production'
@@ -517,8 +513,8 @@ export class WebhookManager {
       timestamp: Date.now(),
       status: delivery.status === 'delivered' ? 'success' : 'failure',
       responseTime: delivery.response?.duration || 0,
-      responseStatus: delivery.response?.status,
-      error: delivery.error,
+      responseStatus: delivery.response?.status || 0,
+      error: delivery.error || '',
       retryCount: delivery.attempts - 1,
       payload: delivery.payload
     };
@@ -605,7 +601,7 @@ export class WebhookManager {
     try {
       const response = await this.sendWebhook(endpoint, testPayload);
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

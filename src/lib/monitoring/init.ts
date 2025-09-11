@@ -4,11 +4,11 @@
  * for production mental health platform deployment
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { getMonitoringConfig, DEFAULT_ALERT_RULES, MONITORING_ENDPOINTS } from './config';
-import { getErrorMonitor } from '@/lib/performance/error-monitoring';
 import { getWebVitalsMonitor } from '@/lib/performance/web-vitals';
 import { getPerformanceMetricsCollector } from '@/lib/performance/metrics';
-import { getCSRFProtection } from '@/lib/security/csrf';
 import { logInfo, logError, logWarning } from '@/lib/logger';
 
 /**
@@ -67,11 +67,14 @@ export async function initializeMonitoring(): Promise<void> {
     scheduleCleanupTasks(config);
 
   } catch (error) {
-    logError('Failed to initialize monitoring systems', 'MonitoringInit', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      initializationTime: `${Date.now() - startTime}ms`
-    });
+    logError('Failed to initialize monitoring systems', 
+      error instanceof Error ? error : new Error(String(error)), 
+      'MonitoringInit', 
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        initializationTime: `${Date.now() - startTime}ms`
+      });
     throw error;
   }
 }
@@ -81,7 +84,8 @@ export async function initializeMonitoring(): Promise<void> {
  */
 async function initializeErrorTracking(config: any): Promise<void> {
   try {
-    const errorMonitor = getErrorMonitor();
+    // Initialize error monitor (currently unused but available for future implementation)
+    // const errorMonitor = getErrorMonitor();
 
     // Configure error exclusions
     config.errorTracking.excludeUrls.forEach((url: string) => {
@@ -113,9 +117,12 @@ async function initializeErrorTracking(config: any): Promise<void> {
     });
 
   } catch (error) {
-    logError('Failed to initialize error tracking', 'ErrorTracking', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to initialize error tracking', 
+      error instanceof Error ? error : new Error(String(error)),
+      'ErrorTracking', 
+      {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     throw error;
   }
 }
@@ -152,7 +159,8 @@ async function initializePerformanceMonitoring(config: any): Promise<void> {
     // Setup periodic performance reporting
     if (typeof window !== 'undefined') {
       setInterval(() => {
-        const report = metricsCollector.generateReport();
+        // Generate report (currently unused but available for future implementation)
+        // const report = metricsCollector.generateReport();
         const vitalsScore = metricsCollector.getWebVitalsScore();
         
         if (vitalsScore.score < 70) {
@@ -172,9 +180,12 @@ async function initializePerformanceMonitoring(config: any): Promise<void> {
     });
 
   } catch (error) {
-    logError('Failed to initialize performance monitoring', 'PerformanceMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to initialize performance monitoring', 
+      error instanceof Error ? error : new Error(String(error)),
+      'PerformanceMonitoring', 
+      {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     throw error;
   }
 }
@@ -184,8 +195,8 @@ async function initializePerformanceMonitoring(config: any): Promise<void> {
  */
 async function initializeSecuritySystems(config: any): Promise<void> {
   try {
-    // Initialize CSRF protection
-    const csrfProtection = getCSRFProtection();
+    // Initialize CSRF protection (currently unused but available for future implementation)
+    // const csrfProtection = getCSRFProtection();
     
     logInfo('Security systems initialized', 'SecurityInit', {
       rateLimiting: config.security.rateLimiting.enabled,
@@ -203,9 +214,12 @@ async function initializeSecuritySystems(config: any): Promise<void> {
     }
 
   } catch (error) {
-    logError('Failed to initialize security systems', 'SecurityInit', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to initialize security systems', 
+      error instanceof Error ? error : new Error(String(error)),
+      'SecurityInit', 
+      {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     throw error;
   }
 }
@@ -234,9 +248,12 @@ async function initializeUptimeMonitoring(config: any): Promise<void> {
     }
 
   } catch (error) {
-    logError('Failed to initialize uptime monitoring', 'UptimeMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to initialize uptime monitoring', 
+      error instanceof Error ? error : new Error(String(error)),
+      'UptimeMonitoring', 
+      {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     throw error;
   }
 }
@@ -263,9 +280,12 @@ async function setupDefaultAlertRules(): Promise<void> {
     });
 
   } catch (error) {
-    logError('Failed to setup alert rules', 'AlertRules', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to setup alert rules', 
+      error instanceof Error ? error : new Error(String(error)),
+      'AlertRules', 
+      {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     throw error;
   }
 }
@@ -281,9 +301,12 @@ function scheduleCleanupTasks(config: any): void {
     try {
       await performDataCleanup(config);
     } catch (error) {
-      logError('Data cleanup failed', 'DataCleanup', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      logError('Data cleanup failed', 
+        error instanceof Error ? error : new Error(String(error)),
+        'DataCleanup', 
+        {
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
   }, cleanupInterval);
 
@@ -321,10 +344,13 @@ async function performDataCleanup(config: any): Promise<void> {
     });
 
   } catch (error) {
-    logError('Data cleanup failed', 'DataCleanup', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: now.toISOString()
-    });
+    logError('Data cleanup failed', 
+      error instanceof Error ? error : new Error(String(error)),
+      'DataCleanup', 
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: now.toISOString()
+      });
     throw error;
   }
 }
@@ -376,7 +402,8 @@ export function initializeClientMonitoring(): void {
 
   // Initialize error tracking on client
   if (config.errorTracking.enabled) {
-    const errorMonitor = getErrorMonitor();
+    // Initialize error monitor (currently unused but available for future implementation)
+    // const errorMonitor = getErrorMonitor();
     
     // Log successful initialization
     logInfo('Client-side monitoring initialized', 'ClientMonitoring', {

@@ -2,7 +2,7 @@ import { InputHTMLAttributes, forwardRef, useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { VisuallyHidden } from './accessibility/VisuallyHidden';
 import { useAccessibilityPreferences, useAccessibleId } from '@/hooks/useAccessibility';
-import { validateSensitiveInput } from '@/utils/accessibility';
+import { validateSensitiveInputWithSuggestions } from '@/utils/accessibility';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -83,9 +83,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
       // Perform sensitive content validation
       if (sensitiveType !== 'none' && String(currentValue).length > 0) {
-        const validation = validateSensitiveInput(String(currentValue), sensitiveType);
+        const validation = validateSensitiveInputWithSuggestions(String(currentValue), sensitiveType);
         if (!validation.isValid && validation.suggestions.length > 0) {
-          setValidationMessage(validation.suggestions[0]);
+          setValidationMessage(validation.suggestions[0] || '');
         } else {
           setValidationMessage('');
         }

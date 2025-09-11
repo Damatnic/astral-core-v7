@@ -6,7 +6,7 @@
 import { EncryptionService } from '@/lib/security/encryption';
 import { PHIService } from '@/lib/security/phi-service';
 import { mockPrisma, resetPrismaMocks } from '../../mocks/prisma';
-import { createMockUser, createMockJournalEntry, createMockAppointment } from '../../utils/test-helpers';
+import { createMockJournalEntry, createMockAppointment } from '../../utils/test-helpers';
 
 // Mock crypto module for controlled testing
 const mockCrypto = {
@@ -22,7 +22,7 @@ const mockCrypto = {
 jest.mock('crypto', () => mockCrypto);
 
 jest.mock('@/lib/db/prisma', () => ({
-  default: require('../../mocks/prisma').mockPrisma
+  default: mockPrisma
 }));
 
 jest.mock('@/lib/security/audit', () => ({
@@ -691,7 +691,7 @@ describe('Comprehensive Data Encryption System', () => {
 
       // Verify encryption meets HIPAA standards
       const testData = 'HIPAA protected health information';
-      const encrypted = encryptionService.encrypt(testData);
+      encryptionService.encrypt(testData);
 
       // Verify encryption algorithm compliance
       expect(mockCrypto.createCipheriv).toHaveBeenCalledWith(
@@ -797,8 +797,6 @@ describe('Comprehensive Data Encryption System', () => {
 
     it('should implement caching for frequently accessed encrypted data', async () => {
       const cacheSize = 100;
-      const cacheHitRatio = 0.8;
-
       // Simulate cache implementation
       const encryptionCache = new Map();
 
@@ -806,7 +804,7 @@ describe('Comprehensive Data Encryption System', () => {
       const cacheKey = encryptionService.createSearchableHash(testData);
 
       // First access - cache miss
-      let encrypted = encryptionService.encrypt(testData);
+      const encrypted = encryptionService.encrypt(testData);
       encryptionCache.set(cacheKey, encrypted);
 
       // Subsequent access - cache hit

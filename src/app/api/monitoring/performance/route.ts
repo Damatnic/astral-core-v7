@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { rateLimiters } from '@/lib/security/rate-limit';
-import { logInfo, logError } from '@/lib/logger';
-import { prisma } from '@/lib/db/prisma';
+import { logInfo, logError, toError } from '@/lib/logger';
+import prisma from '@/lib/db/prisma';
 import { z } from 'zod';
 
 /**
@@ -52,7 +52,7 @@ const CustomMetricSchema = z.object({
   name: z.string().min(1).max(100),
   value: z.number(),
   unit: z.string().max(20),
-  tags: z.record(z.string()).optional(),
+  tags: z.record(z.string(), z.string()).optional(),
   timestamp: z.number().optional()
 });
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
           sessionId: validatedData.sessionId || null,
           userId: userId || null,
           vitals: JSON.stringify(validatedData.vitals),
-          metadata: validatedData.metadata ? JSON.stringify(validatedData.metadata) : null,
+          ...(validatedData.metadata && { metadata: JSON.stringify(validatedData.metadata) }),
           timestamp: validatedData.metadata?.timestamp ? new Date(validatedData.metadata.timestamp) : new Date(),
           clientIP: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                    request.headers.get('x-real-ip') || 
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
           unit: validatedData.unit,
           timestamp: validatedData.timestamp ? new Date(validatedData.timestamp) : new Date(),
           source: userId || 'anonymous',
-          labels: validatedData.tags ? JSON.stringify(validatedData.tags) : null
+          ...(validatedData.tags && { labels: JSON.stringify(validatedData.tags) })
         }
       });
 
@@ -154,16 +154,13 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    logError('Failed to store performance metrics', 'PerformanceMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    logError('Failed to store performance metrics', toError(error), 'PerformanceMonitoring');
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           error: 'Invalid performance data format',
-          details: error.errors
+          details: error.issues
         },
         { status: 400 }
       );
@@ -236,11 +233,11 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      // Parse and aggregate vitals
-      const vitalsData = metrics.map(metric => ({
+      // Parse and aggregate vitals  
+      const vitalsData = metrics.map((metric) => ({
         ...metric,
-        vitals: metric.vitals ? JSON.parse(metric.vitals) : {},
-        metadata: metric.metadata ? JSON.parse(metric.metadata) : {}
+        vitals: metric.vitals && typeof metric.vitals === 'string' ? JSON.parse(metric.vitals) : {},
+        metadata: metric.metadata && typeof metric.metadata === 'string' ? JSON.parse(metric.metadata) : {}
       }));
 
       // Calculate aggregated statistics
@@ -269,18 +266,18 @@ export async function GET(request: NextRequest) {
       });
 
       // Group by metric type
-      const groupedMetrics = metrics.reduce((acc, metric) => {
+      const groupedMetrics = metrics.reduce((acc: Record<string, Array<{ value: number; unit: string; timestamp: Date; labels: Record<string, unknown> }>>, metric) => {
         if (!acc[metric.metricType]) {
           acc[metric.metricType] = [];
         }
-        acc[metric.metricType].push({
+        acc[metric.metricType]?.push({
           value: metric.value,
           unit: metric.unit,
           timestamp: metric.timestamp,
-          labels: metric.labels ? JSON.parse(metric.labels) : {}
+          labels: metric.labels && typeof metric.labels === 'string' ? JSON.parse(metric.labels) : {}
         });
         return acc;
-      }, {} as Record<string, any[]>);
+      }, {} as Record<string, Array<{ value: number; unit: string; timestamp: Date; labels: Record<string, unknown> }>>);
 
       return NextResponse.json({
         timeframe,
@@ -298,9 +295,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    logError('Failed to retrieve performance analytics', 'PerformanceMonitoring', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError('Failed to retrieve performance analytics', toError(error), 'PerformanceMonitoring');
 
     return NextResponse.json(
       { error: 'Failed to retrieve performance data' },
@@ -379,7 +374,7 @@ async function checkPerformanceThresholds(
               ruleId: alertRule.id,
               title: alert.message,
               message: `Performance issue detected: ${alert.metric} value of ${alert.value}ms/score is above threshold`,
-              severity: alert.severity as any,
+              severity: alert.severity.toUpperCase() as 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL',
               metadata: JSON.stringify({
                 metricId,
                 userId,
@@ -391,8 +386,7 @@ async function checkPerformanceThresholds(
           });
         }
       } catch (error) {
-        logError('Failed to create performance alert', 'PerformanceMonitoring', {
-          error: error instanceof Error ? error.message : 'Unknown error',
+        logError('Failed to create performance alert', toError(error), 'PerformanceMonitoring', {
           alert
         });
       }
@@ -401,9 +395,9 @@ async function checkPerformanceThresholds(
 }
 
 // Helper function to calculate Web Vitals aggregations
-function calculateWebVitalsAggregations(vitalsData: any[]) {
+function calculateWebVitalsAggregations(vitalsData: Array<{ vitals: Record<string, number> }>) {
   const vitalsKeys = ['fcp', 'lcp', 'fid', 'cls', 'ttfb', 'inp'];
-  const aggregations: Record<string, any> = {};
+  const aggregations: Record<string, { min: number; max: number; avg: number; p50: number; p75: number; p90: number; p95: number; p99: number; count: number }> = {};
 
   for (const key of vitalsKeys) {
     const values = vitalsData
@@ -411,16 +405,17 @@ function calculateWebVitalsAggregations(vitalsData: any[]) {
       .filter(v => v !== undefined && v !== null && !isNaN(v));
 
     if (values.length > 0) {
-      const sorted = values.sort((a, b) => a - b);
+      const sorted = values.sort((a, b) => (a ?? 0) - (b ?? 0));
       aggregations[key] = {
         count: values.length,
-        min: Math.min(...values),
-        max: Math.max(...values),
-        mean: values.reduce((sum, v) => sum + v, 0) / values.length,
-        median: sorted[Math.floor(sorted.length / 2)],
-        p75: sorted[Math.floor(sorted.length * 0.75)],
-        p90: sorted[Math.floor(sorted.length * 0.90)],
-        p95: sorted[Math.floor(sorted.length * 0.95)]
+        min: Math.min(...values.filter(v => v !== undefined)),
+        max: Math.max(...values.filter(v => v !== undefined)),
+        avg: (values.reduce((sum, v) => (sum ?? 0) + (v ?? 0), 0) ?? 0) / values.length,
+        p50: sorted[Math.floor(sorted.length / 2)] ?? 0,
+        p75: sorted[Math.floor(sorted.length * 0.75)] ?? 0,
+        p90: sorted[Math.floor(sorted.length * 0.90)] ?? 0,
+        p95: sorted[Math.floor(sorted.length * 0.95)] ?? 0,
+        p99: sorted[Math.floor(sorted.length * 0.99)] ?? 0
       };
     }
   }

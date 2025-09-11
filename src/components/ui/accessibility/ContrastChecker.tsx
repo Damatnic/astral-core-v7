@@ -108,7 +108,7 @@ export function ContrastChecker({
             Accessible alternatives:
           </p>
           <div className="flex flex-wrap gap-1">
-            {contrastData.suggestions.slice(0, 3).map((color, index) => (
+            {contrastData.suggestions.slice(0, 3).map((color: string, index: number) => (
               <div
                 key={index}
                 className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs"

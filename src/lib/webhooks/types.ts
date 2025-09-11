@@ -1,5 +1,7 @@
 // Webhook system types for mental health platform integrations
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export type WebhookEvent = 
   // User events
   | 'user.created'

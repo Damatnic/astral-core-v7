@@ -108,7 +108,7 @@ export function checkLastModified(request: NextRequest, lastModified: Date): boo
  * Creates a cached response with appropriate headers
  */
 export function createCachedResponse(
-  data: any,
+  data: unknown,
   options: CacheOptions & {
     etag?: string;
     lastModified?: Date;
@@ -253,7 +253,7 @@ export function isCacheable(request: NextRequest): boolean {
  * Utility to create response with cache headers for API routes
  */
 export function apiResponse(
-  data: any,
+  data: unknown,
   cacheStrategy: CacheOptions = CacheStrategies.NO_CACHE,
   status: number = 200
 ): NextResponse {

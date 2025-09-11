@@ -3,6 +3,7 @@
  * Analyzes the current bundle without requiring a full build
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 
@@ -91,7 +92,7 @@ function generateSuggestions(heavyDeps, importUsage) {
   let stripeUsageCount = 0;
   let socketUsageCount = 0;
   
-  for (const [file, imports] of importUsage) {
+  for (const [, imports] of importUsage) {
     imports.forEach(imp => {
       if (imp.includes('@stripe')) stripeUsageCount++;
       if (imp.includes('socket.io')) socketUsageCount++;

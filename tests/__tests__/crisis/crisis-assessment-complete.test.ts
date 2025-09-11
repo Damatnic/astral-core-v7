@@ -6,11 +6,11 @@
 import { POST as AssessPOST, GET as ResourcesGET } from '@/app/api/crisis/assess/route';
 import { POST as AlertPOST } from '@/app/api/crisis/alert/route';
 import { mockPrisma, resetPrismaMocks } from '../../mocks/prisma';
-import { createMockRequest, createMockUser, createMockCrisisAssessment } from '../../utils/test-helpers';
+import { createMockRequest, createMockCrisisAssessment } from '../../utils/test-helpers';
 
 // Mock all dependencies
 jest.mock('@/lib/db/prisma', () => ({
-  default: require('../../mocks/prisma').mockPrisma
+  default: mockPrisma
 }));
 
 jest.mock('next-auth', () => ({
@@ -475,20 +475,6 @@ describe('Comprehensive Crisis Assessment System', () => {
     });
 
     it('should handle automated crisis detection from app usage patterns', async () => {
-      const automatedAlert = {
-        userId: 'user-pattern',
-        triggerType: 'USAGE_PATTERN',
-        severity: 'HIGH',
-        indicators: [
-          'increased_late_night_activity',
-          'concerning_journal_entries',
-          'missed_appointments',
-          'app_usage_spike'
-        ],
-        confidence: 0.85,
-        lastActivity: new Date()
-      };
-
       phiService.create.mockResolvedValue({
         id: 'auto-alert-123',
         type: 'AUTOMATED_DETECTION'
@@ -509,15 +495,6 @@ describe('Comprehensive Crisis Assessment System', () => {
     });
 
     it('should process crisis alert from family/emergency contact', async () => {
-      const familyAlert = {
-        reporterId: 'family-123',
-        concernedUserId: 'user-concern',
-        relationship: 'family',
-        concerns: 'Has been expressing suicidal thoughts',
-        urgency: 'HIGH',
-        contactInfo: '+1234567890'
-      };
-
       phiService.create.mockResolvedValue({
         id: 'family-alert-123',
         type: 'FAMILY_REPORT'
@@ -539,10 +516,6 @@ describe('Comprehensive Crisis Assessment System', () => {
 
   describe('Crisis Resources and Support', () => {
     it('should provide comprehensive crisis resources without authentication', async () => {
-      const request = createMockRequest('http://localhost:3000/api/crisis/assess', {
-        method: 'GET'
-      });
-
       const response = await ResourcesGET();
       const data = await response.json();
 
@@ -593,10 +566,6 @@ describe('Comprehensive Crisis Assessment System', () => {
     });
 
     it('should provide location-specific emergency resources', async () => {
-      const request = createMockRequest('http://localhost:3000/api/crisis/assess?location=california', {
-        method: 'GET'
-      });
-
       const response = await ResourcesGET();
       const data = await response.json();
 
@@ -612,10 +581,6 @@ describe('Comprehensive Crisis Assessment System', () => {
     });
 
     it('should provide multilingual crisis resources', async () => {
-      const request = createMockRequest('http://localhost:3000/api/crisis/assess?lang=spanish', {
-        method: 'GET'
-      });
-
       const response = await ResourcesGET();
       const data = await response.json();
 
@@ -691,14 +656,6 @@ describe('Comprehensive Crisis Assessment System', () => {
     });
 
     it('should track crisis intervention outcomes', async () => {
-      const outcomeData = {
-        interventionId: 'intervention-123',
-        outcome: 'SUCCESSFUL_CONTACT',
-        notes: 'User is safe, scheduled therapy appointment',
-        nextAction: 'ROUTINE_MONITORING',
-        completedBy: 'crisis-responder-123'
-      };
-
       phiService.update.mockResolvedValue({
         id: 'intervention-123',
         status: 'COMPLETED',

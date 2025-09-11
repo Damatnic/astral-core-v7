@@ -92,7 +92,7 @@ export function validateQueryParams<T>(
  * Validates path parameters against a Zod schema
  */
 export function validatePathParams<T>(
-  params: any,
+  params: unknown,
   schema: ZodSchema<T>
 ): { success: true; data: T } | { success: false; response: NextResponse } {
   try {
@@ -131,16 +131,18 @@ export function validatePathParams<T>(
 export function createErrorResponse(
   error: string,
   statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR,
-  details?: any
+  details?: unknown
 ): NextResponse {
-  return NextResponse.json(
-    {
-      success: false,
-      error,
-      ...(details && { details })
-    },
-    { status: statusCode }
-  );
+  const response: { success: false; error: string; details?: unknown } = {
+    success: false,
+    error
+  };
+  
+  if (details) {
+    response.details = details;
+  }
+  
+  return NextResponse.json(response, { status: statusCode });
 }
 
 /**
@@ -195,20 +197,20 @@ export function createPaginatedResponse<T>(
 /**
  * Higher-order function for API route validation
  */
-export function withValidation<T, Q = any>(
+export function withValidation<T, Q = unknown>(
   handler: (
     request: NextRequest,
-    context: { params?: any },
-    validatedData: { body?: T; query?: Q; params?: any }
+    context: { params?: Record<string, string> },
+    validatedData: { body?: T; query?: Q; params?: Record<string, string> }
   ) => Promise<NextResponse>,
   schemas: {
     body?: ZodSchema<T>;
     query?: ZodSchema<Q>;
-    params?: ZodSchema<any>;
+    params?: ZodSchema<Record<string, string>>;
   }
 ) {
-  return async (request: NextRequest, context: { params?: any }) => {
-    const validatedData: { body?: T; query?: Q; params?: any } = {};
+  return async (request: NextRequest, context: { params?: Record<string, string> }) => {
+    const validatedData: { body?: T; query?: Q; params?: Record<string, string> } = {};
 
     // Validate request body
     if (schemas.body) {
@@ -304,11 +306,11 @@ export function sanitizeObject<T>(obj: T): T {
   const sanitized = {} as T;
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {
-      (sanitized as any)[key] = sanitizeInput(value);
+      (sanitized as Record<string, unknown>)[key] = sanitizeInput(value);
     } else if (typeof value === 'object') {
-      (sanitized as any)[key] = sanitizeObject(value);
+      (sanitized as Record<string, unknown>)[key] = sanitizeObject(value);
     } else {
-      (sanitized as any)[key] = value;
+      (sanitized as Record<string, unknown>)[key] = value;
     }
   }
   

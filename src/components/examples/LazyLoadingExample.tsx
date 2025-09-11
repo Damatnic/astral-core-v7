@@ -157,7 +157,7 @@ const LazyLoadingExample: React.FC = () => {
                   </p>
                   <div className="mt-4 p-4 bg-white rounded border-l-4 border-blue-500">
                     <p className="text-sm text-gray-600">
-                      Check the browser's Network tab to see when this component's 
+                      Check the browser&apos;s Network tab to see when this component&apos;s 
                       JavaScript chunk was actually loaded.
                     </p>
                   </div>

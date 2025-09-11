@@ -210,6 +210,7 @@ describe('MFA Service', () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       // Mock implementation
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const verifyMFAToken = async (userId: string, token: string) => {
         const user = await mockPrisma.user.findUnique({
           where: { id: userId },
@@ -301,7 +302,6 @@ describe('MFA Service', () => {
   describe('generateBackupCodes', () => {
     test('should generate backup codes for user', async () => {
       // Arrange
-      const mockCodes = ['ABC123', 'DEF456', 'GHI789'];
       mockPrisma.mfaBackupCode.create.mockImplementation((data) => 
         Promise.resolve({ id: 'code_123', ...data.data })
       );

@@ -386,7 +386,7 @@ export function RevealCard({
     
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
           setTimeout(() => {
             setIsVisible(true);
           }, getAnimationDuration(delay));
@@ -444,6 +444,7 @@ export function SuccessCelebration({
       const timer = setTimeout(onComplete, shouldAnimate() ? 3000 : 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isVisible, onComplete, shouldAnimate]);
   
   if (!isVisible) return null;

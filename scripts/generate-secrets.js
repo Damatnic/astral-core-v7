@@ -5,6 +5,7 @@
  * Run this to generate all required secret keys
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');

@@ -3,7 +3,7 @@
  * Advanced focus management for complex UI patterns
  */
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFocusTrap, useRovingTabIndex } from '@/hooks/useAccessibility';
 
 interface FocusManagerProps {
@@ -11,43 +11,43 @@ interface FocusManagerProps {
   /**
    * Whether focus should be trapped within this component
    */
-  trapFocus?: boolean;
+  trapFocus?: boolean | undefined;
   /**
    * Whether to use roving tab index for keyboard navigation
    */
-  rovingTabIndex?: boolean;
+  rovingTabIndex?: boolean | undefined;
   /**
    * Orientation for roving tab index
    */
-  orientation?: 'horizontal' | 'vertical' | 'both';
+  orientation?: 'horizontal' | 'vertical' | 'both' | undefined;
   /**
    * Whether to auto-focus the first element when mounted
    */
-  autoFocus?: boolean;
+  autoFocus?: boolean | undefined;
   /**
    * Called when focus escapes the component (useful for modals)
    */
-  onEscapeFocus?: () => void;
+  onEscapeFocus?: (() => void) | undefined;
   /**
    * Called when Escape key is pressed
    */
-  onEscape?: () => void;
+  onEscape?: (() => void) | undefined;
   /**
    * Additional class names
    */
-  className?: string;
+  className?: string | undefined;
   /**
    * ARIA role for the container
    */
-  role?: string;
+  role?: string | undefined;
   /**
    * ARIA label for the container
    */
-  'aria-label'?: string;
+  'aria-label'?: string | undefined;
   /**
    * ARIA labelledby for the container
    */
-  'aria-labelledby'?: string;
+  'aria-labelledby'?: string | undefined;
 }
 
 export function FocusManager({
@@ -175,7 +175,7 @@ export function ModalFocusManager({
   return (
     <FocusManager
       trapFocus
-      autoFocus
+      autoFocus={true}
       onEscape={onClose}
       role="dialog"
       aria-modal="true"
@@ -216,7 +216,7 @@ export function MenuFocusManager({
     <FocusManager
       rovingTabIndex
       orientation="vertical"
-      autoFocus
+      autoFocus={true}
       onEscape={onClose}
       onEscapeFocus={onClose}
       role="menu"
