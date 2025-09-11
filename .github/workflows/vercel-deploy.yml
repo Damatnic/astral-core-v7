@@ -1,0 +1,146 @@
+name: Vercel Production Deployment
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: '20.x'
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Vercel Production
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: 🔧 Setup environment variables
+        run: |
+          # Create .env.local from secrets
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env.local
+          echo "DIRECT_URL=${{ secrets.DIRECT_URL }}" >> .env.local
+          echo "NEXTAUTH_URL=https://astral-core-v7.vercel.app" >> .env.local
+          echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env.local
+          echo "ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}" >> .env.local
+          echo "JWT_SIGNING_KEY=${{ secrets.JWT_SIGNING_KEY }}" >> .env.local
+          
+          # Stripe configuration
+          echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}" >> .env.local
+          echo "STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}" >> .env.local
+          echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}" >> .env.local
+          echo "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}" >> .env.local
+          
+          # Email configuration
+          echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env.local
+          echo "EMAIL_FROM=noreply@astralcore.app" >> .env.local
+          
+          # App configuration
+          echo "NEXT_PUBLIC_APP_URL=https://astral-core-v7.vercel.app" >> .env.local
+          echo "NEXT_PUBLIC_APP_NAME=Astral Core" >> .env.local
+          echo "NEXT_PUBLIC_APP_VERSION=7.0.0" >> .env.local
+          
+          # Security settings
+          echo "PHI_ENCRYPTION_ENABLED=true" >> .env.local
+          echo "AUDIT_LOG_RETENTION_DAYS=2555" >> .env.local
+          echo "SESSION_TIMEOUT_MINUTES=15" >> .env.local
+          echo "MAX_LOGIN_ATTEMPTS=5" >> .env.local
+          echo "LOCKOUT_DURATION_MINUTES=15" >> .env.local
+          echo "RATE_LIMIT_WINDOW_MS=60000" >> .env.local
+          echo "RATE_LIMIT_MAX_REQUESTS=50" >> .env.local
+          
+          # Optional services
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env.local
+          echo "POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}" >> .env.local
+          
+      - name: 🔄 Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: 🏗️ Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+          
+      - name: 🚀 Deploy to Vercel Production
+        id: deploy
+        run: |
+          deployment_url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deployment_url=$deployment_url" >> $GITHUB_OUTPUT
+          echo "Deployed to: $deployment_url"
+          
+      - name: 📊 Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            https://astral-core-v7.vercel.app
+            https://astral-core-v7.vercel.app/auth/login
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          
+      - name: ✅ Deployment Summary
+        run: |
+          echo "## 🎉 Deployment Successful!"
+          echo ""
+          echo "**Production URL**: https://astral-core-v7.vercel.app"
+          echo "**Deployment URL**: ${{ steps.deploy.outputs.deployment_url }}"
+          echo "**Branch**: ${{ github.ref_name }}"
+          echo "**Commit**: ${{ github.sha }}"
+          echo "**Deployed by**: ${{ github.actor }}"
+          echo "**Time**: $(date)"
+          
+  health-check:
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    name: Post-Deployment Health Check
+    
+    steps:
+      - name: 🩺 Check application health
+        run: |
+          echo "Checking application health..."
+          
+          # Check main page
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://astral-core-v7.vercel.app)
+          if [ $response -eq 200 ]; then
+            echo "✅ Main page is healthy (HTTP $response)"
+          else
+            echo "❌ Main page returned HTTP $response"
+            exit 1
+          fi
+          
+          # Check health endpoint
+          health_response=$(curl -s https://astral-core-v7.vercel.app/api/health)
+          echo "Health endpoint response: $health_response"
+          
+          # Check login page
+          login_response=$(curl -s -o /dev/null -w "%{http_code}" https://astral-core-v7.vercel.app/auth/login)
+          if [ $login_response -eq 200 ]; then
+            echo "✅ Login page is healthy (HTTP $login_response)"
+          else
+            echo "❌ Login page returned HTTP $login_response"
+            exit 1
+          fi
+          
+      - name: 📧 Send deployment notification
+        if: success()
+        run: |
+          echo "Deployment successful! Application is healthy."
+          # Add email/Slack notification here if needed

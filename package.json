@@ -30,7 +30,10 @@
     "analyze": "cross-env ANALYZE=true npm run build",
     "analyze:bundle": "node scripts/analyze-bundle.js",
     "optimize:images": "node scripts/optimize-images.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "vercel:env": "node scripts/vercel-env-sync.js",
+    "vercel:deploy": "npm run vercel:env && vercel --prod",
+    "deploy": "npm run vercel:deploy"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
