@@ -30,7 +30,7 @@
     "analyze": "cross-env ANALYZE=true npm run build",
     "analyze:bundle": "node scripts/analyze-bundle.js",
     "optimize:images": "node scripts/optimize-images.js",
-    "prepare": "husky install",
+    "prepare": "node -e \"if (process.env.NODE_ENV !== 'production' && !process.env.CI) { require('child_process').execSync('husky install', {stdio: 'inherit'}); }\"",
     "vercel:env": "node scripts/vercel-env-sync.js",
     "vercel:deploy": "npm run vercel:env && vercel --prod",
     "deploy": "npm run vercel:deploy"

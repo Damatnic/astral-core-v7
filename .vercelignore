@@ -1,0 +1,43 @@
+# Development files
+.husky
+.git
+.github
+*.log
+*.md
+!README.md
+
+# Test files
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+/coverage
+/e2e
+/tests
+playwright.config.ts
+jest.config.js
+
+# Documentation
+/docs
+*.drawio
+*.sketch
+*.fig
+
+# Scripts that aren't needed for production
+/scripts/generate-secrets.js
+/scripts/reset-and-create-demo-accounts.js
+/scripts/seed-demo-accounts.js
+
+# Local environment files
+.env.local
+.env.generated
+deployment-secrets.html
+.env.vercel.backup
+local env.txt
+
+# Development dependencies
+.eslintrc.json
+.prettierrc
+tsconfig.tsbuildinfo
+FINAL_POLISH_PLAN.md

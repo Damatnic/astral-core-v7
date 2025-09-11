@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 local env.txt
+.env.generated
+deployment-secrets.html
+.env.vercel.backup
 
 # vercel
 .vercel
