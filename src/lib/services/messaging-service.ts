@@ -4,6 +4,7 @@ import { websocketServer } from '@/lib/websocket/server';
 import { notificationService } from './notification-service';
 import { audit } from '@/lib/security/audit';
 import { ConversationType } from '@prisma/client';
+import { logError } from '@/lib/logger';
 
 interface CreateConversationDto {
   type: ConversationType;
@@ -98,7 +99,7 @@ export class MessagingService {
 
       return conversation;
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      logError('Error creating conversation', error, 'MessagingService');
       throw error;
     }
   }
@@ -199,7 +200,7 @@ export class MessagingService {
         content: data.content // Return unencrypted
       };
     } catch (error) {
-      console.error('Error sending message:', error);
+      logError('Error sending message', error, 'MessagingService');
       throw error;
     }
   }
@@ -269,7 +270,7 @@ export class MessagingService {
 
       return conversationsWithUnread;
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      logError('Error fetching conversations', error, 'MessagingService');
       throw error;
     }
   }
@@ -349,7 +350,7 @@ export class MessagingService {
 
       return decryptedMessages.reverse();
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      logError('Error fetching messages', error, 'MessagingService');
       throw error;
     }
   }
@@ -400,7 +401,7 @@ export class MessagingService {
 
       return receipt;
     } catch (error) {
-      console.error('Error marking message as read:', error);
+      logError('Error marking message as read', error, 'MessagingService');
       throw error;
     }
   }
@@ -460,7 +461,7 @@ export class MessagingService {
         content: newContent
       };
     } catch (error) {
-      console.error('Error editing message:', error);
+      logError('Error editing message', error, 'MessagingService');
       throw error;
     }
   }
@@ -503,7 +504,7 @@ export class MessagingService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error deleting message:', error);
+      logError('Error deleting message', error, 'MessagingService');
       throw error;
     }
   }
@@ -529,7 +530,7 @@ export class MessagingService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error archiving conversation:', error);
+      logError('Error archiving conversation', error, 'MessagingService');
       throw error;
     }
   }
@@ -555,7 +556,7 @@ export class MessagingService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error muting conversation:', error);
+      logError('Error muting conversation', error, 'MessagingService');
       throw error;
     }
   }
@@ -614,7 +615,7 @@ export class MessagingService {
 
       return results.filter(Boolean);
     } catch (error) {
-      console.error('Error searching messages:', error);
+      logError('Error searching messages', error, 'MessagingService');
       throw error;
     }
   }

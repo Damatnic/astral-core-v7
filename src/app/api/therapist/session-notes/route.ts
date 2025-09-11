@@ -6,7 +6,7 @@ import { sessionNoteSchema } from '@/lib/types/therapy';
 import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import prisma from '@/lib/db/prisma';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 
 // Ensure user is a therapist
 async function requireTherapist() {

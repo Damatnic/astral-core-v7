@@ -5,6 +5,8 @@
 
 'use client';
 
+import { logDebug } from '@/lib/logger';
+
 export interface CoreWebVitals {
   fcp: number; // First Contentful Paint
   lcp: number; // Largest Contentful Paint
@@ -165,7 +167,7 @@ class PerformanceMetricsCollector {
       const navigationEntry = entry as PerformanceNavigationTiming;
 
       // Additional navigation metrics can be collected here
-      console.log('Page load complete:', {
+      logDebug('Page load complete', 'PerformanceMetrics', {
         loadTime: navigationEntry.loadEventEnd - navigationEntry.fetchStart,
         domContentLoaded: navigationEntry.domContentLoadedEventEnd - navigationEntry.fetchStart,
         firstByte: navigationEntry.responseStart - navigationEntry.requestStart
@@ -410,13 +412,15 @@ export function logPerformanceMetrics() {
     const vitalsScore = collector.getWebVitalsScore();
 
     console.group('Performance Metrics Report');
-    console.log('Web Vitals Score:', `${vitalsScore.score}/100 (${vitalsScore.grade})`);
-    console.log('Web Vitals:', report.webVitals);
-    console.log('Page Load Time:', `${report.pageLoadTime.toFixed(2)}ms`);
-    console.log('Bundle Size:', `${(report.bundleSize / 1024).toFixed(2)}KB`);
-    console.log('API Performance:', collector.getApiPerformanceSummary());
-    console.log('Memory Usage:', collector.getLatestMemoryUsage());
-    console.log('Issues:', vitalsScore.issues);
+    logDebug('Performance Report', 'PerformanceMetrics', {
+      webVitalsScore: `${vitalsScore.score}/100 (${vitalsScore.grade})`,
+      webVitals: report.webVitals,
+      pageLoadTime: `${report.pageLoadTime.toFixed(2)}ms`,
+      bundleSize: `${(report.bundleSize / 1024).toFixed(2)}KB`,
+      apiPerformance: collector.getApiPerformanceSummary(),
+      memoryUsage: collector.getLatestMemoryUsage(),
+      issues: vitalsScore.issues
+    });
     console.groupEnd();
   }
 }

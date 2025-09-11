@@ -90,10 +90,186 @@ export const progressReportSchema = z.object({
   nextSteps: z.array(z.string())
 });
 
+// Query schemas
+export const appointmentQuerySchema = z.object({
+  status: z.enum(['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED', 'NO_SHOW']).optional(),
+  type: z.enum(['INITIAL_CONSULTATION', 'THERAPY_SESSION', 'FOLLOW_UP', 'CRISIS_SESSION', 'GROUP_SESSION', 'ASSESSMENT']).optional(),
+  therapistId: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional()
+});
+
+export const sessionNotesQuerySchema = z.object({
+  appointmentId: z.string().optional(),
+  clientId: z.string().optional(),
+  therapistId: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional()
+});
+
+export const treatmentPlanQuerySchema = z.object({
+  clientId: z.string().optional(),
+  status: z.enum(['ACTIVE', 'COMPLETED', 'DISCONTINUED']).optional(),
+  therapistId: z.string().optional()
+});
+
+// Type inference from schemas
 export type AppointmentInput = z.infer<typeof appointmentSchema>;
 export type SessionNoteInput = z.infer<typeof sessionNoteSchema>;
 export type TreatmentPlanInput = z.infer<typeof treatmentPlanSchema>;
 export type ProgressReportInput = z.infer<typeof progressReportSchema>;
+export type AppointmentQuery = z.infer<typeof appointmentQuerySchema>;
+export type SessionNotesQuery = z.infer<typeof sessionNotesQuerySchema>;
+export type TreatmentPlanQuery = z.infer<typeof treatmentPlanQuerySchema>;
+
+// =====================
+// RESPONSE TYPES
+// =====================
+
+export interface AppointmentResponse {
+  success: boolean;
+  appointment?: AppointmentWithDetails;
+  appointments?: AppointmentWithDetails[];
+  total?: number;
+  message: string;
+  error?: string;
+}
+
+export interface SessionNoteResponse {
+  success: boolean;
+  sessionNote?: {
+    id: string;
+    appointmentId: string;
+    sessionDate: string;
+    sessionType: string;
+    presentingIssues: string[];
+    interventions: string[];
+    clientResponse?: string;
+    homework?: string;
+    riskAssessment?: {
+      suicidalIdeation: boolean;
+      homicidalIdeation: boolean;
+      selfHarm: boolean;
+      substanceUse: boolean;
+      notes?: string;
+    };
+    planForNext?: string;
+    additionalNotes?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  sessionNotes?: Array<{
+    id: string;
+    appointmentId: string;
+    sessionDate: string;
+    sessionType: string;
+    presentingIssues: string[];
+    interventions: string[];
+    createdAt: string;
+  }>;
+  total?: number;
+  message: string;
+  error?: string;
+}
+
+export interface TreatmentPlanResponse {
+  success: boolean;
+  treatmentPlan?: {
+    id: string;
+    clientId: string;
+    title: string;
+    diagnosis: string[];
+    goals: Array<{
+      id: string;
+      description: string;
+      targetDate: string;
+      status: string;
+      progress?: number;
+    }>;
+    objectives: Array<{
+      id: string;
+      goalId: string;
+      description: string;
+      measurable: string;
+      targetDate: string;
+      completed?: boolean;
+    }>;
+    interventions: Array<{
+      id: string;
+      type: string;
+      description: string;
+      frequency: string;
+    }>;
+    frequency: string;
+    duration: string;
+    startDate: string;
+    reviewDate: string;
+    endDate?: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  treatmentPlans?: Array<{
+    id: string;
+    title: string;
+    status: string;
+    startDate: string;
+    reviewDate: string;
+    goalsCount: number;
+    completedGoalsCount: number;
+  }>;
+  total?: number;
+  message: string;
+  error?: string;
+}
+
+export interface ProgressReportResponse {
+  success: boolean;
+  progressReport?: {
+    id: string;
+    clientId: string;
+    reportDate: string;
+    reportPeriod: string;
+    summary: string;
+    goalsProgress: Array<{
+      goalId: string;
+      goalDescription: string;
+      progress: number;
+      notes: string;
+    }>;
+    challenges: string[];
+    achievements: string[];
+    recommendations: string[];
+    nextSteps: string[];
+    createdAt: string;
+  };
+  progressReports?: Array<{
+    id: string;
+    reportDate: string;
+    reportPeriod: string;
+    summary: string;
+    overallProgress: number;
+    createdAt: string;
+  }>;
+  total?: number;
+  message: string;
+  error?: string;
+}
+
+export interface TherapistAvailabilityResponse {
+  success: boolean;
+  availability?: Array<{
+    date: string;
+    timeSlots: Array<{
+      startTime: string;
+      endTime: string;
+      available: boolean;
+      appointmentId?: string;
+    }>;
+  }>;
+  message: string;
+  error?: string;
+}
 
 export interface AppointmentWithDetails {
   id: string;
@@ -103,13 +279,30 @@ export interface AppointmentWithDetails {
   duration: number;
   type: AppointmentType;
   status: AppointmentStatus;
+  location?: string;
+  meetingUrl?: string;
+  notes?: string;
   user: {
+    id: string;
     name: string | null;
     email: string;
   };
   therapist: {
+    id: string;
     name: string | null;
     email: string;
+    therapistProfile?: {
+      specializations: string[];
+      licenseNumber: string;
+    };
   };
   sessionNote?: SessionNoteInput;
+  payments?: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    createdAt: Date;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
 }

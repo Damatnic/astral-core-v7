@@ -6,6 +6,7 @@ import { phiService } from '@/lib/security/phi-service';
 import { UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { logError } from '@/lib/logger';
 
 interface CreateUserDto {
   email: string;
@@ -129,7 +130,7 @@ export class AdminService {
         activeThisWeek: recentLogins
       };
     } catch (error) {
-      console.error('Error getting system stats:', error);
+      logError('Error getting system stats', error, 'AdminService');
       throw error;
     }
   }
@@ -206,7 +207,7 @@ export class AdminService {
         hasMore: (filters.offset || 0) + users.length < total
       };
     } catch (error) {
-      console.error('Error getting users:', error);
+      logError('Error getting users', error, 'AdminService');
       throw error;
     }
   }
@@ -318,7 +319,7 @@ export class AdminService {
         temporaryPassword: tempPassword
       };
     } catch (error) {
-      console.error('Error creating user:', error);
+      logError('Error creating user', error, 'AdminService');
       throw error;
     }
   }
@@ -421,7 +422,7 @@ export class AdminService {
 
       return updatedUser;
     } catch (error) {
-      console.error('Error updating user:', error);
+      logError('Error updating user', error, 'AdminService');
       throw error;
     }
   }
@@ -480,7 +481,7 @@ export class AdminService {
 
       return updatedUser;
     } catch (error) {
-      console.error('Error toggling user suspension:', error);
+      logError('Error toggling user suspension', error, 'AdminService');
       throw error;
     }
   }
@@ -528,7 +529,7 @@ export class AdminService {
 
       return { temporaryPassword: tempPassword };
     } catch (error) {
-      console.error('Error resetting password:', error);
+      logError('Error resetting password', error, 'AdminService');
       throw error;
     }
   }
@@ -613,7 +614,7 @@ export class AdminService {
 
       return activities;
     } catch (error) {
-      console.error('Error getting user activity:', error);
+      logError('Error getting user activity', error, 'AdminService');
       throw error;
     }
   }
@@ -650,7 +651,7 @@ export class AdminService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logError('Error deleting user', error, 'AdminService');
       throw error;
     }
   }
@@ -703,7 +704,7 @@ export class AdminService {
 
       return auditLogs;
     } catch (error) {
-      console.error('Error generating audit report:', error);
+      logError('Error generating audit report', error, 'AdminService');
       throw error;
     }
   }
@@ -741,7 +742,7 @@ export class AdminService {
         timestamp: new Date()
       };
     } catch (error) {
-      console.error('Error checking system health:', error);
+      logError('Error checking system health', error, 'AdminService');
       throw error;
     }
   }

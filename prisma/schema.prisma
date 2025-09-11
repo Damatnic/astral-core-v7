@@ -815,6 +815,42 @@ model PerformanceMetric {
   @@index([sessionId])
 }
 
+model ErrorLog {
+  id                String         @id @default(cuid())
+  message           String         @db.Text
+  stack             String?        @db.Text
+  filename          String?
+  lineno            Int?
+  colno             Int?
+  url               String
+  timestamp         DateTime       @default(now())
+  userAgent         String
+  userId            String?
+  sessionId         String?
+  severity          ErrorSeverity
+  type              ErrorType
+  resolved          Boolean        @default(false)
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  context           String?        @db.Text
+  performanceImpact String?        @db.Text
+  fingerprint       String?        // For deduplication
+  count             Int            @default(1)
+  firstSeen         DateTime       @default(now())
+  lastSeen          DateTime       @default(now())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  @@index([severity])
+  @@index([type])
+  @@index([timestamp])
+  @@index([userId])
+  @@index([resolved])
+  @@index([fingerprint])
+  @@index([firstSeen])
+  @@index([lastSeen])
+}
+
 model ErrorMetric {
   id              String   @id @default(cuid())
   message         String   @db.Text
@@ -864,6 +900,135 @@ model QueryMetric {
   @@index([success])
 }
 
+model HealthCheck {
+  id                String           @id @default(cuid())
+  service           String           // database, redis, external-api, etc.
+  status            HealthStatus
+  responseTime      Float            // in milliseconds
+  timestamp         DateTime         @default(now())
+  details           Json?            @db.JsonB
+  errorMessage      String?          @db.Text
+  metadata          Json?            @db.JsonB
+  createdAt         DateTime         @default(now())
+  
+  @@index([service])
+  @@index([status])
+  @@index([timestamp])
+  @@index([responseTime])
+}
+
+model UptimeMonitor {
+  id                String           @id @default(cuid())
+  url               String
+  name              String
+  status            MonitorStatus    @default(ACTIVE)
+  interval          Int              @default(300) // seconds
+  timeout           Int              @default(30)  // seconds
+  expectedStatus    Int              @default(200)
+  lastCheck         DateTime?
+  lastStatus        HealthStatus?
+  lastResponseTime  Float?
+  uptime            Float            @default(100.0) // percentage
+  totalChecks       Int              @default(0)
+  successfulChecks  Int              @default(0)
+  failedChecks      Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  incidents         UptimeIncident[]
+  
+  @@index([status])
+  @@index([lastCheck])
+  @@index([lastStatus])
+  @@index([uptime])
+}
+
+model UptimeIncident {
+  id                String           @id @default(cuid())
+  monitorId         String
+  startTime         DateTime         @default(now())
+  endTime           DateTime?
+  duration          Int?             // seconds
+  status            IncidentStatus   @default(INVESTIGATING)
+  severity          IncidentSeverity @default(MINOR)
+  title             String
+  description       String?          @db.Text
+  statusUpdates     Json[]           @db.JsonB
+  affectedServices  String[]
+  resolvedBy        String?
+  rootCause         String?          @db.Text
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  monitor           UptimeMonitor    @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  
+  @@index([monitorId])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([status])
+  @@index([severity])
+}
+
+model SystemMetric {
+  id                String           @id @default(cuid())
+  metricType        String           // cpu, memory, disk, network, response_time
+  value             Float
+  unit              String           // percentage, mb, ms, etc.
+  timestamp         DateTime         @default(now())
+  source            String?          // server identifier
+  labels            Json?            @db.JsonB
+  createdAt         DateTime         @default(now())
+  
+  @@index([metricType])
+  @@index([timestamp])
+  @@index([source])
+}
+
+model AlertRule {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?          @db.Text
+  condition         String           @db.Text // JSON condition
+  severity          AlertSeverity
+  isActive          Boolean          @default(true)
+  cooldownPeriod    Int              @default(300) // seconds
+  lastTriggered     DateTime?
+  triggerCount      Int              @default(0)
+  actions           Json[]           @db.JsonB // webhook, email, etc.
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  alerts            Alert[]
+  
+  @@index([isActive])
+  @@index([severity])
+  @@index([lastTriggered])
+}
+
+model Alert {
+  id                String           @id @default(cuid())
+  ruleId            String
+  title             String
+  message           String           @db.Text
+  severity          AlertSeverity
+  status            AlertStatus      @default(OPEN)
+  triggeredAt       DateTime         @default(now())
+  acknowledgedAt    DateTime?
+  acknowledgedBy    String?
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  metadata          Json?            @db.JsonB
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  rule              AlertRule        @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  
+  @@index([ruleId])
+  @@index([severity])
+  @@index([status])
+  @@index([triggeredAt])
+}
+
 // ==================== ENUMS ====================
 
 enum ErrorSeverity {
@@ -879,6 +1044,48 @@ enum ErrorType {
   RESOURCE
   NETWORK
   CUSTOM
+}
+
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  UNKNOWN
+}
+
+enum MonitorStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+  CANCELLED
+}
+
+enum IncidentSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+  MAINTENANCE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  SUPPRESSED
 }
 
 enum QueryOperation {

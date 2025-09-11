@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Bug, AlertCircle, TrendingDown, Filter, Download } from 'lucide-react';
+import { AlertTriangle, Bug, AlertCircle, TrendingDown, Filter, Download } from '@/components/ui/Icons';
 import { useErrorMonitoring, ErrorEvent, ErrorPattern } from '@/lib/performance/error-monitoring';
 
 interface ErrorCardProps {

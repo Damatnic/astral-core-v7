@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { fileUploadService } from '@/lib/services/file-upload-service';
 import { rateLimiter } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import { FileCategory } from '@prisma/client';
 
 // POST /api/files/upload - Upload a file

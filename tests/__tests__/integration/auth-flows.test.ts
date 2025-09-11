@@ -28,11 +28,19 @@ jest.mock('bcryptjs', () => ({
 }));
 
 jest.mock('@/lib/db/prisma', () => ({
-  default: createDatabaseMock()
+  default: require('../../mocks/prisma').mockPrisma
 }));
 
 jest.mock('@/lib/security/encryption', () => ({
-  encryption: createEncryptionMock()
+  encryption: {
+    encrypt: jest.fn().mockImplementation(data => `encrypted_${data}`),
+    decrypt: jest.fn().mockImplementation(data => data.replace('encrypted_', '')),
+    hashPassword: jest.fn().mockImplementation(password => `hashed_${password}`),
+    verifyPassword: jest.fn().mockImplementation((password, hash) => hash === `hashed_${password}`),
+    generateToken: jest.fn().mockReturnValue('test-token-123'),
+    encryptObject: jest.fn(),
+    decryptObject: jest.fn()
+  }
 }));
 
 jest.mock('@/lib/security/audit', () => ({
@@ -45,8 +53,22 @@ jest.mock('@/lib/security/audit', () => ({
 
 jest.mock('@/lib/security/rate-limit', () => ({
   rateLimiters: {
-    auth: createRateLimitMock(),
-    mfa: createRateLimitMock()
+    auth: {
+      getIdentifier: jest.fn().mockReturnValue('test-ip'),
+      check: jest.fn().mockResolvedValue({
+        allowed: true,
+        remaining: 10,
+        resetTime: Date.now() + 3600000
+      })
+    },
+    mfa: {
+      getIdentifier: jest.fn().mockReturnValue('test-ip'),
+      check: jest.fn().mockResolvedValue({
+        allowed: true,
+        remaining: 10,
+        resetTime: Date.now() + 3600000
+      })
+    }
   }
 }));
 

@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import { logWarning } from '@/lib/logger';
 import { clsx } from 'clsx';
 
 interface Payment {
@@ -423,7 +424,7 @@ const PaymentHistory = ({ className, showInvoices = true }: PaymentHistoryProps)
       const data = await response.json();
       setInvoices(data.invoices || []);
     } catch (err) {
-      console.warn('Failed to load invoices:', err);
+      logWarning('Failed to load invoices', 'PaymentHistory', { error: err });
       // Don't set error for invoices as they might not be available
     }
   }, [showInvoices]);

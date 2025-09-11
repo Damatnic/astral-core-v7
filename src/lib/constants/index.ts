@@ -32,7 +32,8 @@ export const ERROR_MESSAGES = {
   SERVER_ERROR: 'Internal server error',
   EMAIL_EXISTS: 'Email already exists',
   RATE_LIMIT: 'Too many requests, please try again later',
-  NOT_FOUND: 'Not found'
+  NOT_FOUND: 'Not found',
+  INVALID_JSON: 'Invalid JSON format'
 };
 
 export const SUCCESS_MESSAGES = {

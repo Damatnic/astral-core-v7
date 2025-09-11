@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import prisma from '@/lib/db/prisma';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import { AppointmentStatus } from '@prisma/client';
 import { logError } from '@/lib/logger';
 

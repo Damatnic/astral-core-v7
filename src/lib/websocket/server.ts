@@ -3,6 +3,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { audit } from '@/lib/security/audit';
 import { phiService } from '@/lib/security/phi-service';
 import prisma from '@/lib/db/prisma';
+import { logInfo, logError, logDebug } from '@/lib/logger';
 import type {
   WebSocketMessage,
   PresenceUpdateMessage,
@@ -62,7 +63,7 @@ export class WebSocketServer {
     this.setupEventHandlers();
     this.startHeartbeat();
 
-    console.log('WebSocket server initialized');
+    logInfo('WebSocket server initialized', 'WebSocketServer');
   }
 
   private setupMiddleware() {
@@ -89,7 +90,7 @@ export class WebSocketServer {
 
         next();
       } catch (error) {
-        console.error('WebSocket auth error:', error);
+        logError('WebSocket auth error', error, 'WebSocketServer');
         next(new Error('Authentication failed'));
       }
     });
@@ -101,7 +102,7 @@ export class WebSocketServer {
     this.io.on('connection', (socket: AuthenticatedSocket) => {
       if (!socket.userId) return;
 
-      console.log(`User ${socket.userId} connected`);
+      logInfo(`User ${socket.userId} connected`, 'WebSocketServer');
       this.handleUserConnection(socket);
 
       // Core events
@@ -200,7 +201,7 @@ export class WebSocketServer {
       }
     });
 
-    console.log(`User ${socket.userId} disconnected`);
+    logInfo(`User ${socket.userId} disconnected`, 'WebSocketServer');
   }
 
   private handlePresenceUpdate(socket: AuthenticatedSocket, data: PresenceUpdateMessage) {
@@ -303,7 +304,7 @@ export class WebSocketServer {
         socket.userId
       );
     } catch (error) {
-      console.error('Message handling error:', error);
+      logError('Message handling error', error, 'WebSocketServer');
       socket.emit('error', { message: 'Failed to send message' });
     }
   }
@@ -477,7 +478,7 @@ export class WebSocketServer {
         socket.userId
       );
     } catch (error) {
-      console.error('Crisis alert error:', error);
+      logError('Crisis alert error', error, 'WebSocketServer');
       socket.emit('error', { message: 'Failed to process crisis alert' });
     }
   }
@@ -589,7 +590,7 @@ export class WebSocketServer {
   // Helper methods
   private async verifySession(token: string): Promise<string | null> {
     // Implement session verification logic based on token
-    console.log(`Verifying session token: ${token.substring(0, 10)}...`);
+    logDebug(`Verifying session token: ${token.substring(0, 10)}...`, 'WebSocketServer');
     // This would integrate with NextAuth or your auth system
     return null;
   }
@@ -651,14 +652,15 @@ export class WebSocketServer {
 
   private async sendPushNotifications(conversationId: string, senderId: string, content: string) {
     // Implement push notification logic
-    console.log(
-      `Push notification for conversation ${conversationId} from sender ${senderId}: ${content.substring(0, 50)}...`
+    logDebug(
+      `Push notification for conversation ${conversationId} from sender ${senderId}: ${content.substring(0, 50)}...`,
+      'WebSocketServer'
     );
     // This would integrate with FCM, APNS, or web push
   }
 
   private async getCrisisResources(severity: string): Promise<unknown[]> {
-    console.log(`Getting crisis resources for severity: ${severity}`);
+    logDebug(`Getting crisis resources for severity: ${severity}`, 'WebSocketServer');
     return [
       { type: 'hotline', number: '988', description: 'Suicide & Crisis Lifeline' },
       { type: 'text', number: '741741', description: 'Crisis Text Line' },

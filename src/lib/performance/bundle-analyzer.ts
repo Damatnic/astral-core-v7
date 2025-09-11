@@ -5,6 +5,9 @@
 
 'use client';
 
+import { logDebug } from '@/lib/logger';
+import { devLog } from '@/lib/dev-logger';
+
 interface PerformanceMetrics {
   bundleSize: number;
   loadTime: number;
@@ -82,7 +85,7 @@ class BundleAnalyzer {
 
     // Log for development
     if (process.env.NODE_ENV === 'development') {
-      console.log(
+      devLog(
         `Chunk loaded: ${chunkName}, Size: ${this.formatSize(size)}, Load time: ${loadTime.toFixed(2)}ms`
       );
     }
@@ -100,7 +103,7 @@ class BundleAnalyzer {
     });
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(
+      devLog(
         `Page load complete: ${loadTime.toFixed(2)}ms, Bundle size: ${this.formatSize(this.getTotalBundleSize())}`
       );
     }
@@ -144,7 +147,7 @@ class BundleAnalyzer {
     const loadTime = performance.now() - startTime;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Component loaded: ${componentName}, Load time: ${loadTime.toFixed(2)}ms`);
+      devLog(`Component loaded: ${componentName}, Load time: ${loadTime.toFixed(2)}ms`);
     }
 
     return loadTime;
@@ -236,11 +239,13 @@ export function logPerformanceReport() {
     const report = analyzer.generateReport();
 
     console.group('Bundle Performance Report');
-    console.log('Total Bundle Size:', report.totalSize);
-    console.log('Average Load Time:', report.loadTime.toFixed(2) + 'ms');
-    console.log('Chunk Count:', report.chunkCount);
-    console.log('Largest Chunks:', report.largestChunks);
-    console.log('Recommendations:', report.recommendations);
+    logDebug('Bundle Analysis Report', 'BundleAnalyzer', {
+      totalBundleSize: report.totalSize,
+      averageLoadTime: report.loadTime.toFixed(2) + 'ms',
+      chunkCount: report.chunkCount,
+      largestChunks: report.largestChunks,
+      recommendations: report.recommendations
+    });
     console.groupEnd();
   }
 }

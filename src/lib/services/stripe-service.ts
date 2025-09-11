@@ -978,10 +978,18 @@ export class StripeService {
   static constructWebhookEvent(body: string | Buffer, signature: string): Stripe.Event {
     const webhookSecret = process.env['STRIPE_WEBHOOK_SECRET'];
     if (!webhookSecret) {
-      throw new Error('Stripe webhook secret not configured');
+      throw new Error('STRIPE_WEBHOOK_SECRET environment variable not configured - webhook signature validation impossible');
     }
 
-    return stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    if (!webhookSecret.startsWith('whsec_')) {
+      throw new Error('Invalid STRIPE_WEBHOOK_SECRET format - must start with whsec_');
+    }
+
+    try {
+      return stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    } catch (error) {
+      throw new Error(`Webhook signature verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**

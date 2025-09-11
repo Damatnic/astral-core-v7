@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { logError } from '@/lib/logger';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { clsx } from 'clsx';
@@ -282,7 +283,7 @@ const PaymentMethodCard = ({
 
       onSetDefault(paymentMethod.id);
     } catch (error) {
-      console.error('Error setting default payment method:', error);
+      logError('Error setting default payment method', error, 'PaymentMethods');
     } finally {
       setIsUpdating(false);
     }
@@ -308,7 +309,7 @@ const PaymentMethodCard = ({
 
       onRemove(paymentMethod.id);
     } catch (error) {
-      console.error('Error removing payment method:', error);
+      logError('Error removing payment method', error, 'PaymentMethods');
     } finally {
       setIsRemoving(false);
     }

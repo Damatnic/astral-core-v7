@@ -1,5 +1,6 @@
 import { LRUCache } from 'lru-cache';
 import crypto from 'crypto';
+import { logWarning } from '@/lib/logger';
 
 interface SessionData {
   userId: string;
@@ -168,7 +169,7 @@ export class SessionManager {
     // Validate IP address if provided and stored
     if (this.options.secure && session.ipAddress && ipAddress) {
       if (session.ipAddress !== ipAddress) {
-        console.warn(`Session ${sessionId} IP mismatch: ${session.ipAddress} !== ${ipAddress}`);
+        logWarning(`Session ${sessionId} IP mismatch`, 'SessionManager', { sessionIp: session.ipAddress, requestIp: ipAddress });
         this.destroySession(sessionId);
         return false;
       }
@@ -177,7 +178,7 @@ export class SessionManager {
     // Validate user agent if provided and stored
     if (this.options.secure && session.userAgent && userAgent) {
       if (session.userAgent !== userAgent) {
-        console.warn(`Session ${sessionId} User-Agent mismatch`);
+        logWarning(`Session ${sessionId} User-Agent mismatch`, 'SessionManager');
         this.destroySession(sessionId);
         return false;
       }

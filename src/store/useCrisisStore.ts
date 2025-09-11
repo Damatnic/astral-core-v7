@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { CrisisAssessmentInput, CrisisIntervention } from '@/lib/types/crisis';
+import { logError } from '@/lib/logger';
 
 interface CrisisResource {
   id: string;
@@ -101,7 +102,7 @@ export const useCrisisStore = create<CrisisState>(set => ({
         set({ resources: data.resources });
       }
     } catch (error) {
-      console.error('Failed to fetch crisis resources:', error);
+      logError('Failed to fetch crisis resources', error, 'useCrisisStore');
     }
   },
 

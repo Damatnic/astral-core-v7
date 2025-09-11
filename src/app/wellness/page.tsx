@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { useWellnessStore } from '@/store/useWellnessStore';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import type { WellnessDataInput } from '@/lib/types/wellness';
 
 const MOOD_OPTIONS = [
@@ -74,8 +75,30 @@ export default function WellnessPage() {
   };
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8'>
-      <div className='max-w-4xl mx-auto px-4'>
+    <ErrorBoundary
+      fallback={
+        <div className='min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8'>
+          <div className='sm:mx-auto sm:w-full sm:max-w-md'>
+            <div className='bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10'>
+              <div className='text-center'>
+                <h3 className='text-lg font-medium text-gray-900'>Wellness Check-In Error</h3>
+                <p className='mt-2 text-sm text-gray-600'>
+                  Unable to load the wellness check-in form. Your wellness data is safe and will be available once the issue is resolved.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className='mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700'
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8'>
+        <div className='max-w-4xl mx-auto px-4'>
         <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-8'>
           Daily Wellness Check-In
         </h1>
@@ -285,7 +308,8 @@ export default function WellnessPage() {
             </Button>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

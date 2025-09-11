@@ -10,6 +10,7 @@ import { SubscriptionService } from '@/lib/services/subscription-service';
 import { prisma } from '@/lib/db';
 import { auditLog } from '@/lib/security/audit';
 import { notificationService } from '@/lib/services/notification-service';
+import { logger } from '@/lib/logger';
 import { PaymentStatus, InvoiceStatus } from '@prisma/client';
 import Stripe from 'stripe';
 
@@ -57,11 +58,32 @@ export async function POST(request: NextRequest) {
     const signature = (await headers()).get('stripe-signature');
 
     if (!signature) {
+      await auditLog({
+        action: 'STRIPE_WEBHOOK_ERROR',
+        entity: 'WebhookEvent',
+        details: { error: 'Missing stripe-signature header' },
+        outcome: 'FAILURE'
+      });
       return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 });
     }
 
-    // Construct and verify webhook event
-    const event = StripeService.constructWebhookEvent(body, signature);
+    // Construct and verify webhook event with proper error handling
+    let event: Stripe.Event;
+    try {
+      event = StripeService.constructWebhookEvent(body, signature);
+    } catch (err) {
+      await auditLog({
+        action: 'STRIPE_WEBHOOK_ERROR',
+        entity: 'WebhookEvent',
+        details: { 
+          error: 'Invalid webhook signature',
+          signaturePresent: !!signature,
+          bodyLength: body.length
+        },
+        outcome: 'FAILURE'
+      });
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+    }
 
     // Log webhook event
     await auditLog({
@@ -122,7 +144,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.warn(`Unhandled webhook event type: ${event.type}`, 'webhook-handler', { eventType: event.type });
     }
 
     return NextResponse.json({ received: true });
@@ -242,7 +264,10 @@ async function handleInvoicePaymentSucceeded(invoice: ExpandedStripeInvoice) {
     });
 
     if (!customer) {
-      console.log(`Customer ${invoice.customer} not found in database`);
+      logger.warn(`Customer not found in database for invoice`, 'webhook-handler', { 
+        customerId: invoice.customer,
+        invoiceId: invoice.id 
+      });
       return;
     }
 
@@ -325,7 +350,10 @@ async function handleInvoicePaymentFailed(invoice: ExpandedStripeInvoice) {
     });
 
     if (!customer) {
-      console.log(`Customer ${invoice.customer} not found in database`);
+      logger.warn(`Customer not found in database for invoice`, 'webhook-handler', { 
+        customerId: invoice.customer,
+        invoiceId: invoice.id 
+      });
       return;
     }
 
@@ -420,7 +448,9 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     });
 
     if (!payment) {
-      console.log(`Payment ${paymentIntent.id} not found in database`);
+      logger.warn(`Payment not found in database`, 'webhook-handler', { 
+        paymentIntentId: paymentIntent.id 
+      });
       return;
     }
 
@@ -470,7 +500,9 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
     });
 
     if (!payment) {
-      console.log(`Payment ${paymentIntent.id} not found in database`);
+      logger.warn(`Payment not found in database`, 'webhook-handler', { 
+        paymentIntentId: paymentIntent.id 
+      });
       return;
     }
 
@@ -534,7 +566,10 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
     });
 
     if (!customer) {
-      console.log(`Customer ${paymentMethod.customer} not found in database`);
+      logger.warn(`Customer not found in database for payment method`, 'webhook-handler', { 
+        customerId: paymentMethod.customer,
+        paymentMethodId: paymentMethod.id 
+      });
       return;
     }
 
@@ -568,7 +603,10 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
     });
 
     if (!customer) {
-      console.log(`Customer ${setupIntent.customer} not found in database`);
+      logger.warn(`Customer not found in database for setup intent`, 'webhook-handler', { 
+        customerId: setupIntent.customer,
+        setupIntentId: setupIntent.id 
+      });
       return;
     }
 
@@ -600,7 +638,9 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
     const userId = customer.metadata?.['userId'];
 
     if (!userId) {
-      console.log(`Customer ${customer.id} created without userId metadata`);
+      logger.warn(`Stripe customer created without userId metadata`, 'webhook-handler', { 
+        stripeCustomerId: customer.id 
+      });
       return;
     }
 
@@ -660,7 +700,10 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
     });
 
     if (!payment) {
-      console.log(`Payment for dispute ${dispute.id} not found in database`);
+      logger.warn(`Payment not found in database for dispute`, 'webhook-handler', { 
+        disputeId: dispute.id,
+        chargeId: dispute.charge 
+      });
       return;
     }
 
@@ -752,14 +795,19 @@ async function handlePaymentRetryLogic(
   amount: number
 ): Promise<void> {
   try {
-    console.log(`Processing payment retry for invoice ${invoiceId}, amount: ${amount}`);
+    logger.info(`Processing payment retry for invoice`, 'webhook-handler', { 
+      invoiceId, 
+      amount 
+    });
     // Get current invoice to check retry metadata
     const invoice = await prisma.invoice.findUnique({
       where: { stripeInvoiceId: invoiceId }
     });
 
     if (!invoice) {
-      console.log(`Invoice ${invoiceId} not found for retry logic`);
+      logger.warn(`Invoice not found for retry logic`, 'webhook-handler', { 
+        invoiceId 
+      });
       return;
     }
 
@@ -1162,7 +1210,11 @@ async function sendAutomaticDisputeResponse(
       outcome: 'SUCCESS'
     });
 
-    console.log(`Automatic dispute response initiated for dispute ${dispute.id}`);
+    logger.info(`Automatic dispute response initiated`, 'webhook-handler', { 
+      disputeId: dispute.id,
+      amount: dispute.amount,
+      reason: dispute.reason 
+    });
 
     // In production, this would integrate with Stripe's dispute evidence submission API
     // For now, we create an audit trail for manual follow-up
@@ -1204,7 +1256,10 @@ async function initiateDocumentCollection(
       });
     }
 
-    console.log(`Document collection initiated for dispute ${disputeData.stripeDisputeId}`);
+    logger.info(`Document collection initiated for dispute`, 'webhook-handler', { 
+      disputeId: disputeData.stripeDisputeId,
+      amount: disputeData.amount 
+    });
   } catch (error) {
     console.error('Error initiating document collection:', error);
   }
@@ -1259,7 +1314,11 @@ async function escalateHighValueDispute(
       });
     }
 
-    console.log(`High-value dispute ${disputeData.stripeDisputeId} escalated for senior review`);
+    logger.warn(`High-value dispute escalated for senior review`, 'webhook-handler', { 
+      disputeId: disputeData.stripeDisputeId,
+      amount: disputeData.amount,
+      threshold: DISPUTE_CONFIG.escalationThreshold 
+    });
   } catch (error) {
     console.error('Error escalating high-value dispute:', error);
   }

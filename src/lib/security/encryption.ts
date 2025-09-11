@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { logError } from '@/lib/logger';
 
 const ALGORITHM = 'aes-256-gcm';
 const SALT_LENGTH = 64;
@@ -128,7 +129,7 @@ export class EncryptionService {
           const value = String(decrypted[field]);
           decrypted[field] = this.decrypt(value) as T[keyof T];
         } catch (error) {
-          console.error(`Failed to decrypt field ${String(field)}:`, error);
+          logError(`Failed to decrypt field ${String(field)}`, error, 'EncryptionService');
         }
       }
     }

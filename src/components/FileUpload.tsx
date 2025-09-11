@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
+import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { toast } from 'react-hot-toast';
@@ -326,11 +327,13 @@ export default function FileUpload({
                   <div className='flex items-center space-x-3'>
                     <div className='flex-shrink-0'>
                       {file.preview ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
+                        <Image
                           src={file.preview}
-                          alt=''
-                          className='w-10 h-10 object-cover rounded'
+                          alt={`Preview of ${file.name}`}
+                          width={40}
+                          height={40}
+                          className='object-cover rounded'
+                          unoptimized={true}
                           onLoad={() => URL.revokeObjectURL(file.preview!)}
                         />
                       ) : (

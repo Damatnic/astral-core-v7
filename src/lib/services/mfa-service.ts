@@ -520,7 +520,7 @@ export class MfaService {
   async disableMfa(userId: string, password: string): Promise<boolean> {
     try {
       // Verify password first
-      console.log(`Disabling MFA for user ${userId} with password verification`);
+      logInfo(`Disabling MFA for user ${userId} with password verification`, 'MfaService');
       
       if (!password) {
         await audit.logFailure('MFA_DISABLE', 'User', 'Password required for MFA disable', userId);

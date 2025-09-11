@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { treatmentPlanService, treatmentPlanSchema } from '@/lib/services/treatment-plan-service';
 import { rateLimiter } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 

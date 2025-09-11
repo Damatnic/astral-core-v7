@@ -1043,6 +1043,56 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /files:
+    get:
+      tags: [Files]
+      summary: List user files
+      description: Get a list of user's uploaded files with filtering and pagination
+      operationId: getUserFiles
+      parameters:
+        - name: category
+          in: query
+          description: Filter by file category
+          schema:
+            type: string
+            enum: [CONSENT_FORM, INSURANCE, MEDICAL_RECORD, SESSION_NOTE, ASSESSMENT, REPORT, OTHER]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Files retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FileResponse/properties/file'
+                      total:
+                        type: integer
+                      hasMore:
+                        type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /files/upload:
     post:
       tags: [Files]
@@ -1082,6 +1132,522 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '413':
           description: File too large
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/{id}:
+    get:
+      tags: [Files]
+      summary: Download file
+      description: Download a specific file by ID with proper authorization
+      operationId: downloadFile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: File ID
+          schema:
+            type: string
+        - name: inline
+          in: query
+          description: Whether to display inline or download
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: File downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Access denied to file
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== JOURNAL ENTRIES ====================
+
+  /journal/entries:
+    get:
+      tags: [Journal]
+      summary: Get journal entries
+      description: Retrieve user's journal entries with pagination and filtering
+      operationId: getJournalEntries
+      parameters:
+        - name: startDate
+          in: query
+          description: Start date for filtering entries
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: End date for filtering entries
+          schema:
+            type: string
+            format: date
+        - name: mood
+          in: query
+          description: Filter by mood level
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Journal entries retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/JournalEntry'
+                      total:
+                        type: integer
+                      hasMore:
+                        type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Journal]
+      summary: Create journal entry
+      description: Create a new journal entry
+      operationId: createJournalEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJournalEntryRequest'
+      responses:
+        '201':
+          description: Journal entry created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/JournalEntry'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== TREATMENT PLANS ====================
+
+  /treatment-plans:
+    get:
+      tags: [Treatment Plans]
+      summary: Get treatment plans
+      description: Retrieve treatment plans (clients see their own, therapists see assigned plans)
+      operationId: getTreatmentPlans
+      parameters:
+        - name: status
+          in: query
+          description: Filter by plan status
+          schema:
+            type: string
+            enum: [DRAFT, ACTIVE, COMPLETED, DISCONTINUED]
+        - name: clientId
+          in: query
+          description: Filter by client ID (therapists only)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Treatment plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TreatmentPlan'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Treatment Plans]
+      summary: Create treatment plan
+      description: Create a new treatment plan (therapists only)
+      operationId: createTreatmentPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTreatmentPlanRequest'
+      responses:
+        '201':
+          description: Treatment plan created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/TreatmentPlan'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Therapist access required
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /treatment-plans/templates:
+    get:
+      tags: [Treatment Plans]
+      summary: Get treatment plan templates
+      description: Retrieve available treatment plan templates (therapists only)
+      operationId: getTreatmentPlanTemplates
+      responses:
+        '200':
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  templates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TreatmentPlanTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Therapist access required
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /treatment-plans/progress:
+    post:
+      tags: [Treatment Plans]
+      summary: Update treatment progress
+      description: Update progress on treatment plan goals and objectives
+      operationId: updateTreatmentProgress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProgressRequest'
+      responses:
+        '200':
+          description: Progress updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/ProgressUpdate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== THERAPIST SESSION NOTES ====================
+
+  /therapist/session-notes:
+    get:
+      tags: [Therapist, Session Notes]
+      summary: Get session notes
+      description: Retrieve session notes (therapists only)
+      operationId: getSessionNotes
+      parameters:
+        - name: clientId
+          in: query
+          description: Filter by client ID
+          schema:
+            type: string
+        - name: appointmentId
+          in: query
+          description: Filter by appointment ID
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Session notes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SessionNote'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Therapist access required
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Therapist, Session Notes]
+      summary: Create session note
+      description: Create a new session note (therapists only)
+      operationId: createSessionNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionNoteRequest'
+      responses:
+        '201':
+          description: Session note created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/SessionNote'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Therapist access required
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== NOTIFICATIONS PREFERENCES ====================
+
+  /notifications/preferences:
+    get:
+      tags: [Notifications]
+      summary: Get notification preferences
+      description: Retrieve user's notification preferences
+      operationId: getNotificationPreferences
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Notifications]
+      summary: Update notification preferences
+      description: Update user's notification preferences
+      operationId: updateNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationPreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== ADDITIONAL PAYMENTS ====================
+
+  /payments/sessions:
+    post:
+      tags: [Payments, Sessions]
+      summary: Create session payment
+      description: Create a one-time payment for a therapy session
+      operationId: createSessionPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionPaymentRequest'
+      responses:
+        '201':
+          description: Session payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionPaymentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /payments/therapy-plans:
+    get:
+      tags: [Payments, Therapy Plans]
+      summary: Get available therapy plans
+      description: Retrieve available therapy plans for subscription
+      operationId: getTherapyPlans
+      responses:
+        '200':
+          description: Therapy plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  plans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TherapyPlan'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /payments/invoices:
+    get:
+      tags: [Payments, Invoices]
+      summary: Get user invoices
+      description: Retrieve user's billing history and invoices
+      operationId: getUserInvoices
+      parameters:
+        - name: status
+          in: query
+          description: Filter by invoice status
+          schema:
+            type: string
+            enum: [DRAFT, OPEN, PAID, UNCOLLECTIBLE, VOID]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: startingAfter
+          in: query
+          description: Pagination cursor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoices retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      invoices:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Invoice'
+                      hasMore:
+                        type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== ANALYTICS ====================
+
+  /analytics/dashboard:
+    get:
+      tags: [Analytics]
+      summary: Get dashboard analytics
+      description: Retrieve analytics data for dashboard (placeholder endpoint)
+      operationId: getDashboardAnalytics
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Analytics dashboard placeholder"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -1948,6 +2514,440 @@ components:
               type: string
               format: date-time
 
+    # ==================== NEW SCHEMAS FOR ADDITIONAL ENDPOINTS ====================
+
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        mood:
+          type: integer
+          minimum: 1
+          maximum: 10
+        tags:
+          type: array
+          items:
+            type: string
+        isPrivate:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateJournalEntryRequest:
+      type: object
+      required:
+        - title
+        - content
+        - mood
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          maxLength: 5000
+        mood:
+          type: integer
+          minimum: 1
+          maximum: 10
+        tags:
+          type: array
+          items:
+            type: string
+        isPrivate:
+          type: boolean
+          default: true
+
+    TreatmentPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        therapistId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, COMPLETED, DISCONTINUED]
+        goals:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              description:
+                type: string
+              targetDate:
+                type: string
+                format: date
+              objectives:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    description:
+                      type: string
+                    isCompleted:
+                      type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateTreatmentPlanRequest:
+      type: object
+      required:
+        - clientId
+        - title
+        - description
+        - goals
+      properties:
+        clientId:
+          type: string
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        goals:
+          type: array
+          items:
+            type: object
+            required:
+              - title
+              - description
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              targetDate:
+                type: string
+                format: date
+              objectives:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - description
+                  properties:
+                    description:
+                      type: string
+
+    TreatmentPlanTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        goals:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              objectives:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+
+    UpdateProgressRequest:
+      type: object
+      required:
+        - planId
+        - progress
+      properties:
+        planId:
+          type: string
+        goalId:
+          type: string
+        objectiveId:
+          type: string
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        notes:
+          type: string
+          maxLength: 1000
+        evidenceData:
+          type: object
+          additionalProperties: true
+
+    ProgressUpdate:
+      type: object
+      properties:
+        id:
+          type: string
+        planId:
+          type: string
+        goalId:
+          type: string
+        objectiveId:
+          type: string
+        progress:
+          type: number
+        notes:
+          type: string
+        evidenceData:
+          type: object
+        updatedAt:
+          type: string
+          format: date-time
+
+    SessionNote:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        therapistId:
+          type: string
+        appointmentId:
+          type: string
+        sessionDate:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        assessments:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              score:
+                type: number
+              notes:
+                type: string
+        interventions:
+          type: array
+          items:
+            type: string
+        goals:
+          type: array
+          items:
+            type: string
+        nextSteps:
+          type: array
+          items:
+            type: string
+        isConfidential:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateSessionNoteRequest:
+      type: object
+      required:
+        - clientId
+        - appointmentId
+        - notes
+      properties:
+        clientId:
+          type: string
+        appointmentId:
+          type: string
+        sessionDate:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          maxLength: 5000
+        assessments:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              score:
+                type: number
+              notes:
+                type: string
+        interventions:
+          type: array
+          items:
+            type: string
+        goals:
+          type: array
+          items:
+            type: string
+        nextSteps:
+          type: array
+          items:
+            type: string
+
+    NotificationPreferencesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        preferences:
+          type: object
+          properties:
+            email:
+              type: boolean
+            push:
+              type: boolean
+            sms:
+              type: boolean
+            appointments:
+              type: boolean
+            messages:
+              type: boolean
+            wellness:
+              type: boolean
+            crisis:
+              type: boolean
+
+    UpdateNotificationPreferencesRequest:
+      type: object
+      properties:
+        email:
+          type: boolean
+        push:
+          type: boolean
+        sms:
+          type: boolean
+        appointments:
+          type: boolean
+        messages:
+          type: boolean
+        wellness:
+          type: boolean
+        crisis:
+          type: boolean
+
+    CreateSessionPaymentRequest:
+      type: object
+      required:
+        - appointmentId
+        - amount
+      properties:
+        appointmentId:
+          type: string
+        amount:
+          type: number
+          minimum: 1
+          maximum: 10000
+        paymentMethodId:
+          type: string
+        savePaymentMethod:
+          type: boolean
+          default: false
+
+    SessionPaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        payment:
+          type: object
+          properties:
+            id:
+              type: string
+            amount:
+              type: number
+            status:
+              type: string
+              enum: [PENDING, SUCCEEDED, FAILED, CANCELED]
+            paymentIntentId:
+              type: string
+        clientSecret:
+          type: string
+          description: Client secret for payment confirmation (if required)
+
+    TherapyPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        interval:
+          type: string
+          enum: [MONTH, YEAR]
+        features:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, OPEN, PAID, UNCOLLECTIBLE, VOID]
+        amount:
+          type: number
+        currency:
+          type: string
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        hostedInvoiceUrl:
+          type: string
+        invoicePdf:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
     # ==================== COMMON RESPONSE SCHEMAS ====================
     
     SuccessResponse:
@@ -2061,6 +3061,12 @@ tags:
     description: Subscription management for therapy plans
   - name: Payment Methods
     description: Payment method management
+  - name: Sessions
+    description: One-time session payment management
+  - name: Therapy Plans
+    description: Therapy plan management and retrieval
+  - name: Invoices
+    description: Invoice and billing history management
   - name: Webhooks
     description: Webhook handlers for external integrations
   - name: User Management
@@ -2073,6 +3079,16 @@ tags:
     description: User notification management
   - name: Files
     description: File upload and management
+  - name: Journal
+    description: Personal journal and mood tracking
+  - name: Treatment Plans
+    description: Treatment plan creation and progress tracking
+  - name: Therapist
+    description: Therapist-specific functionality
+  - name: Session Notes
+    description: Therapy session notes and documentation
+  - name: Analytics
+    description: Analytics and reporting endpoints
 
 externalDocs:
   description: Astral Core v7 Documentation

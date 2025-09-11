@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { rateLimiters } from '@/lib/security/rate-limit';
+import { isCacheable } from '@/lib/utils/cache';
+import { validateCSRF, generateCSRFToken } from '@/lib/security/csrf';
 
 const PUBLIC_PATHS = [
   '/',
@@ -33,7 +35,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Security headers
+  // Security headers and caching configuration
   const response = NextResponse.next();
 
   response.headers.set('X-Frame-Options', 'DENY');
@@ -58,6 +60,16 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // Add cache-related headers for better performance
+  if (isCacheable(request)) {
+    response.headers.set('Vary', 'Accept-Encoding, Authorization, Cookie');
+    
+    // Set default cache headers for HTML pages (will be overridden by next.config.ts)
+    if (!pathname.startsWith('/api')) {
+      response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, must-revalidate');
+    }
+  }
+
   // Rate limiting for API routes
   if (pathname.startsWith('/api')) {
     const identifier = rateLimiters.api.getIdentifier(request);
@@ -72,6 +84,22 @@ export async function middleware(request: NextRequest) {
         { error: 'Too many requests' },
         {
           status: 429,
+          headers: response.headers
+        }
+      );
+    }
+
+    // CSRF Protection for API routes
+    const csrfResult = await validateCSRF(request);
+    if (!csrfResult.valid) {
+      return NextResponse.json(
+        { 
+          error: 'CSRF token validation failed',
+          message: csrfResult.error,
+          code: 'CSRF_TOKEN_INVALID'
+        },
+        {
+          status: 403,
           headers: response.headers
         }
       );
@@ -115,6 +143,26 @@ export async function middleware(request: NextRequest) {
   // Session activity tracking
   response.headers.set('X-User-Id', token.id as string);
   response.headers.set('X-User-Role', userRole);
+
+  // Generate CSRF token for authenticated users on page requests
+  if (!pathname.startsWith('/api') && token) {
+    try {
+      const { headers: csrfHeaders } = generateCSRFToken(
+        token.id as string,
+        token.sessionId as string
+      );
+      
+      // Add CSRF token to response headers
+      Object.entries(csrfHeaders).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          response.headers.set(key, value);
+        }
+      });
+    } catch (error) {
+      // Log error but don't fail the request
+      console.error('Failed to generate CSRF token:', error);
+    }
+  }
 
   return response;
 }

@@ -6,7 +6,7 @@ import { wellnessDataSchema } from '@/lib/types/wellness';
 import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import { rateLimiters } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants/index';
 import prisma from '@/lib/db/prisma';
 import { logError } from '@/lib/logger';
 

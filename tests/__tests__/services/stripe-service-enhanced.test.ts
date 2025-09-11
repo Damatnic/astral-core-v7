@@ -1,20 +1,4 @@
-import { StripeService } from '@/lib/services/stripe-service';
-import { createDatabaseMock, createEncryptionMock } from '../../utils/api-test-helpers';
-
-// Mock dependencies
-jest.mock('@/lib/db/prisma', () => ({
-  prisma: createDatabaseMock()
-}));
-
-jest.mock('@/lib/security/encryption', () => ({
-  encryption: createEncryptionMock()
-}));
-
-jest.mock('@/lib/security/audit', () => ({
-  auditLog: jest.fn().mockResolvedValue(undefined)
-}));
-
-// Mock Stripe
+// Mock Stripe instance first
 const mockStripe = {
   customers: {
     create: jest.fn(),
@@ -65,24 +49,23 @@ const mockStripe = {
   }
 };
 
-jest.mock('stripe', () => {
-  return jest.fn().mockImplementation(() => mockStripe);
-});
-
-// Use test mocks instead of real imports
-import { mockPrisma } from '../../mocks/prisma';
-
-// Mock the modules
-jest.mock('@/lib/db/prisma', () => ({
-  default: mockPrisma
-}));
-
+// Mock encryption service
 const mockEncryption = {
   encrypt: jest.fn(),
   decrypt: jest.fn()
 };
 
+// Mock audit log
 const mockAuditLog = jest.fn();
+
+// Set up all mocks before importing the service
+jest.mock('stripe', () => {
+  return jest.fn().mockImplementation(() => mockStripe);
+});
+
+jest.mock('@/lib/db/prisma', () => ({
+  default: require('../../mocks/prisma').mockPrisma
+}));
 
 jest.mock('@/lib/security/encryption', () => ({
   encryption: mockEncryption
@@ -91,6 +74,10 @@ jest.mock('@/lib/security/encryption', () => ({
 jest.mock('@/lib/security/audit', () => ({
   auditLog: mockAuditLog
 }));
+
+// Import service after mocks are set up
+import { StripeService } from '@/lib/services/stripe-service';
+import { mockPrisma } from '../../mocks/prisma';
 
 // Make mocks available to tests
 const prisma = mockPrisma;

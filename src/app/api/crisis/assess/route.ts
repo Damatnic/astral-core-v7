@@ -12,7 +12,7 @@ import { logError } from '@/lib/logger';
 import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import { rateLimiters } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import type { PHIRecord } from '@/lib/types/phi';
 import type { CrisisSeverity, InterventionType } from '@prisma/client';
 

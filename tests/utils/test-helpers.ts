@@ -1,4 +1,16 @@
 import { Session } from 'next-auth';
+import { jest } from '@jest/globals';
+
+// Test environment setup
+export const setupTestEnvironment = () => {
+  process.env.NEXTAUTH_SECRET = 'test-secret';
+  process.env.NEXTAUTH_URL = 'http://localhost:3000';
+  process.env.STRIPE_SECRET_KEY = 'sk_test_123';
+  process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_123';
+  process.env.ENCRYPTION_KEY = 'test-encryption-key-32-characters';
+  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/testdb';
+  process.env.NODE_ENV = 'test';
+};
 
 // Mock user data generator
 export const createMockUser = (overrides: Partial<Record<string, unknown>> = {}) => ({

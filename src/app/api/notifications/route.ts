@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { notificationService } from '@/lib/services/notification-service';
 import { rateLimiter } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import { NotificationType } from '@prisma/client';
 
 // GET /api/notifications - Get user notifications

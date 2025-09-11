@@ -8,6 +8,7 @@ import { StripeService, CreateSubscriptionData } from './stripe-service';
 import { auditLog } from '@/lib/security/audit';
 import type { TherapyPlan, Subscription, SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
+import { logInfo } from '@/lib/logger';
 
 // Helper function to map Stripe status to Prisma enum
 function mapStripeStatusToPrisma(stripeStatus: Stripe.Subscription.Status): SubscriptionStatus {
@@ -776,7 +777,7 @@ export class SubscriptionService {
       });
 
       if (!subscription) {
-        console.log(`Subscription ${subscriptionId} not found in database`);
+        logInfo(`Subscription ${subscriptionId} not found in database`, 'SubscriptionService');
         return;
       }
 

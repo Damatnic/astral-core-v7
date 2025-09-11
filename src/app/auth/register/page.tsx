@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { z } from 'zod';
 import { registerSchema } from '@/lib/types/auth';
 import { APP_CONFIG } from '@/lib/constants';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -53,7 +54,29 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4'>
+    <ErrorBoundary
+      fallback={
+        <div className='min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8'>
+          <div className='sm:mx-auto sm:w-full sm:max-w-md'>
+            <div className='bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10'>
+              <div className='text-center'>
+                <h3 className='text-lg font-medium text-gray-900'>Registration Error</h3>
+                <p className='mt-2 text-sm text-gray-600'>
+                  We encountered an issue with the registration page. Please try refreshing or contact support if the problem persists.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className='mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700'
+                >
+                  Refresh Page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4'>
       <div className='max-w-md w-full space-y-8'>
         <div className='text-center'>
           <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Create Account</h1>
@@ -223,7 +246,8 @@ export default function RegisterPage() {
             </Link>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

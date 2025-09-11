@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { UserRole } from '@prisma/client';
+import { logError } from '@/lib/logger';
 
 interface DateRange {
   startDate: Date;
@@ -170,7 +171,7 @@ export class AnalyticsService {
         stressTrend
       };
     } catch (error) {
-      console.error('Error getting wellness analytics:', error);
+      logError('Error getting wellness analytics', error, 'AnalyticsService');
       throw error;
     }
   }
@@ -272,7 +273,7 @@ export class AnalyticsService {
         averageGoalProgress: Math.round(averageGoalProgress * 10) / 10
       };
     } catch (error) {
-      console.error('Error getting therapy analytics:', error);
+      logError('Error getting therapy analytics', error, 'AnalyticsService');
       throw error;
     }
   }
@@ -347,7 +348,7 @@ export class AnalyticsService {
         recentAlerts
       };
     } catch (error) {
-      console.error('Error getting crisis analytics:', error);
+      logError('Error getting crisis analytics', error, 'AnalyticsService');
       throw error;
     }
   }
@@ -470,7 +471,7 @@ export class AnalyticsService {
         retentionRate: Math.round(retentionRate * 10) / 10
       };
     } catch (error) {
-      console.error('Error getting engagement analytics:', error);
+      logError('Error getting engagement analytics', error, 'AnalyticsService');
       throw error;
     }
   }
@@ -508,7 +509,7 @@ export class AnalyticsService {
         cpuUsage: 35 // percentage
       };
     } catch (error) {
-      console.error('Error getting performance metrics:', error);
+      logError('Error getting performance metrics', error, 'AnalyticsService');
       throw error;
     }
   }
@@ -563,7 +564,7 @@ export class AnalyticsService {
         vulnerabilitiesFound: 0
       };
     } catch (error) {
-      console.error('Error getting compliance metrics:', error);
+      logError('Error getting compliance metrics', error, 'AnalyticsService');
       throw error;
     }
   }
@@ -620,7 +621,7 @@ export class AnalyticsService {
         };
       }
     } catch (error) {
-      console.error('Error generating dashboard analytics:', error);
+      logError('Error generating dashboard analytics', error, 'AnalyticsService');
       throw error;
     }
   }
@@ -694,7 +695,7 @@ export class AnalyticsService {
         reportGenerated: new Date()
       };
     } catch (error) {
-      console.error('Error generating wellness report:', error);
+      logError('Error generating wellness report', error, 'AnalyticsService');
       throw error;
     }
   }

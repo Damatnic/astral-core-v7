@@ -5,7 +5,7 @@ import prisma from '@/lib/db/prisma';
 import { registerSchema } from '@/lib/types/auth';
 import { audit } from '@/lib/security/audit';
 import { rateLimiters } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants/index';
 import { encryption } from '@/lib/security/encryption';
 import { logError } from '@/lib/logger';
 

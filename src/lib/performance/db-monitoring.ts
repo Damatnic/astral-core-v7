@@ -5,6 +5,8 @@
 
 'use client';
 
+import { logWarning, logError, logDebug } from '@/lib/logger';
+
 export interface QueryMetric {
   id: string;
   query: string;
@@ -181,8 +183,7 @@ class DatabaseMonitor {
     if (process.env.NODE_ENV === 'development' && insights.length > 0) {
       console.group('Database Performance Insights');
       insights.forEach(insight => {
-        console.warn(`${insight.type}: ${insight.message}`);
-        console.log(`Recommendation: ${insight.recommendation}`);
+        logWarning(`${insight.type}: ${insight.message}`, 'DatabaseMonitor', { recommendation: insight.recommendation });
       });
       console.groupEnd();
     }
@@ -223,7 +224,7 @@ class DatabaseMonitor {
       process.env.NODE_ENV === 'development' &&
       metric.duration > this.alertThresholds.slowQueryMs
     ) {
-      console.warn(`Slow query detected (${metric.duration}ms):`, metric.query);
+      logWarning(`Slow query detected (${metric.duration}ms)`, 'DatabaseMonitor', { query: metric.query });
     }
 
     return metric;
@@ -234,7 +235,7 @@ class DatabaseMonitor {
       try {
         callback(metric);
       } catch (e) {
-        console.error('Error in database monitor subscriber:', e);
+        logError('Error in database monitor subscriber', e, 'DatabaseMonitor');
       }
     });
   }
@@ -570,11 +571,13 @@ export function logDatabaseReport() {
     const data = monitor.exportData();
 
     console.group('Database Performance Report');
-    console.log('Total Queries:', data.stats.totalQueries);
-    console.log('Average Duration:', `${data.stats.averageDuration.toFixed(2)}ms`);
-    console.log('Cache Hit Rate:', `${(data.stats.cacheHitRate * 100).toFixed(1)}%`);
-    console.log('Slowest Queries:', data.stats.slowestQueries.slice(0, 3));
-    console.log('Insights:', data.insights);
+    logDebug('Database Performance Report', 'DatabaseMonitor', {
+      totalQueries: data.stats.totalQueries,
+      averageDuration: `${data.stats.averageDuration.toFixed(2)}ms`,
+      cacheHitRate: `${(data.stats.cacheHitRate * 100).toFixed(1)}%`,
+      slowestQueries: data.stats.slowestQueries.slice(0, 3),
+      insights: data.insights
+    });
     console.groupEnd();
   }
 }

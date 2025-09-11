@@ -11,6 +11,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import PaymentForm from './PaymentForm';
+import { PaymentErrorBoundary } from '@/components/PaymentErrorBoundary';
 import { clsx } from 'clsx';
 
 // Initialize Stripe
@@ -546,12 +547,13 @@ const SubscriptionManager = ({ className }: SubscriptionManagerProps) => {
   }
 
   return (
-    <div className={clsx('space-y-6', className)}>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
-          Subscription Management
-        </h1>
-      </div>
+    <PaymentErrorBoundary onRetry={() => window.location.reload()}>
+      <div className={clsx('space-y-6', className)}>
+        <div className='flex items-center justify-between'>
+          <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
+            Subscription Management
+          </h1>
+        </div>
 
       {error && (
         <div className='p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800'>
@@ -596,7 +598,8 @@ const SubscriptionManager = ({ className }: SubscriptionManagerProps) => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </PaymentErrorBoundary>
   );
 };
 

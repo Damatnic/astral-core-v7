@@ -3,8 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { fileUploadService } from '@/lib/services/file-upload-service';
 import { rateLimiter } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import { FileCategory } from '@prisma/client';
+import { 
+  handleConditionalRequest, 
+  createCachedResponse, 
+  generateETag, 
+  CacheStrategies 
+} from '@/lib/utils/cache';
 
 // GET /api/files - Get user files
 export async function GET(request: NextRequest) {
@@ -52,9 +58,25 @@ export async function GET(request: NextRequest) {
 
     const result = await fileUploadService.getUserFiles(session.user.id, filters);
 
-    return NextResponse.json({
-      success: true,
-      data: result
+    // Generate ETag based on file list and timestamps
+    const etag = generateETag(JSON.stringify(result));
+    
+    // Find the most recent file modification date
+    const lastModified = result.files?.length > 0 
+      ? new Date(Math.max(...result.files.map((file: any) => new Date(file.updatedAt).getTime())))
+      : new Date();
+
+    // Check for conditional requests
+    const conditionalResponse = handleConditionalRequest(request, etag, lastModified);
+    if (conditionalResponse) {
+      return conditionalResponse;
+    }
+
+    // Return cached response
+    return createCachedResponse(result, {
+      ...CacheStrategies.SHORT_CACHE,
+      etag,
+      lastModified,
     });
   } catch (error: unknown) {
     console.error('Error fetching files:', error);

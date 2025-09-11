@@ -37,7 +37,16 @@
       "Bash(node:*)",
       "Bash(powershell:*)",
       "Bash(cmd /c:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(npx madge:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(npm run dev:*)",
+      "Bash(set ANALYZE=true)",
+      "Bash(npx depcheck:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run analyze:bundle:*)",
+      "Bash(npm run optimize:images:*)",
+      "Bash(npx prisma:*)"
     ],
     "deny": [],
     "ask": []

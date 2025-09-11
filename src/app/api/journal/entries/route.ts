@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { authOptions } from '@/lib/auth/config';
 import { journalEntrySchema } from '@/lib/types/wellness';
 import { phiService } from '@/lib/security/phi-service';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import prisma from '@/lib/db/prisma';
 import { logError } from '@/lib/logger';
 

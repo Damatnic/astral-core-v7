@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, AlertTriangle, TrendingUp, Database, Globe, Cpu, RefreshCw } from 'lucide-react';
+import { Activity, AlertTriangle, TrendingUp, Database, Globe, Cpu, RefreshCw } from '@/components/ui/Icons';
 import { usePerformanceMetrics } from '@/lib/performance/metrics';
 import { useWebVitals } from '@/lib/performance/web-vitals';
 import { useErrorMonitoring } from '@/lib/performance/error-monitoring';

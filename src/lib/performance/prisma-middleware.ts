@@ -4,6 +4,7 @@
  */
 
 import { getDatabaseMonitor } from './db-monitoring';
+import { logWarning, logError } from '@/lib/logger';
 
 interface QueryContext {
   userId?: string;
@@ -74,7 +75,7 @@ export function createPerformanceMiddleware() {
 
       // Log slow queries in development
       if (process.env.NODE_ENV === 'development' && duration > 1000) {
-        console.warn(`🐌 Slow query detected (${duration.toFixed(2)}ms):`, {
+        logWarning(`🐌 Slow query detected (${duration.toFixed(2)}ms)`, 'PrismaMiddleware', {
           operation,
           model,
           query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
@@ -114,10 +115,9 @@ export function createPerformanceMiddleware() {
 
       // Log database errors
       if (process.env.NODE_ENV === 'development') {
-        console.error(`❌ Database error (${duration.toFixed(2)}ms):`, {
+        logError(`❌ Database error (${duration.toFixed(2)}ms)`, new Error(errorMessage), 'PrismaMiddleware', {
           operation,
           model,
-          error: errorMessage,
           duration: `${duration.toFixed(2)}ms`
         });
       }

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { EncryptionService } from './encryption';
 import { audit } from './audit';
+import { logError } from '@/lib/logger';
 import type {
   PHIRecord,
   PrismaFindManyArgs,
@@ -443,7 +444,7 @@ export class PHIService {
           return false;
       }
     } catch (error) {
-      console.error('Access check error:', error);
+      logError('Access check error', error, 'PHIService');
       return false;
     }
   }

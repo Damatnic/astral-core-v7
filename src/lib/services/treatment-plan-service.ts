@@ -4,6 +4,7 @@ import { phiService } from '@/lib/security/phi-service';
 import { audit } from '@/lib/security/audit';
 import { notificationService } from './notification-service';
 import { z } from 'zod';
+import { logError } from '@/lib/logger';
 
 // Schemas for validation
 export const goalSchema = z.object({
@@ -174,7 +175,7 @@ export class TreatmentPlanService {
 
       return treatmentPlan;
     } catch (error) {
-      console.error('Error creating treatment plan:', error);
+      logError('Error creating treatment plan', error, 'TreatmentPlanService');
       throw error;
     }
   }
@@ -231,7 +232,7 @@ export class TreatmentPlanService {
         diagnosis: decryptedDiagnosis
       };
     } catch (error) {
-      console.error('Error fetching treatment plan:', error);
+      logError('Error fetching treatment plan', error, 'TreatmentPlanService');
       throw error;
     }
   }
@@ -300,7 +301,7 @@ export class TreatmentPlanService {
 
       return updatedPlan;
     } catch (error) {
-      console.error('Error updating treatment plan:', error);
+      logError('Error updating treatment plan', error, 'TreatmentPlanService');
       throw error;
     }
   }
@@ -423,7 +424,7 @@ export class TreatmentPlanService {
 
       return updatedPlan;
     } catch (error) {
-      console.error('Error updating progress:', error);
+      logError('Error updating progress', error, 'TreatmentPlanService');
       throw error;
     }
   }
@@ -481,7 +482,7 @@ export class TreatmentPlanService {
 
       return decryptedPlans;
     } catch (error) {
-      console.error('Error fetching client treatment plans:', error);
+      logError('Error fetching client treatment plans', error, 'TreatmentPlanService');
       throw error;
     }
   }
@@ -568,7 +569,7 @@ export class TreatmentPlanService {
 
       return updatedPlan;
     } catch (error) {
-      console.error('Error reviewing treatment plan:', error);
+      logError('Error reviewing treatment plan', error, 'TreatmentPlanService');
       throw error;
     }
   }
@@ -650,7 +651,7 @@ export class TreatmentPlanService {
 
       return updatedPlan;
     } catch (error) {
-      console.error('Error completing treatment plan:', error);
+      logError('Error completing treatment plan', error, 'TreatmentPlanService');
       throw error;
     }
   }
@@ -870,7 +871,7 @@ export class TreatmentPlanService {
           durationEfficiency * 0.1
       };
     } catch (error) {
-      console.error('Error calculating effectiveness:', error);
+      logError('Error calculating effectiveness', error, 'TreatmentPlanService');
       throw error;
     }
   }

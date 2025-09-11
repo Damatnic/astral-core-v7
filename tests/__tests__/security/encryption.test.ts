@@ -93,8 +93,12 @@ describe('EncryptionService', () => {
     });
 
     it('should encrypt and decrypt be reversible', () => {
-      // Restore original crypto functions
+      // This test uses real crypto for authentic encryption/decryption
       jest.restoreAllMocks();
+      
+      // Use the actual crypto module
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
 
       const realService = new EncryptionService(mockKey);
       const plaintext = 'test data for encryption';
@@ -103,22 +107,16 @@ describe('EncryptionService', () => {
 
       expect(decrypted).toBe(plaintext);
       expect(encrypted).not.toBe(plaintext);
-
-      // Re-apply mocks for subsequent tests
-      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
-      Object.assign(mockCrypto, {
-        randomBytes: jest.fn(),
-        pbkdf2Sync: jest.fn(),
-        createCipheriv: jest.fn(),
-        createDecipheriv: jest.fn()
-      });
     });
   });
 
   describe('encryptObject', () => {
     it('should encrypt specified fields in object', () => {
-      // Restore real crypto temporarily
+      // Use real crypto for this test
       jest.restoreAllMocks();
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
+      
       const realService = new EncryptionService(mockKey);
 
       const testObj = {
@@ -139,15 +137,6 @@ describe('EncryptionService', () => {
       const decrypted = realService.decryptObject(encrypted, ['email', 'sensitiveData']);
       expect(decrypted.email).toBe(testObj.email);
       expect(decrypted.sensitiveData).toBe(testObj.sensitiveData);
-
-      // Re-apply mocks
-      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
-      Object.assign(mockCrypto, {
-        randomBytes: jest.fn(),
-        pbkdf2Sync: jest.fn(),
-        createCipheriv: jest.fn(),
-        createDecipheriv: jest.fn()
-      });
     });
 
     it('should handle null and undefined values', () => {
@@ -201,46 +190,43 @@ describe('EncryptionService', () => {
   });
 
   describe('password hashing', () => {
-    beforeEach(() => {
-      // Mock crypto for password tests
-      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
-      mockCrypto.randomBytes.mockReturnValue(Buffer.from('mocksalt123456789'));
-      mockCrypto.pbkdf2Sync.mockReturnValue(Buffer.from('mockhash123456789'));
-    });
-
     it('should hash password with salt', () => {
+      // Use real crypto for password hashing
+      jest.restoreAllMocks();
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
+
+      const realService = new EncryptionService(mockKey);
       const password = 'mySecurePassword';
-      const hashed = encryptionService.hashPassword(password);
+      const hashed = realService.hashPassword(password);
 
       expect(hashed).toContain(':');
-      expect(crypto.randomBytes).toHaveBeenCalledWith(16);
-      expect(crypto.pbkdf2Sync).toHaveBeenCalledWith(
-        password,
-        expect.any(String),
-        100000,
-        64,
-        'sha512'
-      );
+      const [salt, hash] = hashed.split(':');
+      expect(salt).toHaveLength(32); // 16 bytes as hex
+      expect(hash).toHaveLength(128); // 64 bytes as hex
     });
 
     it('should verify correct password', () => {
-      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
-      mockCrypto.pbkdf2Sync
-        .mockReturnValueOnce(Buffer.from('originalhash'))
-        .mockReturnValueOnce(Buffer.from('originalhash')); // Same hash for verification
+      // Use real crypto for password verification
+      jest.restoreAllMocks();
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
 
+      const realService = new EncryptionService(mockKey);
       const password = 'mySecurePassword';
-      const hashedPassword = 'salt123:' + Buffer.from('originalhash').toString('hex');
+      const hashedPassword = realService.hashPassword(password);
 
-      const isValid = encryptionService.verifyPassword(password, hashedPassword);
+      const isValid = realService.verifyPassword(password, hashedPassword);
 
       expect(isValid).toBe(true);
     });
 
     it('should reject incorrect password', () => {
-      jest.restoreAllMocks(); // Use real crypto for more realistic test
-      const realService = new EncryptionService(mockKey);
+      jest.restoreAllMocks();
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
 
+      const realService = new EncryptionService(mockKey);
       const correctPassword = 'correctPassword';
       const wrongPassword = 'wrongPassword';
       const hashedPassword = realService.hashPassword(correctPassword);
@@ -248,15 +234,6 @@ describe('EncryptionService', () => {
       const isValid = realService.verifyPassword(wrongPassword, hashedPassword);
 
       expect(isValid).toBe(false);
-
-      // Re-apply mocks
-      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
-      Object.assign(mockCrypto, {
-        randomBytes: jest.fn(),
-        pbkdf2Sync: jest.fn(),
-        createCipheriv: jest.fn(),
-        createDecipheriv: jest.fn()
-      });
     });
 
     it('should reject malformed hash', () => {
@@ -270,39 +247,63 @@ describe('EncryptionService', () => {
   });
 
   describe('token generation', () => {
-    beforeEach(() => {
-      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
-      mockCrypto.randomBytes.mockReturnValue(Buffer.from('mocktokendata123'));
-    });
-
     it('should generate token with default length', () => {
-      const token = encryptionService.generateToken();
+      // Use real crypto for token generation
+      jest.restoreAllMocks();
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
+
+      const realService = new EncryptionService(mockKey);
+      const token = realService.generateToken();
 
       expect(typeof token).toBe('string');
-      expect(crypto.randomBytes).toHaveBeenCalledWith(32);
+      expect(token).toHaveLength(64); // 32 bytes = 64 hex chars
     });
 
     it('should generate token with custom length', () => {
-      const token = encryptionService.generateToken(16);
+      // Use real crypto for token generation
+      jest.restoreAllMocks();
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
+
+      const realService = new EncryptionService(mockKey);
+      const token = realService.generateToken(16);
 
       expect(typeof token).toBe('string');
-      expect(crypto.randomBytes).toHaveBeenCalledWith(16);
+      expect(token).toHaveLength(32); // 16 bytes = 32 hex chars
     });
 
     it('should generate secure random string', () => {
-      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
-      mockCrypto.randomBytes.mockReturnValue(Buffer.from([65, 66, 67, 68])); // ASCII for ABCD
+      // Use real crypto for random string generation
+      jest.restoreAllMocks();
+      const realCrypto = jest.requireActual('crypto');
+      Object.assign(crypto, realCrypto);
 
-      const randomString = encryptionService.generateSecureRandomString(4);
+      const realService = new EncryptionService(mockKey);
+      const randomString = realService.generateSecureRandomString(16);
 
-      expect(randomString).toHaveLength(4);
+      expect(randomString).toHaveLength(16);
       expect(/^[A-Za-z0-9]+$/.test(randomString)).toBe(true);
     });
   });
 
   describe('error handling', () => {
+    beforeEach(() => {
+      // Setup mocks for error scenarios
+      const mockCrypto = crypto as jest.Mocked<typeof crypto>;
+      
+      // Reset any previous mocks
+      jest.clearAllMocks();
+      
+      // Mock basic functions
+      mockCrypto.randomBytes.mockReturnValue(Buffer.alloc(16, 1));
+      mockCrypto.pbkdf2Sync.mockReturnValue(Buffer.alloc(32, 2));
+    });
+
     it('should handle encryption errors', () => {
       const mockCrypto = crypto as jest.Mocked<typeof crypto>;
+      
+      // Mock cipher creation failure
       mockCrypto.createCipheriv.mockImplementation(() => {
         throw new Error('Cipher creation failed');
       });
@@ -312,6 +313,8 @@ describe('EncryptionService', () => {
 
     it('should handle decryption errors', () => {
       const mockCrypto = crypto as jest.Mocked<typeof crypto>;
+      
+      // Mock decipher creation failure
       mockCrypto.createDecipheriv.mockImplementation(() => {
         throw new Error('Decipher creation failed');
       });

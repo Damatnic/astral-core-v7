@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { LoadingStrategy, LoadingPriority } from '@/lib/lazy-loading';
+import { logWarning } from '@/lib/logger';
 
 interface UseLazyLoadingOptions {
   strategy?: LoadingStrategy;
@@ -58,7 +59,7 @@ export function useLazyLoading<T = unknown>(
       await preloadFn();
       setHasPreloaded(true);
     } catch (error) {
-      console.warn('Failed to preload component:', error);
+      logWarning('Failed to preload component', 'useLazyLoading', { error });
     }
   }, [preloadFn, hasPreloaded]);
 
@@ -175,7 +176,7 @@ export function useRoutePreloading() {
       await preloadFn();
       preloadedRoutes.current.add(route);
     } catch (error) {
-      console.warn(`Failed to preload route ${route}:`, error);
+      logWarning(`Failed to preload route ${route}`, 'useLazyLoading', { error });
     }
   }, []);
 

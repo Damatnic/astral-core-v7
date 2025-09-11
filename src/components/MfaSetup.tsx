@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -257,8 +258,15 @@ export default function MfaSetup({ onComplete, onCancel }: MfaSetupProps) {
               </p>
               {setupData.qrCode && (
                 <div className='flex justify-center p-4 bg-white rounded-lg'>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={setupData.qrCode} alt='MFA QR Code' className='w-48 h-48' />
+                  <Image
+                    src={setupData.qrCode}
+                    alt='MFA QR Code'
+                    width={192}
+                    height={192}
+                    priority={true}
+                    unoptimized={true}
+                    className='rounded'
+                  />
                 </div>
               )}
             </div>

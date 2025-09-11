@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
+import { logError } from '@/lib/logger';
 
 interface AuditContext {
   userId?: string | undefined;
@@ -77,7 +78,7 @@ export class AuditService {
         }
       });
     } catch (error) {
-      console.error('Failed to create audit log:', error);
+      logError('Failed to create audit log', error, 'AuditService');
     }
   }
 

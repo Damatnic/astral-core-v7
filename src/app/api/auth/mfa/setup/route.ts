@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { mfaService } from '@/lib/services/mfa-service';
 import { logError } from '@/lib/logger';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
 import { z } from 'zod';
 
 const setupSchema = z.object({

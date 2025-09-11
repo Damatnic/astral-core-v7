@@ -15,7 +15,7 @@ import {
   MousePointer,
   Eye,
   Gauge
-} from 'lucide-react';
+} from '@/components/ui/Icons';
 import { useWebVitals, WebVitalsInsight } from '@/lib/performance/web-vitals';
 
 interface VitalCardProps {

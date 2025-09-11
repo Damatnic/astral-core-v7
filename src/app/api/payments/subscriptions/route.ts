@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/config';
 import { SubscriptionService } from '@/lib/services/subscription-service';
 import { rateLimit } from '@/lib/security/rate-limit';
+import { logError } from '@/lib/logger';
 import { auditLog } from '@/lib/security/audit';
 import { z } from 'zod';
 
@@ -75,7 +76,7 @@ export async function GET() {
       outcome: 'FAILURE'
     });
 
-    console.error('Error retrieving subscription:', error);
+    logError('Error retrieving subscription', error, 'SubscriptionsAPI');
     return NextResponse.json({ error: 'Failed to retrieve subscription' }, { status: 500 });
   }
 }
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
       outcome: 'FAILURE'
     });
 
-    console.error('Error creating subscription:', error);
+    logError('Error creating subscription', error, 'SubscriptionsAPI');
     return NextResponse.json({ error: 'Failed to create subscription' }, { status: 500 });
   }
 }
@@ -238,7 +239,7 @@ export async function PUT(request: NextRequest) {
       outcome: 'FAILURE'
     });
 
-    console.error('Error updating subscription:', error);
+    logError('Error updating subscription', error, 'SubscriptionsAPI');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to update subscription' },
       { status: 500 }
@@ -319,7 +320,7 @@ export async function DELETE(request: NextRequest) {
       outcome: 'FAILURE'
     });
 
-    console.error('Error canceling subscription:', error);
+    logError('Error canceling subscription', error, 'SubscriptionsAPI');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to cancel subscription' },
       { status: 500 }

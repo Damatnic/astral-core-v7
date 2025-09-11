@@ -6,11 +6,17 @@ import prisma from '@/lib/db/prisma';
 import { profileSchema } from '@/lib/types/user';
 import { audit } from '@/lib/security/audit';
 import { phiService } from '@/lib/security/phi-service';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants/index';
 import { logError } from '@/lib/logger';
+import { 
+  handleConditionalRequest, 
+  createCachedResponse, 
+  generateETag, 
+  CacheStrategies
+} from '@/lib/utils/cache';
 
 // GET /api/user/profile - Get current user's profile
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -31,9 +37,21 @@ export async function GET() {
       return NextResponse.json({ message: 'Profile not found' }, { status: HTTP_STATUS.NOT_FOUND });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: profile
+    // Generate ETag based on profile data and last updated time
+    const etag = generateETag(JSON.stringify(profile));
+    const lastModified = profile.updatedAt || profile.createdAt;
+
+    // Check for conditional requests (304 Not Modified)
+    const conditionalResponse = handleConditionalRequest(request, etag, lastModified);
+    if (conditionalResponse) {
+      return conditionalResponse;
+    }
+
+    // Return cached response with appropriate headers
+    return createCachedResponse(profile, {
+      ...CacheStrategies.MEDIUM_CACHE,
+      etag,
+      lastModified,
     });
   } catch (error) {
     logError('Error fetching profile', error, 'user-profile-get');

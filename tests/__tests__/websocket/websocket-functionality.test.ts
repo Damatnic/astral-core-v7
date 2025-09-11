@@ -29,11 +29,20 @@ jest.mock('socket.io', () => ({
 
 // Mock dependencies
 jest.mock('@/lib/db/prisma', () => ({
-  default: createDatabaseMock()
+  default: require('../../mocks/prisma').mockPrisma
 }));
 
 jest.mock('@/lib/security/phi-service', () => ({
-  phiService: createPHIMock()
+  phiService: {
+    create: jest.fn().mockResolvedValue({ id: 'test-id', data: 'encrypted-data' }),
+    read: jest.fn().mockResolvedValue({ id: 'test-id', data: 'decrypted-data' }),
+    update: jest.fn().mockResolvedValue({ id: 'test-id', data: 'updated-data' }),
+    delete: jest.fn().mockResolvedValue({ success: true }),
+    findUnique: jest.fn().mockResolvedValue({ id: 'test-id', data: 'test-data' }),
+    findMany: jest.fn().mockResolvedValue([{ id: 'test-id', data: 'test-data' }]),
+    encryptField: jest.fn().mockImplementation(data => `encrypted_${data}`),
+    decryptField: jest.fn().mockImplementation(data => data.replace('encrypted_', ''))
+  }
 }));
 
 jest.mock('@/lib/security/audit', () => ({

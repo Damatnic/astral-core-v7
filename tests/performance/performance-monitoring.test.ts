@@ -36,9 +36,26 @@ const mockPerformanceObserver = jest.fn().mockImplementation(() => ({
   requestPermission: jest.fn(() => Promise.resolve('granted'))
 };
 
-// Mock window and navigation
-Object.defineProperty(global, 'window', {
-  value: {
+// Mock window and navigation - only if not already defined
+if (typeof global.window === 'undefined') {
+  Object.defineProperty(global, 'window', {
+    value: {
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      location: {
+        href: 'https://test.com/page',
+        pathname: '/page'
+      },
+      navigator: {
+        userAgent: 'test-user-agent'
+      },
+      fetch: jest.fn()
+    },
+    writable: true
+  });
+} else {
+  // Extend existing window object
+  Object.assign(global.window, {
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     location: {
@@ -49,9 +66,8 @@ Object.defineProperty(global, 'window', {
       userAgent: 'test-user-agent'
     },
     fetch: jest.fn()
-  },
-  writable: true
-});
+  });
+}
 
 // Import after mocks are set up
 import {

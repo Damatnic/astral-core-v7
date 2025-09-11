@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import { logError } from '@/lib/logger';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface JournalEntry {
   id: string;
@@ -141,8 +142,30 @@ export default function JournalPage() {
   };
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8'>
-      <div className='max-w-6xl mx-auto px-4'>
+    <ErrorBoundary
+      fallback={
+        <div className='min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8'>
+          <div className='sm:mx-auto sm:w-full sm:max-w-md'>
+            <div className='bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10'>
+              <div className='text-center'>
+                <h3 className='text-lg font-medium text-gray-900'>Journal Error</h3>
+                <p className='mt-2 text-sm text-gray-600'>
+                  Unable to load your journal. Your entries are safe and will be available once the issue is resolved.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className='mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700'
+                >
+                  Reload Journal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8'>
+        <div className='max-w-6xl mx-auto px-4'>
         <div className='flex justify-between items-center mb-8'>
           <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>My Journal</h1>
           <Button
@@ -320,7 +343,8 @@ export default function JournalPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

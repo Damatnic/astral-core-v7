@@ -198,12 +198,47 @@ export const rateLimiters = {
     message: 'API rate limit exceeded'
   }),
 
+  /** Strict API rate limiter for public endpoints - 30 requests per minute */
+  publicApi: new RateLimiter({
+    windowMs: 60000, // 1 minute
+    max: 30,
+    message: 'Public API rate limit exceeded'
+  }),
+
   /** Authentication rate limiter - 5 attempts per 15 minutes, only counts failures */
   auth: new RateLimiter({
     windowMs: 900000, // 15 minutes
     max: 5,
     message: 'Too many authentication attempts',
     skipSuccessfulRequests: true
+  }),
+
+  /** Registration rate limiter - 3 attempts per hour */
+  registration: new RateLimiter({
+    windowMs: 3600000, // 1 hour
+    max: 3,
+    message: 'Too many registration attempts'
+  }),
+
+  /** Password reset rate limiter - 3 attempts per hour */
+  passwordReset: new RateLimiter({
+    windowMs: 3600000, // 1 hour
+    max: 3,
+    message: 'Too many password reset attempts'
+  }),
+
+  /** File upload rate limiter - 20 uploads per hour */
+  fileUpload: new RateLimiter({
+    windowMs: 3600000, // 1 hour
+    max: 20,
+    message: 'File upload rate limit exceeded'
+  }),
+
+  /** Message sending rate limiter - 60 messages per hour */
+  messaging: new RateLimiter({
+    windowMs: 3600000, // 1 hour
+    max: 60,
+    message: 'Message rate limit exceeded'
   }),
 
   /** Crisis intervention rate limiter - 1000 requests per minute for emergency situations */
@@ -218,6 +253,55 @@ export const rateLimiters = {
     windowMs: 3600000, // 1 hour
     max: 100,
     message: 'Wellness tracking rate limit exceeded'
+  }),
+
+  /** Search rate limiter - 50 searches per minute */
+  search: new RateLimiter({
+    windowMs: 60000, // 1 minute
+    max: 50,
+    message: 'Search rate limit exceeded'
+  }),
+
+  /** Admin actions rate limiter - 200 requests per minute */
+  admin: new RateLimiter({
+    windowMs: 60000, // 1 minute
+    max: 200,
+    message: 'Admin rate limit exceeded'
+  }),
+
+  /** Payment processing rate limiter - 10 payment attempts per hour */
+  payment: new RateLimiter({
+    windowMs: 3600000, // 1 hour
+    max: 10,
+    message: 'Payment rate limit exceeded'
+  }),
+
+  /** Appointment booking rate limiter - 20 bookings per day */
+  appointments: new RateLimiter({
+    windowMs: 86400000, // 24 hours
+    max: 20,
+    message: 'Appointment booking rate limit exceeded'
+  }),
+
+  /** Email sending rate limiter - 10 emails per hour */
+  email: new RateLimiter({
+    windowMs: 3600000, // 1 hour
+    max: 10,
+    message: 'Email sending rate limit exceeded'
+  }),
+
+  /** Error reporting rate limiter - 50 errors per minute */
+  errorReporting: new RateLimiter({
+    windowMs: 60000, // 1 minute
+    max: 50,
+    message: 'Error reporting rate limit exceeded'
+  }),
+
+  /** Performance metrics rate limiter - 100 metrics per minute */
+  performanceMetrics: new RateLimiter({
+    windowMs: 60000, // 1 minute
+    max: 100,
+    message: 'Performance metrics rate limit exceeded'
   })
 };
 
