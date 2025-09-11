@@ -233,7 +233,7 @@ async function createDemoAccount(accountData: typeof DEMO_ACCOUNTS[0]) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Check if demo accounts are allowed in current environment
     if (!areDemoAccountsAllowed()) {
