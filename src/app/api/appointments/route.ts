@@ -1,68 +1,143 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
-import prisma from '@/lib/db/prisma';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
-import { AppointmentStatus } from '@prisma/client';
-import { logError } from '@/lib/logger';
+import { authOptions } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
-// GET /api/appointments - Get user's appointments
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.UNAUTHORIZED },
-        { status: HTTP_STATUS.UNAUTHORIZED }
-      );
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = parseInt(searchParams.get('offset') || '0');
-
-    const where = {
-      userId: session.user.id,
-      ...(status && { status: status as AppointmentStatus })
-    };
-
-    const [appointments, total] = await Promise.all([
-      prisma.appointment.findMany({
-        where,
-        include: {
-          therapist: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        },
-        orderBy: { scheduledAt: 'asc' },
-        take: limit,
-        skip: offset
-      }),
-      prisma.appointment.count({ where })
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        items: appointments,
-        total,
-        page: Math.floor(offset / limit) + 1,
-        limit,
-        hasMore: offset + limit < total
-      }
+    const appointments = await prisma.appointment.findMany({
+      where: { userId: session.user.id },
+      orderBy: { dateTime: 'asc' },
+      include: {
+        therapist: true,
+      },
     });
-  } catch (error) {
-    logError('Error fetching appointments', error, 'API:appointments:GET');
 
+    return NextResponse.json(appointments);
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
     return NextResponse.json(
-      { error: ERROR_MESSAGES.SERVER_ERROR },
-      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+      { error: 'Failed to fetch appointments' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { dateTime, therapistId, type, notes } = body;
+
+    const appointment = await prisma.appointment.create({
+      data: {
+        dateTime: new Date(dateTime),
+        type,
+        notes,
+        userId: session.user.id,
+        therapistId,
+        status: 'SCHEDULED',
+      },
+      include: {
+        therapist: true,
+      },
+    });
+
+    return NextResponse.json(appointment);
+  } catch (error) {
+    console.error('Error creating appointment:', error);
+    return NextResponse.json(
+      { error: 'Failed to create appointment' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { id, ...updateData } = body;
+
+    // Verify the appointment belongs to the user
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!appointment) {
+      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+    }
+
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id },
+      data: updateData,
+      include: {
+        therapist: true,
+      },
+    });
+
+    return NextResponse.json(updatedAppointment);
+  } catch (error) {
+    console.error('Error updating appointment:', error);
+    return NextResponse.json(
+      { error: 'Failed to update appointment' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Appointment ID required' }, { status: 400 });
+    }
+
+    // Verify the appointment belongs to the user
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!appointment) {
+      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+    }
+
+    await prisma.appointment.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting appointment:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete appointment' },
+      { status: 500 }
     );
   }
 }

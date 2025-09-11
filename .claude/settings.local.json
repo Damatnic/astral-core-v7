@@ -63,7 +63,8 @@
       "Bash(for:*)",
       "Bash(do)",
       "Bash(echo:*)",
-      "Bash(auth0:*)"
+      "Bash(auth0:*)",
+      "WebFetch(domain:vercel.com)"
     ],
     "deny": [],
     "ask": []
