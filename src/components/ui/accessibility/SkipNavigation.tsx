@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * SkipNavigation Component
  * Provides skip links for keyboard navigation and accessibility

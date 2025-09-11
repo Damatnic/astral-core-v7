@@ -31,19 +31,6 @@ export const LAZY_LOADING_CONFIG = {
     }
   },
 
-  // Billing components (large, load on demand)
-  billing: {
-    priority: LoadingPriority.MEDIUM,
-    strategy: LoadingStrategy.ON_INTERACTION,
-    components: {
-      paymentHistory: () => import('@/components/billing/PaymentHistory'),
-      subscriptionManager: () => import('@/components/billing/SubscriptionManager'),
-      billingDashboard: () => import('@/components/billing/BillingDashboard'),
-      paymentMethods: () => import('@/components/billing/PaymentMethods'),
-      paymentForm: () => import('@/components/billing/PaymentForm'),
-      appointmentPayment: () => import('@/components/billing/AppointmentPayment')
-    }
-  },
 
   // Analytics components (heavy, load when needed)
   analytics: {
@@ -85,17 +72,6 @@ export const preloadComponents = {
     }
   },
 
-  billing: {
-    all: () => {
-      Object.values(LAZY_LOADING_CONFIG.billing.components).forEach(loader => loader());
-    },
-    paymentHistory: () => LAZY_LOADING_CONFIG.billing.components.paymentHistory(),
-    subscriptionManager: () => LAZY_LOADING_CONFIG.billing.components.subscriptionManager(),
-    billingDashboard: () => LAZY_LOADING_CONFIG.billing.components.billingDashboard(),
-    paymentMethods: () => LAZY_LOADING_CONFIG.billing.components.paymentMethods(),
-    paymentForm: () => LAZY_LOADING_CONFIG.billing.components.paymentForm(),
-    appointmentPayment: () => LAZY_LOADING_CONFIG.billing.components.appointmentPayment()
-  },
 
   analytics: {
     dashboard: () => LAZY_LOADING_CONFIG.analytics.components.dashboard()
@@ -116,10 +92,6 @@ export const preloadComponents = {
 // Bundle size tracking (for development)
 export const COMPONENT_SIZES = {
   // Estimated sizes in KB (for monitoring)
-  PaymentHistory: 35,
-  SubscriptionManager: 34,
-  BillingDashboard: 22,
-  PaymentMethods: 28,
   AnalyticsDashboard: 26,
   MfaSetup: 21,
   FileUpload: 18,
@@ -141,8 +113,7 @@ export const preloadByUserRole = (role: string) => {
       preloadComponents.analytics.dashboard();
       break;
     case 'THERAPIST':
-      // Therapists might access client billing
-      preloadComponents.billing.billingDashboard();
+      // Therapists focus on client care
       break;
     case 'CLIENT':
       // Clients often use journal and wellness tracking
@@ -158,7 +129,6 @@ export const progressivelyLoadComponents = () => {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
       // Load medium priority components when browser is idle
-      preloadComponents.billing.all();
       preloadComponents.analytics.dashboard();
     });
   }

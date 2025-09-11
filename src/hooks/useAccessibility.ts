@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Accessibility Hooks
  * Custom React hooks for enhanced accessibility features

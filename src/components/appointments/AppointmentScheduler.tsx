@@ -40,7 +40,10 @@ const AppointmentScheduler: React.FC = () => {
   useEffect(() => {
     // Initialize with current date
     const today = new Date();
-    setSelectedDate(today.toISOString().split('T')[0]);
+    const dateString = today.toISOString().split('T')[0];
+    if (dateString) {
+      setSelectedDate(dateString);
+    }
   }, []);
 
   useEffect(() => {
@@ -218,7 +221,7 @@ const AppointmentScheduler: React.FC = () => {
                     <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                       {appointment.status}
                     </span>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="secondary">
                       Reschedule
                     </Button>
                   </div>

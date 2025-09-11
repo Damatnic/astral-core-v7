@@ -276,18 +276,18 @@ const AppointmentHistory: React.FC = () => {
                 <div className="flex flex-col space-y-2 ml-4">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => setSelectedAppointment(appointment)}
                   >
                     View Details
                   </Button>
                   {appointment.status === 'scheduled' && (
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="secondary">
                       Reschedule
                     </Button>
                   )}
                   {appointment.status === 'completed' && !appointment.rating && (
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="secondary">
                       Leave Review
                     </Button>
                   )}
@@ -297,6 +297,113 @@ const AppointmentHistory: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Appointment Details Modal */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Appointment Details</h2>
+                <button
+                  onClick={() => setSelectedAppointment(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Close details modal"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Therapist</p>
+                    <p className="text-base text-gray-900">{selectedAppointment.therapistName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Type</p>
+                    <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                      {selectedAppointment.type}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Date</p>
+                    <p className="text-base text-gray-900">{formatDate(selectedAppointment.date)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Time</p>
+                    <p className="text-base text-gray-900">{selectedAppointment.time} ({selectedAppointment.duration} min)</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Status</p>
+                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedAppointment.status)}`}>
+                      {selectedAppointment.status.replace('-', ' ')}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Appointment ID</p>
+                    <p className="text-base text-gray-900">#{selectedAppointment.id}</p>
+                  </div>
+                </div>
+                
+                {selectedAppointment.notes && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm font-medium text-gray-500 mb-2">Notes</p>
+                    <p className="text-base text-gray-700">{selectedAppointment.notes}</p>
+                  </div>
+                )}
+                
+                {selectedAppointment.sessionNotes && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm font-medium text-gray-500 mb-2">Session Notes</p>
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800">{selectedAppointment.sessionNotes}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedAppointment.rating && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm font-medium text-gray-500 mb-2">Client Rating</p>
+                    <div className="flex items-center space-x-2 mb-2">
+                      {renderStars(selectedAppointment.rating)}
+                      <span className="text-sm text-gray-600">({selectedAppointment.rating}/5)</span>
+                    </div>
+                    {selectedAppointment.feedback && (
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-700 italic">"{selectedAppointment.feedback}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="border-t pt-4 flex justify-end space-x-3">
+                  {selectedAppointment.status === 'scheduled' && (
+                    <>
+                      <Button variant="secondary" onClick={() => console.log('Reschedule appointment')}>
+                        Reschedule
+                      </Button>
+                      <Button variant="danger" onClick={() => console.log('Cancel appointment')}>
+                        Cancel Appointment
+                      </Button>
+                    </>
+                  )}
+                  {selectedAppointment.status === 'completed' && !selectedAppointment.rating && (
+                    <Button variant="primary" onClick={() => console.log('Leave review')}>
+                      Leave Review
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={() => setSelectedAppointment(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Summary Statistics */}
       <div className="mt-8">

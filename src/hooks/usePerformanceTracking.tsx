@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Performance Tracking Hook
  * Monitors and tracks lazy loading performance metrics

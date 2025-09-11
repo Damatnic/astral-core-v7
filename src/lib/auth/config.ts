@@ -6,6 +6,7 @@ import GitHubProvider from 'next-auth/providers/github';
 import { compare } from 'bcryptjs';
 import prisma from '@/lib/db/prisma';
 import { audit } from '@/lib/security/audit';
+import { isDemoAccountEmail, getDemoAuditMetadata, areDemoAccountsAllowed } from '@/lib/utils/demo-accounts';
 
 declare module 'next-auth' {
   interface Session {
@@ -40,9 +41,16 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Invalid credentials');
+        }
+
+        // Check if demo accounts are allowed in current environment
+        const isDemoAccount = isDemoAccountEmail(credentials.email);
+        if (isDemoAccount && !areDemoAccountsAllowed()) {
+          await audit.logFailure('LOGIN', 'User', 'Demo account access denied in production', undefined);
+          throw new Error('Demo accounts are not available in this environment');
         }
 
         const user = await prisma.user.findUnique({
@@ -118,7 +126,16 @@ export const authOptions: NextAuthOptions = {
           }
         });
 
-        await audit.logSuccess('LOGIN', 'User', user.id, { method: 'credentials' }, user.id);
+        // Enhanced audit logging for demo accounts
+        const auditMetadata = isDemoAccount
+          ? getDemoAuditMetadata(
+              user.role,
+              req?.headers?.['user-agent'] as string,
+              req?.headers?.['x-forwarded-for'] as string
+            )
+          : { method: 'credentials' };
+
+        await audit.logSuccess('LOGIN', 'User', user.id, auditMetadata, user.id);
 
         return {
           id: user.id,

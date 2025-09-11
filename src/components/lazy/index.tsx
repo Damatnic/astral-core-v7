@@ -11,14 +11,12 @@ export * from './IntersectionLazy';
 
 // Re-export existing lazy components
 export * from '../dashboards/lazy';
-export * from '../billing/lazy';
 
 // Utility functions for coordinated preloading
 import { preloadAnalyticsComponents } from './AnalyticsLazy';
 import { preloadAllFeatures } from './FeatureLazy';
 import { preloadCriticalRoutes } from './PageLazy';
 import { preloadDashboardComponent } from '../dashboards/lazy';
-import { preloadBillingComponents } from '../billing/lazy';
 
 /**
  * Preload all critical components for logged-in users
@@ -41,7 +39,6 @@ export const preloadCriticalComponents = (userRole?: string) => {
  */
 export const preloadAdminComponents = () => {
   preloadAnalyticsComponents();
-  preloadBillingComponents();
   preloadDashboardComponent('ADMIN');
 };
 
@@ -79,10 +76,6 @@ export const smartPreload = (userRole: string, currentPath: string) => {
     }
   }
   
-  if (currentPath.includes('/billing') || userRole === 'ADMIN') {
-    // Preload billing components if user is in billing area or is admin
-    preloadBillingComponents();
-  }
 };
 
 /**
@@ -93,9 +86,6 @@ export const preloadOnNavIntent = (targetRoute: string, userRole?: string) => {
     preloadAnalyticsComponents();
   }
   
-  if (targetRoute.includes('/billing')) {
-    preloadBillingComponents();
-  }
   
   if (targetRoute.includes('/dashboard') && userRole) {
     preloadDashboardComponent(userRole);

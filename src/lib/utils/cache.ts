@@ -241,8 +241,7 @@ export function isCacheable(request: NextRequest): boolean {
   }
 
   // Don't cache auth endpoints
-  if (url.pathname.startsWith('/api/auth') || 
-      url.pathname.startsWith('/api/payments')) {
+  if (url.pathname.startsWith('/api/auth')) {
     return false;
   }
 

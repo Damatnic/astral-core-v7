@@ -269,12 +269,6 @@ export const rateLimiters = {
     message: 'Admin rate limit exceeded'
   }),
 
-  /** Payment processing rate limiter - 10 payment attempts per hour */
-  payment: new RateLimiter({
-    windowMs: 3600000, // 1 hour
-    max: 10,
-    message: 'Payment rate limit exceeded'
-  }),
 
   /** Appointment booking rate limiter - 20 bookings per day */
   appointments: new RateLimiter({

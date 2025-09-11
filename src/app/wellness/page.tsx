@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { useWellnessStore } from '@/store/useWellnessStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import type { WellnessDataInput } from '@/lib/types/wellness';
+
+// Force dynamic rendering to avoid SSR issues with stores
+export const dynamic = 'force-dynamic';
 
 const MOOD_OPTIONS = [
   { value: 1, emoji: '😢', label: 'Very Bad' },
@@ -23,7 +25,40 @@ const MOOD_OPTIONS = [
 
 export default function WellnessPage() {
   const router = useRouter();
-  const { todayData, submitWellnessData, isLoading, error, fetchTodayData } = useWellnessStore();
+  
+  // Client-only store state
+  const [storeState, setStoreState] = useState({
+    todayData: null as any,
+    submitWellnessData: async (_: any) => false,
+    isLoading: false,
+    error: null as string | null,
+    fetchTodayData: async () => {}
+  });
+  
+  // Load store dynamically on client
+  useEffect(() => {
+    const loadStore = async () => {
+      try {
+        const { useWellnessStore } = await import('@/store/useWellnessStoreClient');
+        const store = useWellnessStore();
+        setStoreState({
+          todayData: store.todayData,
+          submitWellnessData: store.submitWellnessData,
+          isLoading: store.isLoading,
+          error: store.error,
+          fetchTodayData: store.fetchTodayData
+        });
+        // Initial data fetch
+        store.fetchTodayData();
+      } catch (error) {
+        console.error('Failed to load wellness store:', error);
+      }
+    };
+    
+    loadStore();
+  }, []);
+  
+  const { todayData, submitWellnessData, isLoading, error } = storeState;
 
   const [formData, setFormData] = useState<WellnessDataInput>({
     moodScore: 5,
@@ -42,10 +77,6 @@ export default function WellnessPage() {
     copingStrategies: [],
     notes: ''
   });
-
-  useEffect(() => {
-    fetchTodayData();
-  }, [fetchTodayData]);
 
   useEffect(() => {
     if (todayData) {

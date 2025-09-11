@@ -284,7 +284,7 @@ const JournalEntry: React.FC = () => {
               </h2>
               <Button 
                 size="sm" 
-                variant="outline" 
+                variant="secondary" 
                 onClick={() => setShowPrompts(!showPrompts)}
               >
                 Prompts
@@ -394,7 +394,7 @@ const JournalEntry: React.FC = () => {
                 </Button>
                 {isEditing && (
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => {
                       setIsEditing(false);
                       setSelectedEntry(null);
@@ -514,10 +514,10 @@ const JournalEntry: React.FC = () => {
                       Last updated: {new Date(entry.updatedAt).toLocaleString()}
                     </p>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEditEntry(entry)}>
+                      <Button size="sm" variant="secondary" onClick={() => handleEditEntry(entry)}>
                         Edit
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDeleteEntry(entry.id)}>
+                      <Button size="sm" variant="secondary" onClick={() => handleDeleteEntry(entry.id)}>
                         Delete
                       </Button>
                     </div>

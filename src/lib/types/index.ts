@@ -13,8 +13,6 @@ export * from './wellness';
 // Crisis intervention types and schemas
 export * from './crisis';
 
-// Billing and payment types and schemas
-export * from './billing';
 
 // Core API types and utilities
 export * from './api';

@@ -16,7 +16,7 @@ interface User {
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [_selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Placeholder for user data loading
@@ -34,7 +34,11 @@ const UserManagement: React.FC = () => {
   }, []);
 
   const handleUserAction = (action: string, userId: string) => {
-    // Placeholder for user actions
+    // Set selected user when editing
+    const user = users.find(u => u.id === userId);
+    if (user && action === 'edit') {
+      setSelectedUser(user);
+    }
     console.log(`${action} user ${userId}`);
   };
 
@@ -71,6 +75,50 @@ const UserManagement: React.FC = () => {
             </p>
           </Card>
         </div>
+
+        {/* Edit User Form */}
+        {selectedUser && (
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Edit User: {selectedUser.name}</h2>
+              <Button 
+                variant="secondary"
+                onClick={() => setSelectedUser(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input 
+                  type="email"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  defaultValue={selectedUser.email}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Role</label>
+                <select 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  defaultValue={selectedUser.role}
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="THERAPIST">Therapist</option>
+                  <option value="CLIENT">Client</option>
+                  <option value="CRISIS_RESPONDER">Crisis Responder</option>
+                  <option value="SUPERVISOR">Supervisor</option>
+                </select>
+              </div>
+              <Button onClick={() => {
+                console.log('Saving user', selectedUser.id);
+                setSelectedUser(null);
+              }}>
+                Save Changes
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* User List */}
         <Card className="p-6">
@@ -133,14 +181,14 @@ const UserManagement: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                       <Button 
                         size="sm" 
-                        variant="outline"
+                        variant="secondary"
                         onClick={() => handleUserAction('edit', user.id)}
                       >
                         Edit
                       </Button>
                       <Button 
                         size="sm" 
-                        variant="outline"
+                        variant="danger"
                         onClick={() => handleUserAction('suspend', user.id)}
                       >
                         Suspend

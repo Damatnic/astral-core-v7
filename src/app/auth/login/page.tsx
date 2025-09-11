@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { loginSchema } from '@/lib/types/auth';
 import { APP_CONFIG } from '@/lib/constants';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import DemoAccountsSection from '@/components/auth/DemoAccountsSection';
 
 function LoginForm() {
   const router = useRouter();
@@ -56,6 +57,7 @@ function LoginForm() {
     setIsLoading(true);
     signIn(provider, { callbackUrl });
   };
+
 
   return (
     <div
@@ -224,15 +226,24 @@ function LoginForm() {
             </div>
           </div>
 
-          <div className='mt-6 text-center text-sm'>
-            <span className='text-gray-600 dark:text-gray-400'>Don&apos;t have an account? </span>
-            <Link
-              href='/auth/register'
-              className='font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded'
-              aria-label='Create a new account'
-            >
-              Sign up
-            </Link>
+          <div className='mt-6'>
+            {/* Demo Accounts Section */}
+            <DemoAccountsSection 
+              onError={setError}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+            />
+
+            <div className='text-center text-sm'>
+              <span className='text-gray-600 dark:text-gray-400'>Don&apos;t have an account? </span>
+              <Link
+                href='/auth/register'
+                className='font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded'
+                aria-label='Create a new account'
+              >
+                Sign up
+              </Link>
+            </div>
           </div>
         </div>
       </div>

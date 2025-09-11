@@ -8,6 +8,9 @@ import Input from '@/components/ui/Input';
 import { logError } from '@/lib/logger';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
+// Force dynamic rendering to avoid SSR issues with stores
+export const dynamic = 'force-dynamic';
+
 interface JournalEntry {
   id: string;
   title?: string;

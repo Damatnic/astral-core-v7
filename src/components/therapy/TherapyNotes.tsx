@@ -26,15 +26,6 @@ interface TherapyNote {
   isConfidential: boolean;
 }
 
-interface TherapyGoal {
-  id: string;
-  title: string;
-  description: string;
-  targetDate: string;
-  status: 'not-started' | 'in-progress' | 'completed' | 'on-hold';
-  priority: 'low' | 'medium' | 'high';
-}
-
 const TherapyNotes: React.FC = () => {
   const [notes, setNotes] = useState<TherapyNote[]>([]);
   const [selectedNote, setSelectedNote] = useState<TherapyNote | null>(null);
@@ -305,10 +296,10 @@ const TherapyNotes: React.FC = () => {
                         ))}
                       </div>
                       <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEditNote(note)}>
+                        <Button size="sm" variant="secondary" onClick={() => handleEditNote(note)}>
                           Edit
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDeleteNote(note.id)}>
+                        <Button size="sm" variant="secondary" onClick={() => handleDeleteNote(note.id)}>
                           Delete
                         </Button>
                       </div>
@@ -449,7 +440,7 @@ const TherapyNotes: React.FC = () => {
                 </Button>
                 {isEditing && (
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => {
                       setIsEditing(false);
                       setSelectedNote(null);

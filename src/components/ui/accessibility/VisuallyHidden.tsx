@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * VisuallyHidden Component
  * Provides content that's accessible to screen readers but visually hidden

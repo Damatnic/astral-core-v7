@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * LiveRegion Component
  * ARIA live region for dynamic content announcements

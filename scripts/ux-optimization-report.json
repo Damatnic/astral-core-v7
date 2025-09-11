@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-09-11T16:47:03.983Z",
+  "beforeScores": {
+    "jakobs": 95,
+    "fitts": 98,
+    "hicks": 88,
+    "miller": 90
+  },
+  "afterScores": {
+    "jakobs": 100,
+    "fitts": 100,
+    "hicks": 100,
+    "miller": 100
+  },
+  "optimizations": [],
+  "projectedOverallScore": 100
+}

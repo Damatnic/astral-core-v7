@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * FocusManager Component
  * Advanced focus management for complex UI patterns

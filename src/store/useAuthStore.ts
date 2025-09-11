@@ -1,45 +1,29 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+'use client';
+
 import type { SessionUser } from '@/lib/types/auth';
 
-interface AuthState {
-  user: SessionUser | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  setUser: (user: SessionUser | null) => void;
-  setLoading: (loading: boolean) => void;
-  logout: () => void;
-}
+// Dummy store for SSR
+const dummyStore = () => ({
+  user: null as SessionUser | null,
+  isAuthenticated: false,
+  isLoading: true,
+  setUser: () => {},
+  setLoading: () => {},
+  logout: () => {}
+});
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    set => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: true,
+// Dynamic import wrapper
+let realStore: any = null;
 
-      setUser: user =>
-        set({
-          user,
-          isAuthenticated: !!user,
-          isLoading: false
-        }),
-
-      setLoading: loading => set({ isLoading: loading }),
-
-      logout: () =>
-        set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false
-        })
-    }),
-    {
-      name: 'auth-storage',
-      partialize: state => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated
-      })
-    }
-  )
-);
+export const useAuthStore = () => {
+  if (typeof window === 'undefined') {
+    return dummyStore();
+  }
+  
+  if (!realStore) {
+    const { useAuthStore: store } = require('./useAuthStoreClient');
+    realStore = store;
+  }
+  
+  return realStore();
+};

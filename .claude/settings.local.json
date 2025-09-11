@@ -54,7 +54,12 @@
       "Bash(do echo \"=== $dir ===\")",
       "Bash(ls:*)",
       "Bash(od:*)",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" WEBPACK_DISABLE_CACHE=true npm run build)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" WEBPACK_DISABLE_CACHE=true npm run build)",
+      "Bash(curl:*)",
+      "Bash(del \"src\\app\\api\\appointments\\route.ts\")",
+      "Bash(npm ci:*)",
+      "Read(//h/**)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

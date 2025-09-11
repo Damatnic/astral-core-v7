@@ -1,0 +1,90 @@
+Vercel CLI 47.0.5
+Retrieving project…
+The `name` property in vercel.json is deprecated (https://vercel.link/name-prop)
+Deploying astral-productions/astral-core-v7
+Uploading [--------------------] (0.0B/3.8KB)
+Uploading [====================] (3.8KB/3.8KB)
+Inspect: https://vercel.com/astral-productions/astral-core-v7/FR11B8V4juhpD8KRa6wWHyXMiEp4 [3s]
+Production: https://astral-core-v7-qmgdnunp4-astral-productions.vercel.app [3s]
+https://astral-core-v7-qmgdnunp4-astral-productions.vercel.appBuilding
+Building
+Error: Command "npm run build" exited with 1
+
+2025-09-11T15:09:47.925Z  Running build in Washington, D.C., USA (East) – iad1
+2025-09-11T15:09:47.925Z  Build machine configuration: 4 cores, 8 GB
+2025-09-11T15:09:47.950Z  Retrieving list of deployment files...
+2025-09-11T15:09:48.100Z  Previous build caches not available
+2025-09-11T15:09:49.499Z  Downloading 241 deployment files...
+2025-09-11T15:09:51.120Z  Running "vercel build"
+2025-09-11T15:09:51.561Z  Vercel CLI 47.1.1
+2025-09-11T15:09:51.938Z  Running "install" command: `npm install`...
+2025-09-11T15:10:13.119Z  
+2025-09-11T15:10:13.119Z  > astral-core-v7@0.1.0 prepare
+2025-09-11T15:10:13.120Z  > node -e "if (process.env.NODE_ENV !== 'production' && !process.env.CI) { require('child_process').execSync('husky install', {stdio: 'inherit'}); }"
+2025-09-11T15:10:13.120Z  
+2025-09-11T15:10:13.163Z  
+2025-09-11T15:10:13.163Z  added 251 packages, and audited 252 packages in 21s
+2025-09-11T15:10:13.163Z  
+2025-09-11T15:10:13.163Z  42 packages are looking for funding
+2025-09-11T15:10:13.163Z    run `npm fund` for details
+2025-09-11T15:10:13.164Z  
+2025-09-11T15:10:13.164Z  found 0 vulnerabilities
+2025-09-11T15:10:13.232Z  Detected Next.js version: 15.5.2
+2025-09-11T15:10:13.233Z  Running "npm run build"
+2025-09-11T15:10:13.352Z  
+2025-09-11T15:10:13.353Z  > astral-core-v7@0.1.0 build
+2025-09-11T15:10:13.353Z  > prisma generate && next build
+2025-09-11T15:10:13.353Z  
+2025-09-11T15:10:14.921Z  Environment variables loaded from .env
+2025-09-11T15:10:14.922Z  Prisma schema loaded from prisma/schema.prisma
+2025-09-11T15:10:15.661Z  ┌─────────────────────────────────────────────────────────┐
+2025-09-11T15:10:15.662Z  │  Update available 6.15.0 -> 6.16.1                      │
+2025-09-11T15:10:15.662Z  │  Run the following to update                            │
+2025-09-11T15:10:15.662Z  │    npm i --save-dev prisma@latest                       │
+2025-09-11T15:10:15.662Z  │    npm i @prisma/client@latest                          │
+2025-09-11T15:10:15.662Z  └─────────────────────────────────────────────────────────┘
+2025-09-11T15:10:15.662Z  
+2025-09-11T15:10:15.662Z  ✔ Generated Prisma Client (v6.15.0) to ./node_modules/@prisma/client in 294ms
+2025-09-11T15:10:15.662Z  
+2025-09-11T15:10:15.662Z  Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+2025-09-11T15:10:15.662Z  
+2025-09-11T15:10:15.662Z  Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+2025-09-11T15:10:15.662Z  
+2025-09-11T15:10:16.497Z     ▲ Next.js 15.5.2
+2025-09-11T15:10:16.497Z     - Environments: .env.production, .env
+2025-09-11T15:10:16.497Z  
+2025-09-11T15:10:16.553Z     Creating an optimized production build ...
+2025-09-11T15:10:30.064Z   ⚠ Compiled with warnings in 1828ms
+2025-09-11T15:10:30.065Z  
+2025-09-11T15:10:30.065Z  ./src/lib/security/csrf.ts
+2025-09-11T15:10:30.065Z  A Node.js module is loaded ('crypto' at line 2) which is not supported in the Edge Runtime.
+2025-09-11T15:10:30.065Z  Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+2025-09-11T15:10:30.065Z  
+2025-09-11T15:10:30.065Z  Import trace for requested module:
+2025-09-11T15:10:30.065Z  ./src/lib/security/csrf.ts
+2025-09-11T15:10:30.066Z  
+2025-09-11T15:10:30.066Z  ./src/lib/utils/cache.ts
+2025-09-11T15:10:30.066Z  A Node.js module is loaded ('crypto' at line 2) which is not supported in the Edge Runtime.
+2025-09-11T15:10:30.066Z  Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+2025-09-11T15:10:30.066Z  
+2025-09-11T15:10:30.066Z  Import trace for requested module:
+2025-09-11T15:10:30.066Z  ./src/lib/utils/cache.ts
+2025-09-11T15:10:30.066Z  
+2025-09-11T15:10:35.529Z   ✓ Compiled successfully in 16.2s
+2025-09-11T15:10:35.531Z     Linting and checking validity of types ...
+2025-09-11T15:10:35.630Z   ⨯ ESLint must be installed in order to run during builds: npm install --save-dev eslint
+2025-09-11T15:10:52.387Z  Failed to compile.
+2025-09-11T15:10:52.387Z  
+2025-09-11T15:10:52.387Z  ./src/app/api/auth/mfa/verify/route.ts:8:17
+2025-09-11T15:10:52.387Z  Type error: Could not find a declaration file for module 'jsonwebtoken'. '/vercel/path0/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2025-09-11T15:10:52.387Z    Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2025-09-11T15:10:52.387Z  
+2025-09-11T15:10:52.387Z  [0m [90m  6 |[39m [36mimport[39m { logError } [36mfrom[39m [32m'@/lib/logger'[39m[33m;[39m
+2025-09-11T15:10:52.388Z   [90m  7 |[39m [36mimport[39m { cookies } [36mfrom[39m [32m'next/headers'[39m[33m;[39m
+2025-09-11T15:10:52.388Z  [31m[1m>[22m[39m[90m  8 |[39m [36mimport[39m jwt [36mfrom[39m [32m'jsonwebtoken'[39m[33m;[39m
+2025-09-11T15:10:52.388Z   [90m    |[39m                 [31m[1m^[22m[39m
+2025-09-11T15:10:52.388Z   [90m  9 |[39m
+2025-09-11T15:10:52.388Z   [90m 10 |[39m [36mconst[39m verifySchema [33m=[39m z[33m.[39mobject({
+2025-09-11T15:10:52.388Z   [90m 11 |[39m   userId[33m:[39m z[33m.[39mstring()[33m,[39m[0m
+2025-09-11T15:10:52.449Z  Next.js build worker exited with code: 1 and signal: null
+2025-09-11T15:10:52.470Z  Error: Command "npm run build" exited with 1
