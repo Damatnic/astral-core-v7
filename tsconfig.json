@@ -44,8 +44,9 @@
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
     "forceConsistentCasingInFileNames": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "tests/**/*", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*", "jest.config.js", "jest.setup.js", ".next", "out", "dist", "build"]
+  "exclude": ["node_modules", "tests/**/*", "**/*.test.ts", "**/*.spec.ts", ".next", "out", "dist", "build"]
 }

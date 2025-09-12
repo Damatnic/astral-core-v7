@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "npm run prisma:generate && next build",
     "build:fast": "next build",
-    "prebuild": "echo 'Skipping typecheck during build'",
+    "prebuild": "npm run typecheck",
     "postinstall": "npm run prisma:generate",
     "prisma:generate": "prisma generate",
     "start": "next start",
