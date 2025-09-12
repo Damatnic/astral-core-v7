@@ -7,8 +7,8 @@
 export { EncryptionService, encryption } from './encryption';
 export { PHIService } from './phi-service';
 export { EnhancedPHIService, enhancedPHIService, PHIAccessReason } from './phi-enhanced';
-export { SessionService } from './session';
-export { CSRFService } from './csrf';
+export { SessionManager, sessionManager } from './session';
+export { CSRFProtection, getCSRFProtection, validateCSRF, generateCSRFToken, extractCSRFToken, handleCSRFTokenRequest, CSRF_CONFIG } from './csrf';
 export { audit, AuditService } from './audit';
 
 // Rate limiting
