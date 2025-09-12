@@ -211,31 +211,40 @@ export const errorTracking = {
 // React error boundary integration
 export const withSentryErrorBoundary = (Component: React.ComponentType<any>) => {
   return Sentry.withErrorBoundary(Component, {
-    fallback: ({ error, resetError }) => (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
-          <div className="text-red-600 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Something went wrong
-          </h2>
-          <p className="text-gray-600 mb-6">
-            We're sorry, but an unexpected error occurred. Our team has been notified.
-          </p>
-          <button
-            onClick={resetError}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    ),
-    beforeCapture: (scope, error, errorInfo) => {
+    fallback: ({ error, resetError }: any) => React.createElement('div', {
+      className: 'min-h-screen bg-gray-50 flex items-center justify-center p-4'
+    }, React.createElement('div', {
+      className: 'max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center'
+    }, [
+      React.createElement('div', {
+        key: 'icon',
+        className: 'text-red-600 mb-4'
+      }, React.createElement('svg', {
+        className: 'mx-auto h-12 w-12',
+        fill: 'none',
+        viewBox: '0 0 24 24',
+        stroke: 'currentColor'
+      }, React.createElement('path', {
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        strokeWidth: 2,
+        d: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z'
+      }))),
+      React.createElement('h2', {
+        key: 'title',
+        className: 'text-xl font-semibold text-gray-900 mb-2'
+      }, 'Something went wrong'),
+      React.createElement('p', {
+        key: 'message',
+        className: 'text-gray-600 mb-6'
+      }, 'We\'re sorry, but an unexpected error occurred. Our team has been notified.'),
+      React.createElement('button', {
+        key: 'button',
+        onClick: resetError,
+        className: 'bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors'
+      }, 'Try Again')
+    ])),
+    beforeCapture: (scope: any, error: any, errorInfo: any) => {
       scope.setTag('errorBoundary', true);
       scope.setContext('errorInfo', errorInfo);
     }
