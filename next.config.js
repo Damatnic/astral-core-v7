@@ -26,10 +26,9 @@ const nextConfig = {
     ignoreDuringBuilds: process.env.NODE_ENV === 'production',
   },
   
-  // Completely disable TypeScript checking
+  // Enable TypeScript checking with proper error handling
   typescript: {
-    ignoreBuildErrors: true,
-    tsconfigPath: './jsconfig.json'
+    ignoreBuildErrors: process.env.NODE_ENV === 'production',
   },
   
   // Webpack configuration for better SSR handling

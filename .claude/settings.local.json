@@ -73,7 +73,15 @@
       "Bash(npx vercel:*)",
       "Bash(npx cross-env:*)",
       "Bash(set SKIP_TYPE_CHECK=true)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm outdated)",
+      "Bash(npm ls:*)",
+      "Bash(set -a)",
+      "Bash(source .env.local)",
+      "Bash(npx --prefer-offline tsc --noEmit)",
+      "Bash(cd:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

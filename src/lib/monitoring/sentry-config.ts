@@ -3,6 +3,7 @@
  * Comprehensive error monitoring and performance tracking
  */
 
+import React from 'react';
 import * as Sentry from '@sentry/nextjs';
 
 // Sentry configuration
