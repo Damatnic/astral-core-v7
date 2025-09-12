@@ -3,8 +3,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { WellnessDataInput, WellnessStats } from '@/lib/types/wellness';
+import type { StateSetFn } from '@/lib/types/store';
 
-interface WellnessState {
+export interface WellnessState {
   todayData: WellnessDataInput | null;
   weeklyData: WellnessDataInput[];
   stats: WellnessStats | null;
@@ -24,7 +25,7 @@ interface WellnessState {
   submitWellnessData: (data: WellnessDataInput) => Promise<boolean>;
 }
 
-const storeCreator = (set: any): WellnessState => ({
+const storeCreator = (set: StateSetFn<WellnessState>): WellnessState => ({
       todayData: null,
       weeklyData: [],
       stats: null,

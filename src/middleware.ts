@@ -1,9 +1,27 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { enhanceSecurityResponse, shouldRateLimit } from '@/lib/security/middleware-enhancer';
+import { applyRateLimit } from '@/lib/security/rate-limiter-config';
+import { validateEnv } from '@/lib/config/env-validation';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Validate environment on first request (cached after)
+  const envValidation = validateEnv();
+  if (!envValidation.success && process.env.NODE_ENV === 'production') {
+    console.error('Environment validation failed:', envValidation.errors);
+    return new NextResponse('Service Unavailable', { status: 503 });
+  }
 
+  // Apply rate limiting for sensitive endpoints
+  if (shouldRateLimit(pathname)) {
+    const rateLimitResponse = await applyRateLimit(request);
+    if (rateLimitResponse && rateLimitResponse.status === 429) {
+      return rateLimitResponse;
+    }
+  }
+  
   // Allow public routes
   const publicRoutes = [
     '/auth/login',
@@ -13,7 +31,8 @@ export async function middleware(request: NextRequest) {
     '/api/health',
     '/api/status',
     '/_next',
-    '/favicon.ico'
+    '/favicon.ico',
+    '/api/crisis/hotline' // Always allow crisis hotline access
   ];
 
   // Check if current path is public
@@ -22,7 +41,8 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isPublicRoute) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    return enhanceSecurityResponse(request, response);
   }
 
   // Check authentication for protected routes
@@ -35,10 +55,23 @@ export async function middleware(request: NextRequest) {
   if (!token) {
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    return enhanceSecurityResponse(request, response);
   }
-
-  return NextResponse.next();
+  
+  // Add user context to request headers for downstream use
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-user-id', token.sub || '');
+  requestHeaders.set('x-user-role', (token as any).role || 'CLIENT');
+  
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  
+  // Apply security headers to all responses
+  return enhanceSecurityResponse(request, response);
 }
 
 export const config = {

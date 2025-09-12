@@ -1,0 +1,165 @@
+{
+  "security": {
+    "authentication": {
+      "sessionTimeout": 1800,
+      "maxLoginAttempts": 5,
+      "lockoutDuration": 900,
+      "passwordPolicy": {
+        "minLength": 8,
+        "requireUppercase": true,
+        "requireLowercase": true,
+        "requireNumbers": true,
+        "requireSpecialChars": true,
+        "maxAge": 90,
+        "preventReuse": 5
+      },
+      "mfa": {
+        "required": true,
+        "methods": ["totp", "sms", "email"],
+        "backupCodes": 10,
+        "gracePeriod": 86400
+      }
+    },
+    "authorization": {
+      "roles": ["CLIENT", "THERAPIST", "ADMIN", "SUPERVISOR"],
+      "defaultRole": "CLIENT",
+      "roleHierarchy": {
+        "ADMIN": ["SUPERVISOR", "THERAPIST", "CLIENT"],
+        "SUPERVISOR": ["THERAPIST", "CLIENT"],
+        "THERAPIST": ["CLIENT"],
+        "CLIENT": []
+      }
+    },
+    "encryption": {
+      "algorithm": "aes-256-gcm",
+      "keyRotation": 30,
+      "phiFields": {
+        "automatic": true,
+        "models": {
+          "User": ["email", "phoneNumber"],
+          "Profile": ["firstName", "lastName", "dateOfBirth", "phoneNumber", "address"],
+          "SessionNote": ["presentingIssues", "interventions", "clientResponse"],
+          "WellnessData": ["notes", "symptoms", "triggers"],
+          "JournalEntry": ["content", "title"]
+        }
+      }
+    },
+    "rateLimiting": {
+      "enabled": true,
+      "endpoints": {
+        "auth": {
+          "login": { "window": 900000, "max": 5 },
+          "register": { "window": 3600000, "max": 3 },
+          "passwordReset": { "window": 3600000, "max": 3 }
+        },
+        "api": {
+          "default": { "window": 60000, "max": 60 },
+          "upload": { "window": 3600000, "max": 10 },
+          "crisis": { "window": 60000, "max": 20 }
+        }
+      }
+    },
+    "cors": {
+      "production": {
+        "origins": ["https://astralcore.app"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        "credentials": true,
+        "maxAge": 86400
+      },
+      "development": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "credentials": true
+      }
+    },
+    "headers": {
+      "frameOptions": "DENY",
+      "contentTypeOptions": "nosniff",
+      "xssProtection": "1; mode=block",
+      "referrerPolicy": "strict-origin-when-cross-origin",
+      "hsts": {
+        "maxAge": 31536000,
+        "includeSubDomains": true,
+        "preload": true
+      },
+      "csp": {
+        "directives": {
+          "defaultSrc": ["'self'"],
+          "scriptSrc": ["'self'", "'unsafe-inline'"],
+          "styleSrc": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          "fontSrc": ["'self'", "https://fonts.gstatic.com"],
+          "imgSrc": ["'self'", "data:", "blob:", "https:"],
+          "connectSrc": ["'self'"],
+          "frameSrc": ["'self'"],
+          "objectSrc": ["'none'"],
+          "upgradeInsecureRequests": true
+        }
+      }
+    },
+    "session": {
+      "name": "astralcore.sid",
+      "secret": "CHANGE_IN_PRODUCTION",
+      "maxAge": 86400000,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "strict",
+      "rolling": true,
+      "resave": false,
+      "saveUninitialized": false
+    },
+    "audit": {
+      "enabled": true,
+      "logLevel": "INFO",
+      "retention": 2190,
+      "events": [
+        "LOGIN",
+        "LOGOUT",
+        "REGISTER",
+        "PASSWORD_CHANGE",
+        "MFA_ENABLE",
+        "MFA_DISABLE",
+        "PHI_ACCESS",
+        "PHI_MODIFY",
+        "PERMISSION_CHANGE",
+        "SECURITY_ALERT"
+      ]
+    },
+    "compliance": {
+      "hipaa": {
+        "enabled": true,
+        "phiEncryption": true,
+        "auditLogging": true,
+        "accessControls": true,
+        "dataRetention": 2555,
+        "breachNotification": 60
+      },
+      "gdpr": {
+        "enabled": true,
+        "dataPortability": true,
+        "rightToErasure": true,
+        "consentManagement": true,
+        "privacyByDesign": true
+      }
+    },
+    "monitoring": {
+      "errorReporting": true,
+      "performanceMonitoring": true,
+      "securityAlerts": true,
+      "anomalyDetection": true,
+      "realTimeAlerts": {
+        "bruteForce": true,
+        "suspiciousActivity": true,
+        "dataExfiltration": true,
+        "privilegeEscalation": true
+      }
+    },
+    "backup": {
+      "enabled": true,
+      "frequency": "daily",
+      "retention": 30,
+      "encryption": true,
+      "offsite": true,
+      "testing": "monthly"
+    }
+  }
+}

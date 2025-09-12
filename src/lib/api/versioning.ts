@@ -1,7 +1,17 @@
 // API Versioning Strategy for Mental Health Platform
 // Supports multiple versioning strategies with backward compatibility
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { 
+  ApiResponseSchema, 
+  ParameterExample, 
+  QueryParameterValue, 
+  RequestBody, 
+  ApiErrorDetails, 
+  ResponseData,
+  OpenAPIDocument,
+  OpenAPIPath,
+  VersionHealthStatus 
+} from '@/lib/types/api-versioning';
 
 export type ApiVersion = 'v1' | 'v2' | 'v3';
 export type VersioningStrategy = 'header' | 'path' | 'query' | 'subdomain';
@@ -48,14 +58,14 @@ export interface ParameterDefinition {
   introduced: ApiVersion;
   deprecated?: ApiVersion;
   description: string;
-  example?: any;
+  example?: ParameterExample;
   validation?: ValidationRule[];
 }
 
 export interface ResponseSchema {
   statusCode: number;
-  schema: any; // JSON Schema
-  examples: Record<string, any>;
+  schema: ApiResponseSchema;
+  examples: Record<string, unknown>;
   headers?: Record<string, string>;
 }
 
@@ -88,7 +98,7 @@ export interface CodeExample {
 
 export interface ValidationRule {
   type: 'min' | 'max' | 'pattern' | 'enum' | 'custom';
-  value: any;
+  value: string | number | RegExp | string[] | ((value: unknown) => boolean);
   message: string;
 }
 
@@ -97,8 +107,8 @@ export interface ApiRequest {
   endpoint: string;
   method: string;
   headers: Record<string, string>;
-  query: Record<string, any>;
-  body?: any;
+  query: Record<string, QueryParameterValue>;
+  body?: RequestBody;
   user?: {
     id: string;
     role: string;
@@ -107,7 +117,7 @@ export interface ApiRequest {
 
 export interface ApiResponse {
   status: number;
-  data?: any;
+  data?: ResponseData;
   error?: ApiError;
   headers: Record<string, string>;
   deprecationWarning?: DeprecationWarning;
@@ -116,7 +126,7 @@ export interface ApiResponse {
 export interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  details?: ApiErrorDetails;
   version: ApiVersion;
   timestamp: string;
   traceId?: string;
@@ -430,16 +440,29 @@ if (data.mfa_required) {
   }
 };
 
+/**
+ * API Version Manager
+ * Handles version extraction, validation, and transformation for API requests/responses
+ */
 export class ApiVersionManager {
   private strategy: VersioningStrategy;
   private defaultVersion: ApiVersion;
   
+  /**
+   * Initialize the API Version Manager
+   * @param strategy - The versioning strategy to use (header, path, query, subdomain)
+   * @param defaultVersion - The default API version when none is specified
+   */
   constructor(strategy: VersioningStrategy = 'header', defaultVersion: ApiVersion = 'v2') {
     this.strategy = strategy;
     this.defaultVersion = defaultVersion;
   }
   
-  // Extract version from request
+  /**
+   * Extract API version from incoming request based on configured strategy
+   * @param request - The incoming API request
+   * @returns The extracted API version or default if not found
+   */
   public extractVersion(request: ApiRequest): ApiVersion {
     switch (this.strategy) {
       case 'header':
@@ -465,7 +488,7 @@ export class ApiVersionManager {
     return this.validateVersion(pathMatch?.[1]);
   }
   
-  private extractFromQuery(query: Record<string, any>): ApiVersion {
+  private extractFromQuery(query: Record<string, QueryParameterValue>): ApiVersion {
     return this.validateVersion(query['version'] || query['v']);
   }
   
@@ -482,7 +505,11 @@ export class ApiVersionManager {
     return this.defaultVersion;
   }
   
-  // Version compatibility checks
+  /**
+   * Check if a specific API version is still supported
+   * @param version - The API version to check
+   * @returns True if version is supported, false if sunset
+   */
   public isVersionSupported(version: ApiVersion): boolean {
     const config = API_VERSIONS[version];
     if (!config) return false;
@@ -546,7 +573,12 @@ export class ApiVersionManager {
     return version >= endpointConfig.introduced;
   }
   
-  // Request transformation for backward compatibility
+  /**
+   * Transform incoming request for backward compatibility
+   * Adjusts parameters based on version-specific requirements
+   * @param request - The incoming API request
+   * @returns Transformed request compatible with the target version
+   */
   public transformRequest(request: ApiRequest): ApiRequest {
     const version = this.extractVersion(request);
     const endpointKey = `${request.method} ${request.endpoint}`;
@@ -578,10 +610,10 @@ export class ApiVersionManager {
   }
   
   private transformParameters(
-    data: Record<string, any>,
+    data: Record<string, unknown>,
     parameters: ParameterDefinition[],
     version: ApiVersion
-  ): Record<string, any> {
+  ): Record<string, unknown> {
     const transformed = { ...data };
     
     for (const param of parameters) {
@@ -601,7 +633,12 @@ export class ApiVersionManager {
     return transformed;
   }
   
-  // Response transformation
+  /**
+   * Transform API response with version-specific headers and warnings
+   * @param response - The API response to transform
+   * @param version - The API version being used
+   * @returns Transformed response with appropriate headers and warnings
+   */
   public transformResponse(response: ApiResponse, version: ApiVersion): ApiResponse {
     const transformedResponse = { ...response };
     
@@ -623,7 +660,7 @@ export class ApiVersionManager {
   }
   
   // Documentation generation
-  public generateApiDoc(version: ApiVersion): any {
+  public generateApiDoc(version: ApiVersion): OpenAPIDocument | null {
     const config = API_VERSIONS[version];
     if (!config) return null;
     
@@ -666,8 +703,8 @@ export class ApiVersionManager {
     };
   }
   
-  private generatePathsDoc(endpoints: Record<string, EndpointVersion>): any {
-    const paths: any = {};
+  private generatePathsDoc(endpoints: Record<string, EndpointVersion>): Record<string, OpenAPIPath> {
+    const paths: Record<string, OpenAPIPath> = {};
     
     for (const [key, endpoint] of Object.entries(endpoints)) {
       const parts = key.split(' ');
@@ -713,7 +750,12 @@ export class ApiVersionManager {
     return paths;
   }
   
-  // Migration helpers
+  /**
+   * Generate migration guide between API versions
+   * @param fromVersion - The current API version
+   * @param toVersion - The target API version to migrate to
+   * @returns Migration guide with steps and examples, or null if versions invalid
+   */
   public getMigrationGuide(fromVersion: ApiVersion, toVersion: ApiVersion): MigrationGuide | null {
     const fromConfig = API_VERSIONS[fromVersion];
     const toConfig = API_VERSIONS[toVersion];
@@ -745,8 +787,8 @@ export class ApiVersionManager {
   }
   
   // Health check
-  public getVersionHealth(): Record<ApiVersion, { status: 'healthy' | 'deprecated' | 'sunset'; details: string }> {
-    const health: any = {};
+  public getVersionHealth(): Record<ApiVersion, VersionHealthStatus> {
+    const health: Record<string, VersionHealthStatus> = {};
     
     for (const [version, config] of Object.entries(API_VERSIONS)) {
       if (config.sunsetDate && new Date() > new Date(config.sunsetDate)) {
@@ -767,6 +809,6 @@ export class ApiVersionManager {
       }
     }
     
-    return health;
+    return health as Record<ApiVersion, VersionHealthStatus>;
   }
 }

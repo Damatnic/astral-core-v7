@@ -3,8 +3,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { SessionUser } from '@/lib/types/auth';
+import type { StateSetFn } from '@/lib/types/store';
 
-interface AuthState {
+export interface AuthState {
   user: SessionUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -13,7 +14,7 @@ interface AuthState {
   logout: () => void;
 }
 
-const storeCreator = (set: any): AuthState => ({
+const storeCreator = (set: StateSetFn<AuthState>): AuthState => ({
       user: null,
       isAuthenticated: false,
       isLoading: true,

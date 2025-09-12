@@ -1,6 +1,7 @@
 'use client';
 
 import type { SessionUser } from '@/lib/types/auth';
+import type { AuthState } from './useAuthStoreClient';
 
 // Dummy store for SSR
 const dummyStore = () => ({
@@ -12,16 +13,17 @@ const dummyStore = () => ({
   logout: () => {}
 });
 
-// Dynamic import wrapper
-let realStore: any = null;
+// Dynamic import wrapper with proper typing
+type AuthStoreHook = () => AuthState;
+let realStore: AuthStoreHook | null = null;
 
-export const useAuthStore = () => {
+export const useAuthStore = (): AuthState => {
   if (typeof window === 'undefined') {
     return dummyStore();
   }
   
   if (!realStore) {
-    const { useAuthStore: store } = require('./useAuthStoreClient');
+    const { useAuthStore: store } = require('./useAuthStoreClient') as { useAuthStore: AuthStoreHook };
     realStore = store;
   }
   

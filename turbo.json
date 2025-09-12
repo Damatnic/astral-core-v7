@@ -1,0 +1,45 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "NEXTAUTH_URL",
+        "NEXTAUTH_SECRET",
+        "NEXT_PUBLIC_*"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "outputs": []
+    },
+    "prisma:generate": {
+      "cache": false,
+      "outputs": ["node_modules/.prisma/**", "node_modules/@prisma/client/**"]
+    }
+  },
+  "globalDependencies": [
+    ".env",
+    ".env.local",
+    "tsconfig.json",
+    "next.config.js",
+    "prisma/schema.prisma"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "VERCEL",
+    "VERCEL_ENV",
+    "VERCEL_URL",
+    "CI"
+  ]
+}

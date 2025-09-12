@@ -5,6 +5,8 @@ import { logError, logInfo, toError } from '@/lib/logger';
 import prisma from '@/lib/db/prisma';
 import { z } from 'zod';
 import { ErrorSeverity, ErrorType } from '@prisma/client';
+import { sendAlert } from '@/lib/services/alerting';
+import { ErrorSeverity as AlertSeverity } from '@/lib/utils/error-handling';
 
 /**
  * Error Tracking API Endpoint
@@ -103,8 +105,22 @@ export async function POST(request: NextRequest) {
         url: validatedData.url
       });
 
-      // TODO: Trigger alerting system for critical errors
-      // This could include email notifications, Slack webhooks, etc.
+      // Trigger alerting system for critical errors
+      const alertSeverity = validatedData.severity === 'CRITICAL' ? AlertSeverity.CRITICAL :
+                           validatedData.severity === 'HIGH' ? AlertSeverity.HIGH :
+                           validatedData.severity === 'MEDIUM' ? AlertSeverity.MEDIUM :
+                           AlertSeverity.LOW;
+      
+      await sendAlert({
+        severity: alertSeverity,
+        errorId: errorRecord.id,
+        message: validatedData.message,
+        userId,
+        url: validatedData.url || undefined,
+        stackTrace: validatedData.stack || undefined,
+        metadata: validatedData.metadata || undefined,
+        timestamp: new Date().toISOString()
+      });
     }
 
     logInfo('Error logged successfully', 'ErrorTracking', {
