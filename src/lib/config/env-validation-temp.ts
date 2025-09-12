@@ -1,6 +1,6 @@
 /**
- * TEMPORARY: Simplified Environment Configuration
- * This bypasses zod dependency until proper installation in Vercel
+ * TEMPORARY: Simplified Environment Configuration for Deployment
+ * This bypasses zod dependency until proper installation
  */
 
 export type EnvConfig = {
@@ -11,7 +11,7 @@ export type EnvConfig = {
   [key: string]: any;
 };
 
-export function validateEnv(): { success: boolean; config?: EnvConfig; errors?: any } {
+export function validateEnv(): { success: boolean; config?: EnvConfig } {
   return {
     success: true,
     config: {
@@ -40,21 +40,8 @@ export function isDevelopment(): boolean {
   return process.env.NODE_ENV === 'development';
 }
 
-export function isTest(): boolean {
-  return process.env.NODE_ENV === 'test';
-}
-
 export function getAppUrl(): string {
   return process.env.NEXTAUTH_URL || process.env.APP_URL || 'http://localhost:3000';
-}
-
-export function maskSensitive(value: string): string {
-  if (!value || value.length < 8) return '***';
-  return value.substring(0, 4) + '***' + value.substring(value.length - 4);
-}
-
-export function logEnvConfig(): void {
-  console.log('Environment configuration loaded');
 }
 
 export function getConfig(): EnvConfig {
