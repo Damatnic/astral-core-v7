@@ -71,7 +71,8 @@
       "Bash(npm cache clean:*)",
       "Bash(takeown:*)",
       "Bash(npx vercel:*)",
-      "Bash(npx cross-env:*)"
+      "Bash(npx cross-env:*)",
+      "Bash(set SKIP_TYPE_CHECK=true)"
     ],
     "deny": [],
     "ask": []
