@@ -63,7 +63,8 @@
       "Bash(for:*)",
       "Bash(do)",
       "Bash(echo:*)",
-      "Bash(del \"H:\\Astral Core\\astral-core-v7\\src\\app\\api\\appointments\\route.ts\")"
+      "Bash(del \"H:\\Astral Core\\astral-core-v7\\src\\app\\api\\appointments\\route.ts\")",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

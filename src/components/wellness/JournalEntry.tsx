@@ -249,14 +249,6 @@ const JournalEntry: React.FC = () => {
 
   const allTags = Array.from(new Set(entries.flatMap(entry => entry.tags)));
 
-  const removeArrayItem = (field: 'gratitude' | 'goals' | 'challenges' | 'achievements', index: number) => {
-    const currentArray = currentEntry[field] || [];
-    setCurrentEntry(prev => ({
-      ...prev,
-      [field]: currentArray.filter((_, i) => i !== index)
-    }));
-  };
-
   return (
     <div className="p-6">
       <div className="mb-6">

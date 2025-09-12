@@ -36,7 +36,7 @@ export default function ClientDashboard({ user }: ClientDashboardProps) {
       }
 
       const wellness = await wellnessRes.json();
-      setWellnessData(wellness.data?.items?.[0]);
+      setWellnessData(wellness.data?.items?.[0] || null);
     } catch (error) {
       logError('Error fetching wellness data', error, 'ClientDashboard');
       setWellnessError(error instanceof Error ? error.message : 'Failed to load wellness data');

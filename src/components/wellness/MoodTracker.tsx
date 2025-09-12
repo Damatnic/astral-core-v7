@@ -159,7 +159,9 @@ const MoodTracker: React.FC = () => {
     const today = new Date();
     
     for (let i = 0; i < sortedDates.length; i++) {
-      const entryDate = new Date(sortedDates[i]);
+      const dateStr = sortedDates[i];
+      if (!dateStr) continue;
+      const entryDate = new Date(dateStr);
       const expectedDate = new Date(today);
       expectedDate.setDate(today.getDate() - i);
       
