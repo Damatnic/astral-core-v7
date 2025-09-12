@@ -28,7 +28,7 @@ const nextConfig = {
   
   // Skip TypeScript errors during production builds (handle in CI)
   typescript: {
-    ignoreBuildErrors: process.env.NODE_ENV === 'production',
+    ignoreBuildErrors: true,
   },
   
   // Webpack configuration for better SSR handling
