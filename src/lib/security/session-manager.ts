@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/auth-options';
-import { getConfig } from '@/lib/config/env-validation';
+import { authOptions } from '../auth/auth-options';
+import { getConfig } from '../config/env-validation';
 import crypto from 'crypto';
 import { z } from 'zod';
 

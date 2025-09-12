@@ -1,9 +1,9 @@
-import { prisma } from '@/lib/db';
-import { audit } from '@/lib/security/audit';
+import { prisma } from '../db';
+import { audit } from '../security/audit';
 import { notificationService } from './notification-service';
-import { logError, logWarning } from '@/lib/logger';
-import { logSystemEvent } from '@/lib/notification-logger';
-import { websocketServer } from '@/lib/websocket/server';
+import { logError, logWarning } from '../logger';
+import { logSystemEvent } from '../notification-logger';
+import { websocketServer } from '../websocket/server';
 import { AppointmentType, AppointmentStatus } from '@prisma/client';
 import { z } from 'zod';
 
@@ -989,7 +989,7 @@ export class AppointmentService {
  * Includes automatic reminder scheduling every hour
  * @example
  * ```typescript
- * import { appointmentService } from '@/lib/services/appointment-service';
+ * import { appointmentService } from './appointment-service';
  *
  * // Create appointment
  * const appointment = await appointmentService.createAppointment({

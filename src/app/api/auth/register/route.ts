@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
-import prisma from '@/lib/db/prisma';
-import { registerSchema } from '@/lib/types/auth';
-import { audit } from '@/lib/security/audit';
-import { rateLimiters } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants/index';
-import { encryption } from '@/lib/security/encryption';
-import { logError } from '@/lib/logger';
+import prisma from '../../../../lib/db/prisma';
+import { registerSchema } from '../../../../lib/types/auth';
+import { audit } from '../../../../lib/security/audit';
+import { rateLimiters } from '../../../../lib/security/rate-limit';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../../../lib/constants/index';
+import { encryption } from '../../../../lib/security/encryption';
+import { logError } from '../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
   try {

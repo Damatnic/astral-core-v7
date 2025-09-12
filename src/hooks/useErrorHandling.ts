@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { logError } from '@/lib/logger';
+import { logError } from '../lib/logger';
 
 interface ErrorState {
   error: string | null;

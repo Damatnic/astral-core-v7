@@ -6,14 +6,14 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // Lazy load large feature components
-const MfaSetup = React.lazy(() => import('@/components/MfaSetup'));
-const FileUpload = React.lazy(() => import('@/components/FileUpload'));
-const NotificationBell = React.lazy(() => import('@/components/NotificationBell'));
-const PresenceIndicator = React.lazy(() => import('@/components/PresenceIndicator'));
+const MfaSetup = React.lazy(() => import('../MfaSetup'));
+const FileUpload = React.lazy(() => import('../FileUpload'));
+const NotificationBell = React.lazy(() => import('../NotificationBell'));
+const PresenceIndicator = React.lazy(() => import('../PresenceIndicator'));
 
 // Higher-order component for feature loading
 const withFeatureLoading = <P extends object>(
@@ -84,10 +84,10 @@ export const LazyNotificationBell = withInteractiveLoading(NotificationBell);
 export const LazyPresenceIndicator = withInteractiveLoading(PresenceIndicator);
 
 // Preload functions for better UX
-export const preloadMfaSetup = () => import('@/components/MfaSetup');
-export const preloadFileUpload = () => import('@/components/FileUpload');
-export const preloadNotificationBell = () => import('@/components/NotificationBell');
-export const preloadPresenceIndicator = () => import('@/components/PresenceIndicator');
+export const preloadMfaSetup = () => import('../MfaSetup');
+export const preloadFileUpload = () => import('../FileUpload');
+export const preloadNotificationBell = () => import('../NotificationBell');
+export const preloadPresenceIndicator = () => import('../PresenceIndicator');
 
 // Preload all feature components
 export const preloadAllFeatures = () => {

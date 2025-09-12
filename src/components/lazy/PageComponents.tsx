@@ -6,8 +6,8 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // Create lazy loading wrappers for page components
 const createLazyPageComponent = (importPath: string, loadingMessage: string) => {
@@ -39,16 +39,16 @@ const createLazyPageComponent = (importPath: string, loadingMessage: string) => 
 };
 
 // Define preload functions
-export const preloadJournalPage = () => import('@/app/journal/page');
-export const preloadWellnessPage = () => import('@/app/wellness/page');
+export const preloadJournalPage = () => import('../../app/journal/page');
+export const preloadWellnessPage = () => import('../../app/wellness/page');
 
 // Create utility function for route-based code splitting
 export const createRouteComponent = (path: string) => {
   switch (path) {
     case '/journal':
-      return createLazyPageComponent('@/app/journal/page', 'Loading journal...');
+      return createLazyPageComponent('../../app/journal/page', 'Loading journal...');
     case '/wellness':
-      return createLazyPageComponent('@/app/wellness/page', 'Loading wellness tracker...');
+      return createLazyPageComponent('../../app/wellness/page', 'Loading wellness tracker...');
     default:
       return null;
   }

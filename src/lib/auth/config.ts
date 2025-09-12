@@ -4,9 +4,9 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
 import { compare } from 'bcryptjs';
-import prisma from '@/lib/db/prisma';
-import { audit } from '@/lib/security/audit';
-import { isDemoAccountEmail, getDemoAuditMetadata, areDemoAccountsAllowed } from '@/lib/utils/demo-accounts';
+import prisma from '../db/prisma';
+import { audit } from '../security/audit';
+import { isDemoAccountEmail, getDemoAuditMetadata, areDemoAccountsAllowed } from '../utils/demo-accounts';
 
 declare module 'next-auth' {
   interface Session {

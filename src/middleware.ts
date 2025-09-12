@@ -1,8 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { enhanceSecurityResponse, shouldRateLimit } from '@/lib/security/middleware-enhancer';
-import { applyRateLimit } from '@/lib/security/rate-limiter-config';
-import { validateEnv } from '@/lib/config/env-validation';
+import { enhanceSecurityResponse, shouldRateLimit } from './lib/security/middleware-enhancer';
+import { applyRateLimit } from './lib/security/rate-limiter-config';
+import { validateEnv } from './lib/config/env-validation';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

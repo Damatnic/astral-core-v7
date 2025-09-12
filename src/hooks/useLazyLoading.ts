@@ -6,8 +6,8 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { LoadingStrategy, LoadingPriority } from '@/lib/lazy-loading';
-import { logWarning } from '@/lib/logger';
+import { LoadingStrategy, LoadingPriority } from '../lib/lazy-loading';
+import { logWarning } from '../lib/logger';
 
 interface UseLazyLoadingOptions {
   strategy?: LoadingStrategy;

@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useFocusTrap, useAnnouncementRegion } from '@/hooks/useAccessibilityFocus';
+import { useFocusTrap, useAnnouncementRegion } from '../../hooks/useAccessibilityFocus';
 
 interface AccessibleModalProps {
   isOpen: boolean;

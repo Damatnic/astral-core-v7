@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
-import { authOptions } from '@/lib/auth/config';
-import prisma from '@/lib/db/prisma';
-import { profileSchema } from '@/lib/types/user';
-import { audit } from '@/lib/security/audit';
-import { phiService } from '@/lib/security/phi-service';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants/index';
-import { logError } from '@/lib/logger';
+import { authOptions } from '../../../../lib/auth/config';
+import prisma from '../../../../lib/db/prisma';
+import { profileSchema } from '../../../../lib/types/user';
+import { audit } from '../../../../lib/security/audit';
+import { phiService } from '../../../../lib/security/phi-service';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../../../lib/constants/index';
+import { logError } from '../../../../lib/logger';
 import { 
   handleConditionalRequest, 
   createCachedResponse, 
   generateETag, 
   CacheStrategies
-} from '@/lib/utils/cache';
+} from '../../../../lib/utils/cache';
 
 // GET /api/user/profile - Get current user's profile
 export async function GET(request: NextRequest) {

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { logWarning, logError, logDebug } from '@/lib/logger';
+import { logWarning, logError, logDebug } from '../logger';
 
 export interface QueryMetric {
   id: string;

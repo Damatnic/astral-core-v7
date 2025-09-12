@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { rateLimiters } from '@/lib/security/rate-limit';
-import { logError, logInfo, toError } from '@/lib/logger';
-import prisma from '@/lib/db/prisma';
+import { rateLimiters } from '../../../../lib/security/rate-limit';
+import { logError, logInfo, toError } from '../../../../lib/logger';
+import prisma from '../../../../lib/db/prisma';
 import { z } from 'zod';
 import { ErrorSeverity, ErrorType } from '@prisma/client';
-import { sendAlert } from '@/lib/services/alerting';
-import { ErrorSeverity as AlertSeverity } from '@/lib/utils/error-handling';
+import { sendAlert } from '../../../../lib/services/alerting';
+import { ErrorSeverity as AlertSeverity } from '../../../../lib/utils/error-handling';
 
 /**
  * Error Tracking API Endpoint

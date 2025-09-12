@@ -351,7 +351,7 @@ export class ValidationService {
  * Integrates with ValidationService methods for consistent validation logic
  * @example
  * ```typescript
- * import { commonSchemas } from '@/lib/security/validation';
+ * import { commonSchemas } from './validation';
  *
  * // Validate email
  * const result = commonSchemas.email.safeParse('user@example.com');

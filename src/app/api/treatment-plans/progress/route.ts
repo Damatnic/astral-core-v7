@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
-import { treatmentPlanService } from '@/lib/services/treatment-plan-service';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
+import { authOptions } from '../../../../lib/auth/config';
+import { treatmentPlanService } from '../../../../lib/services/treatment-plan-service';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../../../lib/constants/index';
 import { z } from 'zod';
 
 const progressSchema = z.object({

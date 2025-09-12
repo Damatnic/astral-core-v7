@@ -7,9 +7,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { getMonitoringConfig, DEFAULT_ALERT_RULES, MONITORING_ENDPOINTS } from './config';
-import { getWebVitalsMonitor } from '@/lib/performance/web-vitals';
-import { getPerformanceMetricsCollector } from '@/lib/performance/metrics';
-import { logInfo, logError, logWarning } from '@/lib/logger';
+import { getWebVitalsMonitor } from '../performance/web-vitals';
+import { getPerformanceMetricsCollector } from '../performance/metrics';
+import { logInfo, logError, logWarning } from '../logger';
 
 /**
  * Initialize all monitoring systems
@@ -103,7 +103,7 @@ async function initializeErrorTracking(config: any): Promise<void> {
 
     // Request notification permissions for browser alerts
     if (typeof window !== 'undefined') {
-      const { requestNotificationPermission } = await import('@/lib/performance/error-monitoring');
+      const { requestNotificationPermission } = await import('../performance/error-monitoring');
       requestNotificationPermission();
     }
 

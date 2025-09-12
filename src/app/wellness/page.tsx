@@ -39,7 +39,7 @@ export default function WellnessPage() {
   useEffect(() => {
     const loadStore = async () => {
       try {
-        const { useWellnessStore } = await import('@/store/useWellnessStoreClient');
+        const { useWellnessStore } = await import('../../store/useWellnessStoreClient');
         const store = useWellnessStore();
         setStoreState({
           todayData: store.todayData,

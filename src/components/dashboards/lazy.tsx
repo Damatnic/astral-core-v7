@@ -6,8 +6,8 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // Lazy load dashboard components
 const AdminDashboard = React.lazy(() => import('./AdminDashboard'));

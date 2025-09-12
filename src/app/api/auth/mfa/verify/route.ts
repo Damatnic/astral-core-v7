@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mfaService } from '@/lib/services/mfa-service';
-import { rateLimiter } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
+import { mfaService } from '../../../../../lib/services/mfa-service';
+import { rateLimiter } from '../../../../../lib/security/rate-limit';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../../../../lib/constants/index';
 import { z } from 'zod';
-import { logError } from '@/lib/logger';
+import { logError } from '../../../../../lib/logger';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 

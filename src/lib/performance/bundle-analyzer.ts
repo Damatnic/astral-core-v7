@@ -5,8 +5,8 @@
 
 'use client';
 
-import { logDebug } from '@/lib/logger';
-import { devLog } from '@/lib/dev-logger';
+import { logDebug } from '../logger';
+import { devLog } from '../dev-logger';
 
 interface PerformanceMetrics {
   bundleSize: number;

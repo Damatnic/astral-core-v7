@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/db/prisma';
+import prisma from '../../../../../lib/db/prisma';
 import bcrypt from 'bcryptjs';
-import { audit } from '@/lib/security/audit';
-import { areDemoAccountsAllowed, getDemoSecurityHeaders } from '@/lib/utils/demo-accounts';
+import { audit } from '../../../../../lib/security/audit';
+import { areDemoAccountsAllowed, getDemoSecurityHeaders } from '../../../../../lib/utils/demo-accounts';
 
 // Demo account configurations
 const DEMO_ACCOUNTS = [

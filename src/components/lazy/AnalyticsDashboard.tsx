@@ -6,11 +6,11 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // Lazy load the analytics dashboard
-const AnalyticsDashboard = React.lazy(() => import('@/components/AnalyticsDashboard'));
+const AnalyticsDashboard = React.lazy(() => import('../AnalyticsDashboard'));
 
 // Higher-order component for analytics loading
 const withAnalyticsLoading = <P extends object>(Component: React.ComponentType<P>) => {
@@ -41,7 +41,7 @@ export const LazyAnalyticsDashboard = withAnalyticsLoading(AnalyticsDashboard);
 
 // Preload function for analytics
 export const preloadAnalyticsDashboard = () => {
-  import('@/components/AnalyticsDashboard');
+  import('../AnalyticsDashboard');
 };
 
 export default LazyAnalyticsDashboard;

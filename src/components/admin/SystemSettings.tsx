@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
 
 interface SystemSetting {
   key: string;

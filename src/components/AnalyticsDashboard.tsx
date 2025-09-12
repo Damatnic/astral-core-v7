@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import Card, { CardHeader, CardTitle, CardContent } from './ui/Card';
+import Button from './ui/Button';
 import { toast } from 'react-hot-toast';
 
 interface AnalyticsData {

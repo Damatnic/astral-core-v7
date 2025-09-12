@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { SessionUser } from '@/lib/types/auth';
+import type { SessionUser } from '../../lib/types/auth';
 
 interface AdminDashboardProps {
   user: SessionUser;

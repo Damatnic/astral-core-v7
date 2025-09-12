@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useWebSocketContext } from '@/providers/WebSocketProvider';
+import { useWebSocketContext } from '../providers/WebSocketProvider';
 
 interface PresenceIndicatorProps {
   userId: string;

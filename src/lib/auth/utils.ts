@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from './config';
-import { ROUTES } from '@/lib/constants';
+import { ROUTES } from '../constants';
 import type { User } from '@prisma/client';
 
 export async function getCurrentUser() {

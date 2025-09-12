@@ -2,12 +2,12 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
 import { compare } from 'bcryptjs';
-import { prisma } from '@/lib/db';
+import { prisma } from '../db';
 import { MfaMethod } from '@prisma/client';
-import { audit } from '@/lib/security/audit';
+import { audit } from '../security/audit';
 import { notificationService } from './notification-service';
-import { phiService } from '@/lib/security/phi-service';
-import { logError, logInfo } from '@/lib/logger';
+import { phiService } from '../security/phi-service';
+import { logError, logInfo } from '../logger';
 
 interface MfaSetupResult {
   secret: string;

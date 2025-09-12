@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { rateLimiters } from '@/lib/security/rate-limit';
-import { logInfo, logError, toError } from '@/lib/logger';
-import prisma from '@/lib/db/prisma';
+import { rateLimiters } from '../../../../lib/security/rate-limit';
+import { logInfo, logError, toError } from '../../../../lib/logger';
+import prisma from '../../../../lib/db/prisma';
 import { z } from 'zod';
 
 /**

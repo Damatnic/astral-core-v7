@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
-import { authOptions } from '@/lib/auth/config';
-import { sessionNoteSchema } from '@/lib/types/therapy';
-import { phiService } from '@/lib/security/phi-service';
-import { audit } from '@/lib/security/audit';
-import prisma from '@/lib/db/prisma';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
+import { authOptions } from '../../../../lib/auth/config';
+import { sessionNoteSchema } from '../../../../lib/types/therapy';
+import { phiService } from '../../../../lib/security/phi-service';
+import { audit } from '../../../../lib/security/audit';
+import prisma from '../../../../lib/db/prisma';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../../../lib/constants/index';
 
 // Ensure user is a therapist
 async function requireTherapist() {

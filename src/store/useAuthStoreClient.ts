@@ -2,8 +2,8 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { SessionUser } from '@/lib/types/auth';
-import type { StateSetFn } from '@/lib/types/store';
+import type { SessionUser } from '../lib/types/auth';
+import type { StateSetFn } from '../lib/types/store';
 
 export interface AuthState {
   user: SessionUser | null;

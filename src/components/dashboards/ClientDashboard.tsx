@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import type { SessionUser } from '@/lib/types/auth';
-import type { AppointmentWithDetails } from '@/lib/types/therapy';
-import type { wellnessDataSchema } from '@/lib/types/wellness';
+import type { SessionUser } from '../../lib/types/auth';
+import type { AppointmentWithDetails } from '../../lib/types/therapy';
+import type { wellnessDataSchema } from '../../lib/types/wellness';
 import type { z } from 'zod';
-import { AppointmentListSkeleton } from '@/components/ui/SkeletonLoader';
-import { logError } from '@/lib/logger';
+import { AppointmentListSkeleton } from '../ui/SkeletonLoader';
+import { logError } from '../../lib/logger';
 
 type WellnessData = z.infer<typeof wellnessDataSchema>;
 

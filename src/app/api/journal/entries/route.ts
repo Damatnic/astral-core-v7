@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
-import { authOptions } from '@/lib/auth/config';
-import { journalEntrySchema } from '@/lib/types/wellness';
-import { phiService } from '@/lib/security/phi-service';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
-import prisma from '@/lib/db/prisma';
-import { logError } from '@/lib/logger';
+import { authOptions } from '../../../../lib/auth/config';
+import { journalEntrySchema } from '../../../../lib/types/wellness';
+import { phiService } from '../../../../lib/security/phi-service';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../../../lib/constants/index';
+import prisma from '../../../../lib/db/prisma';
+import { logError } from '../../../../lib/logger';
 
 // GET /api/journal/entries - Get user's journal entries
 export async function GET(request: NextRequest) {

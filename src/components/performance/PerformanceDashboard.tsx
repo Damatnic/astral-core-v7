@@ -6,11 +6,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, AlertTriangle, TrendingUp, Database, Globe, Cpu, RefreshCw } from '@/components/ui/Icons';
-import { usePerformanceMetrics } from '@/lib/performance/metrics';
-import { useWebVitals } from '@/lib/performance/web-vitals';
-import { useErrorMonitoring } from '@/lib/performance/error-monitoring';
-import { useDatabaseMonitoring } from '@/lib/performance/db-monitoring';
+import { Activity, AlertTriangle, TrendingUp, Database, Globe, Cpu, RefreshCw } from '../ui/Icons';
+import { usePerformanceMetrics } from '../../lib/performance/metrics';
+import { useWebVitals } from '../../lib/performance/web-vitals';
+import { useErrorMonitoring } from '../../lib/performance/error-monitoring';
+import { useDatabaseMonitoring } from '../../lib/performance/db-monitoring';
 
 interface DashboardProps {
   refreshInterval?: number;

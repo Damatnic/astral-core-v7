@@ -1,10 +1,10 @@
-import { prisma } from '@/lib/db';
-import { phiService } from '@/lib/security/phi-service';
+import { prisma } from '../db';
+import { phiService } from '../security/phi-service';
 
-import { audit } from '@/lib/security/audit';
+import { audit } from '../security/audit';
 import { notificationService } from './notification-service';
 import { z } from 'zod';
-import { logError } from '@/lib/logger';
+import { logError } from '../logger';
 
 // Schemas for validation
 export const goalSchema = z.object({

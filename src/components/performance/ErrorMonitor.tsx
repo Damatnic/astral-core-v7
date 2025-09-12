@@ -6,8 +6,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Bug, AlertCircle, TrendingDown, Filter, Download } from '@/components/ui/Icons';
-import { useErrorMonitoring, ErrorEvent, ErrorPattern } from '@/lib/performance/error-monitoring';
+import { AlertTriangle, Bug, AlertCircle, TrendingDown, Filter, Download } from '../ui/Icons';
+import { useErrorMonitoring, ErrorEvent, ErrorPattern } from '../../lib/performance/error-monitoring';
 
 interface ErrorCardProps {
   error: ErrorEvent;

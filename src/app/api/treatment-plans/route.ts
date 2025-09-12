@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
-import { treatmentPlanService, treatmentPlanSchema } from '@/lib/services/treatment-plan-service';
-import { rateLimiter } from '@/lib/security/rate-limit';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
+import { authOptions } from '../../../lib/auth/config';
+import { treatmentPlanService, treatmentPlanSchema } from '../../../lib/services/treatment-plan-service';
+import { rateLimiter } from '../../../lib/security/rate-limit';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../../lib/constants/index';
 import { z } from 'zod';
-import prisma from '@/lib/db/prisma';
+import prisma from '../../../lib/db/prisma';
 
 // GET /api/treatment-plans - Get treatment plans
 export async function GET(request: NextRequest) {

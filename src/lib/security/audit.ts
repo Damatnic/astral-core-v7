@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
-import { logError } from '@/lib/logger';
+import { logError } from '../logger';
 
 interface AuditContext {
   userId?: string | undefined;

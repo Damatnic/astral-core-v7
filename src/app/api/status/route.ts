@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/db/prisma';
-import { logInfo } from '@/lib/logger';
+import prisma from '../../../lib/db/prisma';
+import { logInfo } from '../../../lib/logger';
 
 /**
  * Public Status Page API Endpoint

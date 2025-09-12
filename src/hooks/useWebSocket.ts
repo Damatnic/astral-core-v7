@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
-import { logError, logWarning, logInfo } from '@/lib/logger';
+import { logError, logWarning, logInfo } from '../lib/logger';
 
 interface WebSocketOptions {
   autoConnect?: boolean;

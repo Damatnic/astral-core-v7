@@ -1,5 +1,5 @@
 import { randomBytes, pbkdf2Sync, createCipheriv, createDecipheriv } from 'crypto';
-import { logError } from '@/lib/logger';
+import { logError } from '../logger';
 
 const ALGORITHM = 'aes-256-gcm';
 const SALT_LENGTH = 64;

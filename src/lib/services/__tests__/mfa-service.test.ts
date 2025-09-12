@@ -10,8 +10,8 @@ import { mockUsers } from '../../../../tests/utils/test-fixtures';
 // Mock dependencies
 jest.mock('speakeasy');
 jest.mock('qrcode');
-jest.mock('@/lib/db/prisma');
-jest.mock('@/lib/security/encryption');
+jest.mock('../../db/prisma');
+jest.mock('../../security/encryption');
 
 const mockSpeakeasy = {
   generateSecret: jest.fn(),
@@ -45,11 +45,11 @@ const mockEncryption = {
 // Mock modules
 jest.mock('speakeasy', () => mockSpeakeasy);
 jest.mock('qrcode', () => mockQRCode);
-jest.mock('@/lib/db/prisma', () => ({
+jest.mock('../../db/prisma', () => ({
   __esModule: true,
   default: mockPrisma
 }));
-jest.mock('@/lib/security/encryption', () => ({
+jest.mock('../../security/encryption', () => ({
   encryption: mockEncryption
 }));
 

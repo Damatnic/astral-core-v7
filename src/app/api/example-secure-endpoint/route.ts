@@ -5,19 +5,19 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/auth-options';
+import { authOptions } from '../../../lib/auth/auth-options';
 import {
   validateInput,
   journalEntrySchema,
   sanitizeHtml,
   preventXss
-} from '@/lib/validation/api-schemas';
-import { applyRateLimit } from '@/lib/security/rate-limiter-config';
-import { validateSession } from '@/lib/security/session-manager';
-import { audit } from '@/lib/security';
-import { enhancedPHIService, PHIAccessReason } from '@/lib/security/phi-enhanced';
+} from '../../../lib/validation/api-schemas';
+import { applyRateLimit } from '../../../lib/security/rate-limiter-config';
+import { validateSession } from '../../../lib/security/session-manager';
+import { audit } from '../../../lib/security';
+import { enhancedPHIService, PHIAccessReason } from '../../../lib/security/phi-enhanced';
 import { z } from 'zod';
-import prisma from '@/lib/db/prisma';
+import prisma from '../../../lib/db/prisma';
 
 // Request schema for this endpoint
 const requestSchema = z.object({

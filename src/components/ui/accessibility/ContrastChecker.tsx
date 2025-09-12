@@ -10,7 +10,7 @@ import {
   meetsContrastRequirement, 
   getAccessibleColorSuggestions,
   COLOR_CONTRAST 
-} from '@/utils/accessibility';
+} from '../../../utils/accessibility';
 
 interface ContrastCheckerProps {
   /**

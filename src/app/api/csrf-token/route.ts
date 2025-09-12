@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { handleCSRFTokenRequest } from '@/lib/security/csrf';
+import { handleCSRFTokenRequest } from '../../../lib/security/csrf';
 
 /**
  * CSRF Token API Endpoint

@@ -1,8 +1,8 @@
 import { InputHTMLAttributes, forwardRef, useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { VisuallyHidden } from './accessibility/VisuallyHidden';
-import { useAccessibilityPreferences, useAccessibleId } from '@/hooks/useAccessibility';
-import { validateSensitiveInputWithSuggestions } from '@/utils/accessibility';
+import { useAccessibilityPreferences, useAccessibleId } from '../../hooks/useAccessibility';
+import { validateSensitiveInputWithSuggestions } from '../../utils/accessibility';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;

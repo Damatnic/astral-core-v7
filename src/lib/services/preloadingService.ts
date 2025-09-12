@@ -60,9 +60,9 @@ class PreloadingService {
   private getPreloadingStrategy(userRole: UserRole): PreloadingStrategy {
     const baseStrategy: PreloadingStrategy = {
       immediate: [
-        () => import('@/components/ui/LoadingFallback'),
-        () => import('@/components/ui/Button'),
-        () => import('@/components/ui/Card')
+        () => import('../../components/ui/LoadingFallback'),
+        () => import('../../components/ui/Button'),
+        () => import('../../components/ui/Card')
       ],
       onIdle: [],
       onVisible: [],
@@ -75,20 +75,20 @@ class PreloadingService {
           ...baseStrategy,
           immediate: [
             ...baseStrategy.immediate,
-            () => import('@/components/dashboards/AdminDashboard'),
-            () => import('@/components/AnalyticsDashboard')
+            () => import('../../components/dashboards/AdminDashboard'),
+            () => import('../../components/AnalyticsDashboard')
           ],
           onIdle: [
-            () => import('@/components/performance/PerformanceDashboard'),
-            () => import('@/components/performance/DatabaseMonitor')
+            () => import('../../components/performance/PerformanceDashboard'),
+            () => import('../../components/performance/DatabaseMonitor')
           ],
           onVisible: [
-            () => import('@/components/performance/ErrorMonitor'),
-            () => import('@/components/performance/WebVitalsMonitor')
+            () => import('../../components/performance/ErrorMonitor'),
+            () => import('../../components/performance/WebVitalsMonitor')
           ],
           onUserIntent: [
-            () => import('@/components/admin/UserManagement'),
-            () => import('@/components/admin/SystemSettings')
+            () => import('../../components/admin/UserManagement'),
+            () => import('../../components/admin/SystemSettings')
           ]
         };
 
@@ -97,19 +97,19 @@ class PreloadingService {
           ...baseStrategy,
           immediate: [
             ...baseStrategy.immediate,
-            () => import('@/components/dashboards/TherapistDashboard')
+            () => import('../../components/dashboards/TherapistDashboard')
           ],
           onIdle: [
-            () => import('@/components/FileUpload'),
-            () => import('@/components/appointments/AppointmentScheduler')
+            () => import('../../components/FileUpload'),
+            () => import('../../components/appointments/AppointmentScheduler')
           ],
           onVisible: [
-            () => import('@/components/NotificationBell'),
-            () => import('@/components/PresenceIndicator')
+            () => import('../../components/NotificationBell'),
+            () => import('../../components/PresenceIndicator')
           ],
           onUserIntent: [
-            () => import('@/components/therapy/TherapyNotes'),
-            () => import('@/components/appointments/AppointmentHistory')
+            () => import('../../components/therapy/TherapyNotes'),
+            () => import('../../components/appointments/AppointmentHistory')
           ]
         };
 
@@ -118,18 +118,18 @@ class PreloadingService {
           ...baseStrategy,
           immediate: [
             ...baseStrategy.immediate,
-            () => import('@/components/dashboards/ClientDashboard')
+            () => import('../../components/dashboards/ClientDashboard')
           ],
           onIdle: [
-            () => import('@/components/FileUpload'),
-            () => import('@/components/NotificationBell')
+            () => import('../../components/FileUpload'),
+            () => import('../../components/NotificationBell')
           ],
           onVisible: [
-            () => import('@/components/PresenceIndicator')
+            () => import('../../components/PresenceIndicator')
           ],
           onUserIntent: [
-            () => import('@/components/wellness/MoodTracker'),
-            () => import('@/components/wellness/JournalEntry')
+            () => import('../../components/wellness/MoodTracker'),
+            () => import('../../components/wellness/JournalEntry')
           ]
         };
 
@@ -253,16 +253,16 @@ class PreloadingService {
   preloadByRoute(route: string): void {
     const routePreloaders: Record<string, ComponentPreloader[]> = {
       '/dashboard': [
-        () => import('@/components/dashboards/lazy')
+        () => import('../../components/dashboards/lazy')
       ],
       '/analytics': [
-        () => import('@/components/lazy/AnalyticsLazy')
+        () => import('../../components/lazy/AnalyticsLazy')
       ],
       '/wellness': [
-        () => import('@/app/wellness/page')
+        () => import('../../app/wellness/page')
       ],
       '/journal': [
-        () => import('@/app/journal/page')
+        () => import('../../app/journal/page')
       ]
     };
 
@@ -288,12 +288,12 @@ class PreloadingService {
       switch (feature) {
         case 'analytics':
           this.executePreloads([
-            () => import('@/components/lazy/AnalyticsLazy')
+            () => import('../../components/lazy/AnalyticsLazy')
           ]);
           break;
         case 'file-upload':
           this.executePreloads([
-            () => import('@/components/FileUpload')
+            () => import('../../components/FileUpload')
           ]);
           break;
       }

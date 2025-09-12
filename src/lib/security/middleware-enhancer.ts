@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getConfig } from '@/lib/config/env-validation';
+import { getConfig } from '../config/env-validation';
 
 // Security headers configuration
 export interface SecurityHeaders {

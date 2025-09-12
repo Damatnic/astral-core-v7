@@ -25,9 +25,9 @@ export const LAZY_LOADING_CONFIG = {
     priority: LoadingPriority.HIGH,
     strategy: LoadingStrategy.IMMEDIATE,
     components: {
-      admin: () => import('@/components/dashboards/AdminDashboard'),
-      therapist: () => import('@/components/dashboards/TherapistDashboard'),
-      client: () => import('@/components/dashboards/ClientDashboard')
+      admin: () => import('../../components/dashboards/AdminDashboard'),
+      therapist: () => import('../../components/dashboards/TherapistDashboard'),
+      client: () => import('../../components/dashboards/ClientDashboard')
     }
   },
 
@@ -37,7 +37,7 @@ export const LAZY_LOADING_CONFIG = {
     priority: LoadingPriority.MEDIUM,
     strategy: LoadingStrategy.ON_INTERACTION,
     components: {
-      dashboard: () => import('@/components/AnalyticsDashboard')
+      dashboard: () => import('../../components/AnalyticsDashboard')
     }
   },
 
@@ -46,9 +46,9 @@ export const LAZY_LOADING_CONFIG = {
     priority: LoadingPriority.LOW,
     strategy: LoadingStrategy.ON_INTERACTION,
     components: {
-      mfaSetup: () => import('@/components/MfaSetup'),
-      fileUpload: () => import('@/components/FileUpload'),
-      notificationBell: () => import('@/components/NotificationBell')
+      mfaSetup: () => import('../../components/MfaSetup'),
+      fileUpload: () => import('../../components/FileUpload'),
+      notificationBell: () => import('../../components/NotificationBell')
     }
   },
 
@@ -57,8 +57,8 @@ export const LAZY_LOADING_CONFIG = {
     priority: LoadingPriority.HIGH,
     strategy: LoadingStrategy.IMMEDIATE,
     components: {
-      journal: () => import('@/app/journal/page'),
-      wellness: () => import('@/app/wellness/page')
+      journal: () => import('../../app/journal/page'),
+      wellness: () => import('../../app/wellness/page')
     }
   }
 } as const;

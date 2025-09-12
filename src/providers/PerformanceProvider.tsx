@@ -6,11 +6,11 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { getPerformanceMetricsCollector } from '@/lib/performance/metrics';
-import { getWebVitalsMonitor, sendVitalsToAnalytics } from '@/lib/performance/web-vitals';
-import { getErrorMonitor, requestNotificationPermission } from '@/lib/performance/error-monitoring';
-import { getDatabaseMonitor } from '@/lib/performance/db-monitoring';
-import { logDebug, logWarning } from '@/lib/logger';
+import { getPerformanceMetricsCollector } from '../lib/performance/metrics';
+import { getWebVitalsMonitor, sendVitalsToAnalytics } from '../lib/performance/web-vitals';
+import { getErrorMonitor, requestNotificationPermission } from '../lib/performance/error-monitoring';
+import { getDatabaseMonitor } from '../lib/performance/db-monitoring';
+import { logDebug, logWarning } from '../lib/logger';
 
 interface PerformanceContextType {
   metricsCollector: ReturnType<typeof getPerformanceMetricsCollector>;

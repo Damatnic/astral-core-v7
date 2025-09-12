@@ -1,12 +1,12 @@
-import { prisma } from '@/lib/db';
-import { audit } from '@/lib/security/audit';
+import { prisma } from '../db';
+import { audit } from '../security/audit';
 import { notificationService } from './notification-service';
-import { websocketServer } from '@/lib/websocket/server';
-import { phiService } from '@/lib/security/phi-service';
+import { websocketServer } from '../websocket/server';
+import { phiService } from '../security/phi-service';
 import { UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { logError } from '@/lib/logger';
+import { logError } from '../logger';
 
 interface CreateUserDto {
   email: string;

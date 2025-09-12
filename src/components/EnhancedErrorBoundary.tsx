@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { logError } from '@/lib/logger';
+import { logError } from '../lib/logger';
 import { LoadingSpinner } from './ui/LoadingStates';
 
 interface Props {

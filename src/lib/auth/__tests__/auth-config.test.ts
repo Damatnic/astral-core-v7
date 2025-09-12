@@ -13,8 +13,8 @@ import { mockUsers } from '../../../../tests/utils/test-fixtures';
 
 // Mock dependencies
 jest.mock('bcryptjs');
-jest.mock('@/lib/db/prisma');
-jest.mock('@/lib/security/audit');
+jest.mock('../../db/prisma');
+jest.mock('../../security/audit');
 
 const mockCompare = compare as jest.MockedFunction<typeof compare>;
 
@@ -34,12 +34,12 @@ const mockAudit = {
 };
 
 // Mock modules
-jest.mock('@/lib/db/prisma', () => ({
+jest.mock('../../db/prisma', () => ({
   __esModule: true,
   default: mockPrisma
 }));
 
-jest.mock('@/lib/security/audit', () => ({
+jest.mock('../../security/audit', () => ({
   audit: mockAudit
 }));
 

@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useWebSocketContext } from '@/providers/WebSocketProvider';
+import { useWebSocketContext } from '../providers/WebSocketProvider';
 import { format } from 'date-fns';
 import { BellIcon } from '@heroicons/react/24/outline';
 import { BellAlertIcon } from '@heroicons/react/24/solid';
-import { logError } from '@/lib/logger';
+import { logError } from '../lib/logger';
 
 interface Notification {
   id: string;

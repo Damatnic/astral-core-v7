@@ -5,7 +5,7 @@
 
 'use client';
 
-import { logDebug } from '@/lib/logger';
+import { logDebug } from '../logger';
 
 export interface CoreWebVitals {
   fcp: number; // First Contentful Paint

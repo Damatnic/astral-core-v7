@@ -12,7 +12,7 @@ import {
   generateA11yId, 
   KEYBOARD_KEYS,
   MENTAL_HEALTH_A11Y 
-} from '@/utils/accessibility';
+} from '../utils/accessibility';
 
 /**
  * Hook for managing focus trap within a component

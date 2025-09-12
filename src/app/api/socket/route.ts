@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { logSystemEvent } from '@/lib/notification-logger';
+import { logSystemEvent } from '../../../lib/notification-logger';
 
 // This route initializes the WebSocket server
 // In production, this would be handled differently (e.g., custom server)

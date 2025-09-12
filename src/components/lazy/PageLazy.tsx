@@ -6,8 +6,8 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // Higher-order component for page-level loading
 const withPageLoading = <P extends object>(
@@ -60,19 +60,19 @@ const withPageLoading = <P extends object>(
 
 // Create lazy loading wrapper for wellness page
 export const createLazyWellnessPage = () => {
-  const WellnessPage = React.lazy(() => import('@/app/wellness/page'));
+  const WellnessPage = React.lazy(() => import('../../app/wellness/page'));
   return withPageLoading(WellnessPage, 'Wellness');
 };
 
 // Create lazy loading wrapper for journal page  
 export const createLazyJournalPage = () => {
-  const JournalPage = React.lazy(() => import('@/app/journal/page'));
+  const JournalPage = React.lazy(() => import('../../app/journal/page'));
   return withPageLoading(JournalPage, 'Journal');
 };
 
 // Preload functions for key pages
-export const preloadWellnessPage = () => import('@/app/wellness/page');
-export const preloadJournalPage = () => import('@/app/journal/page');
+export const preloadWellnessPage = () => import('../../app/wellness/page');
+export const preloadJournalPage = () => import('../../app/journal/page');
 
 // Critical route preloading - call this on login success
 export const preloadCriticalRoutes = () => {

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodSchema, ZodError } from 'zod';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants/index';
 
 // =====================
 // VALIDATION HELPERS

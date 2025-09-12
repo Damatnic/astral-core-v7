@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { useWebSocket } from '@/hooks/useWebSocket';
-import { logError } from '@/lib/logger';
-import { logSystemEvent } from '@/lib/notification-logger';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { logError } from '../lib/logger';
+import { logSystemEvent } from '../lib/notification-logger';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 

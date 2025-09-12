@@ -11,7 +11,7 @@ import type {
   OpenAPIDocument,
   OpenAPIPath,
   VersionHealthStatus 
-} from '@/lib/types/api-versioning';
+} from '../types/api-versioning';
 
 export type ApiVersion = 'v1' | 'v2' | 'v3';
 export type VersioningStrategy = 'header' | 'path' | 'query' | 'subdomain';

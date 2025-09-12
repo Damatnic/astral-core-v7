@@ -1,10 +1,10 @@
-import { prisma } from '@/lib/db';
-import { phiService } from '@/lib/security/phi-service';
-import { websocketServer } from '@/lib/websocket/server';
+import { prisma } from '../db';
+import { phiService } from '../security/phi-service';
+import { websocketServer } from '../websocket/server';
 import { notificationService } from './notification-service';
-import { audit } from '@/lib/security/audit';
+import { audit } from '../security/audit';
 import { ConversationType } from '@prisma/client';
-import { logError } from '@/lib/logger';
+import { logError } from '../logger';
 
 interface CreateConversationDto {
   type: ConversationType;

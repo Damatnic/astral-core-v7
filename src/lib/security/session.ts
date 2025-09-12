@@ -1,6 +1,6 @@
 import { LRUCache } from 'lru-cache';
 import crypto from 'crypto';
-import { logWarning } from '@/lib/logger';
+import { logWarning } from '../logger';
 
 interface SessionData {
   userId: string;
@@ -412,7 +412,7 @@ export class SessionManager {
  * Automatically configured based on environment variables
  * @example
  * ```typescript
- * import { sessionManager } from '@/lib/security/session';
+ * import { sessionManager } from './session';
  *
  * // Create session
  * const sessionId = sessionManager.createSession('user_123', 'patient');

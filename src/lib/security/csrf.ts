@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
-import { logError, logWarning, logInfo, toError } from '@/lib/logger';
+import { logError, logWarning, logInfo, toError } from '../logger';
 
 /**
  * CSRF Protection System

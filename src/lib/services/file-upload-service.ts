@@ -1,11 +1,11 @@
 import { createReadStream, promises as fs } from 'fs';
 import { join } from 'path';
 import sharp from 'sharp';
-import { logError, logWarning } from '@/lib/logger';
+import { logError, logWarning } from '../logger';
 import crypto from 'crypto';
-import { prisma } from '@/lib/db';
-import { phiService } from '@/lib/security/phi-service';
-import { audit } from '@/lib/security/audit';
+import { prisma } from '../db';
+import { phiService } from '../security/phi-service';
+import { audit } from '../security/audit';
 import { notificationService } from './notification-service';
 import { FileCategory } from '@prisma/client';
 

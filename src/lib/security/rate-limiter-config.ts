@@ -5,7 +5,7 @@
  */
 
 import { RateLimiter } from './rate-limit';
-import { getConfig } from '@/lib/config/env-validation';
+import { getConfig } from '../config/env-validation';
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 

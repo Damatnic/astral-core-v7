@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import Button from './ui/Button';
+import Input from './ui/Input';
+import Card, { CardHeader, CardTitle, CardContent } from './ui/Card';
 import { toast } from 'react-hot-toast';
 
 interface MfaSetupProps {

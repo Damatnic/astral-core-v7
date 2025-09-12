@@ -6,8 +6,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 interface IntersectionLazyProps {
   children: React.ReactNode;

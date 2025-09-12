@@ -1,9 +1,9 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { audit } from '@/lib/security/audit';
-import { phiService } from '@/lib/security/phi-service';
-import prisma from '@/lib/db/prisma';
-import { logInfo, logError, logDebug } from '@/lib/logger';
+import { audit } from '../security/audit';
+import { phiService } from '../security/phi-service';
+import prisma from '../db/prisma';
+import { logInfo, logError, logDebug } from '../logger';
 import type {
   WebSocketMessage,
   PresenceUpdateMessage,
@@ -19,7 +19,7 @@ import type {
   GroupJoinMessage,
   GroupLeaveMessage,
   GroupMessage
-} from '@/lib/types/websocket';
+} from '../types/websocket';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;

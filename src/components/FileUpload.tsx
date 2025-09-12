@@ -3,8 +3,8 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
 import Image from 'next/image';
-import Button from '@/components/ui/Button';
-import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import Button from './ui/Button';
+import Card, { CardHeader, CardTitle, CardContent } from './ui/Card';
 import { toast } from 'react-hot-toast';
 import { FileCategory } from '@prisma/client';
 

@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import crypto from 'crypto';
-import { getConfig } from '@/lib/config/env-validation';
+import { getConfig } from '../config/env-validation';
 
 // PHI access reason codes (HIPAA requirement)
 export enum PHIAccessReason {

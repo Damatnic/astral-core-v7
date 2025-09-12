@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTheme, Theme } from '@/providers/ThemeProvider';
+import { useTheme, Theme } from '../../providers/ThemeProvider';
 import { SunIcon, MoonIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
 import { SunIcon as SunIconSolid, MoonIcon as MoonIconSolid } from '@heroicons/react/24/solid';
 

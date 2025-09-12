@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
-import { mfaService } from '@/lib/services/mfa-service';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
-import { logError } from '@/lib/logger';
+import { authOptions } from '../../../../../lib/auth/config';
+import { mfaService } from '../../../../../lib/services/mfa-service';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../../../../lib/constants/index';
+import { logError } from '../../../../../lib/logger';
 import { z } from 'zod';
 
 const disableSchema = z.object({

@@ -3,7 +3,7 @@
  * Handles critical error notifications and alerts
  */
 
-import { ErrorSeverity } from '@/lib/utils/error-handling';
+import { ErrorSeverity } from '../utils/error-handling';
 
 /**
  * Alert channel types

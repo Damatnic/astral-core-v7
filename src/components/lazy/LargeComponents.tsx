@@ -6,13 +6,13 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // Lazy load large components
-const MfaSetup = React.lazy(() => import('@/components/MfaSetup'));
-const FileUpload = React.lazy(() => import('@/components/FileUpload'));
-const NotificationBell = React.lazy(() => import('@/components/NotificationBell'));
+const MfaSetup = React.lazy(() => import('../MfaSetup'));
+const FileUpload = React.lazy(() => import('../FileUpload'));
+const NotificationBell = React.lazy(() => import('../NotificationBell'));
 
 // Higher-order component for consistent loading
 const withLazyLoading = <P extends object>(
@@ -58,9 +58,9 @@ export const LazyNotificationBell = withLazyLoading(
 );
 
 // Preload functions
-export const preloadMfaSetup = () => import('@/components/MfaSetup');
-export const preloadFileUpload = () => import('@/components/FileUpload');
-export const preloadNotificationBell = () => import('@/components/NotificationBell');
+export const preloadMfaSetup = () => import('../MfaSetup');
+export const preloadFileUpload = () => import('../FileUpload');
+export const preloadNotificationBell = () => import('../NotificationBell');
 
 // Convenience exports
 export const LargeComponents = {

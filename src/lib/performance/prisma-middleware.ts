@@ -4,7 +4,7 @@
  */
 
 import { getDatabaseMonitor } from './db-monitoring';
-import { logWarning, logError } from '@/lib/logger';
+import { logWarning, logError } from '../logger';
 
 interface QueryContext {
   userId?: string;

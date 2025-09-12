@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Button from '@/components/ui/Button';
+import Button from './ui/Button';
 
 /**
  * Test component to verify error boundaries are working correctly

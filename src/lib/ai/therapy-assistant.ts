@@ -1,4 +1,4 @@
-import { audit } from '@/lib/security/audit';
+import { audit } from '../security/audit';
 import type { CrisisSeverity } from '@prisma/client';
 
 interface SessionData {

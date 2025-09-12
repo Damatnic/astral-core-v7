@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { EncryptionService } from './encryption';
 import { audit } from './audit';
-import { logError } from '@/lib/logger';
+import { logError } from '../logger';
 import type {
   PHIRecord,
   PrismaFindManyArgs,
@@ -10,7 +10,7 @@ import type {
   ResourceAction,
   ResourceType,
   PHIFieldDefinitions
-} from '@/lib/types/phi';
+} from '../types/phi';
 
 interface PHIContext {
   userId?: string;
@@ -636,7 +636,7 @@ export class PHIService {
  * Automatically configured with default database connection and encryption
  * @example
  * ```typescript
- * import { phiService } from '@/lib/security/phi-service';
+ * import { phiService } from './phi-service';
  *
  * // Create encrypted patient profile
  * const profile = await phiService.create('Profile', {

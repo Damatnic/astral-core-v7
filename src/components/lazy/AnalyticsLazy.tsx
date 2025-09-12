@@ -6,22 +6,22 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import LoadingFallback from '@/components/ui/LoadingFallback';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import LoadingFallback from '../ui/LoadingFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // Lazy load large analytics components
-const AnalyticsDashboard = React.lazy(() => import('@/components/AnalyticsDashboard'));
+const AnalyticsDashboard = React.lazy(() => import('../AnalyticsDashboard'));
 const PerformanceDashboard = React.lazy(() => 
-  import('@/components/performance/PerformanceDashboard')
+  import('../performance/PerformanceDashboard')
 );
 const WebVitalsMonitor = React.lazy(() => 
-  import('@/components/performance/WebVitalsMonitor')
+  import('../performance/WebVitalsMonitor')
 );
 const DatabaseMonitor = React.lazy(() => 
-  import('@/components/performance/DatabaseMonitor')
+  import('../performance/DatabaseMonitor')
 );
 const ErrorMonitor = React.lazy(() => 
-  import('@/components/performance/ErrorMonitor')
+  import('../performance/ErrorMonitor')
 );
 
 // Higher-order component for consistent loading and error handling
@@ -88,19 +88,19 @@ export const LazyErrorMonitor = withAnalyticsLoading(
 // Preload functions for better UX
 export const preloadAnalyticsComponents = () => {
   // Preload all analytics components when user is likely to need them
-  import('@/components/AnalyticsDashboard');
-  import('@/components/performance/PerformanceDashboard');
-  import('@/components/performance/WebVitalsMonitor');
-  import('@/components/performance/DatabaseMonitor');
-  import('@/components/performance/ErrorMonitor');
+  import('../AnalyticsDashboard');
+  import('../performance/PerformanceDashboard');
+  import('../performance/WebVitalsMonitor');
+  import('../performance/DatabaseMonitor');
+  import('../performance/ErrorMonitor');
 };
 
 // Specific preload functions
-export const preloadAnalyticsDashboard = () => import('@/components/AnalyticsDashboard');
-export const preloadPerformanceDashboard = () => import('@/components/performance/PerformanceDashboard');
-export const preloadWebVitalsMonitor = () => import('@/components/performance/WebVitalsMonitor');
-export const preloadDatabaseMonitor = () => import('@/components/performance/DatabaseMonitor');
-export const preloadErrorMonitor = () => import('@/components/performance/ErrorMonitor');
+export const preloadAnalyticsDashboard = () => import('../AnalyticsDashboard');
+export const preloadPerformanceDashboard = () => import('../performance/PerformanceDashboard');
+export const preloadWebVitalsMonitor = () => import('../performance/WebVitalsMonitor');
+export const preloadDatabaseMonitor = () => import('../performance/DatabaseMonitor');
+export const preloadErrorMonitor = () => import('../performance/ErrorMonitor');
 
 // Convenience export for all analytics components
 export const AnalyticsComponents = {

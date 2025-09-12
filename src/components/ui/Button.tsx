@@ -1,7 +1,7 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
 import { VisuallyHidden } from './accessibility/VisuallyHidden';
-import { useAccessibilityPreferences } from '@/hooks/useAccessibility';
+import { useAccessibilityPreferences } from '../../hooks/useAccessibility';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';

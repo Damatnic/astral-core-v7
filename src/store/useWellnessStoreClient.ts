@@ -2,8 +2,8 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { WellnessDataInput, WellnessStats } from '@/lib/types/wellness';
-import type { StateSetFn } from '@/lib/types/store';
+import type { WellnessDataInput, WellnessStats } from '../lib/types/wellness';
+import type { StateSetFn } from '../lib/types/store';
 
 export interface WellnessState {
   todayData: WellnessDataInput | null;

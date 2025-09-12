@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { CrisisAssessmentInput, CrisisIntervention } from '@/lib/types/crisis';
-import { logError } from '@/lib/logger';
+import type { CrisisAssessmentInput, CrisisIntervention } from '../lib/types/crisis';
+import { logError } from '../lib/logger';
 
 interface CrisisResource {
   id: string;

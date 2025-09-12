@@ -1,6 +1,6 @@
 'use client';
 
-import type { WellnessDataInput, WellnessStats } from '@/lib/types/wellness';
+import type { WellnessDataInput, WellnessStats } from '../lib/types/wellness';
 import type { WellnessState } from './useWellnessStoreClient';
 
 // Dummy store for SSR

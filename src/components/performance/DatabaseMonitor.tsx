@@ -6,12 +6,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Database, TrendingUp, Clock, AlertTriangle, Activity, BarChart3, Zap } from '@/components/ui/Icons';
+import { Database, TrendingUp, Clock, AlertTriangle, Activity, BarChart3, Zap } from '../ui/Icons';
 import {
   useDatabaseMonitoring,
   QueryMetric,
   DatabaseInsight
-} from '@/lib/performance/db-monitoring';
+} from '../../lib/performance/db-monitoring';
 
 interface QueryCardProps {
   query: QueryMetric;

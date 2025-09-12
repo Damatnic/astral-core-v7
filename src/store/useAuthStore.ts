@@ -1,6 +1,6 @@
 'use client';
 
-import type { SessionUser } from '@/lib/types/auth';
+import type { SessionUser } from '../lib/types/auth';
 import type { AuthState } from './useAuthStoreClient';
 
 // Dummy store for SSR

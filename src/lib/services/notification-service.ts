@@ -1,9 +1,9 @@
-import { prisma } from '@/lib/db';
-import { websocketServer } from '@/lib/websocket/server';
+import { prisma } from '../db';
+import { websocketServer } from '../websocket/server';
 import { NotificationType, NotificationPriority, Prisma } from '@prisma/client';
 
-import { audit } from '@/lib/security/audit';
-import { logError, logInfo, logCleanup } from '@/lib/logger';
+import { audit } from '../security/audit';
+import { logError, logInfo, logCleanup } from '../logger';
 
 interface NotificationPayload {
   userId: string;
@@ -822,7 +822,7 @@ export class NotificationService {
  * Handles all notification types with automatic batching and real-time delivery
  * @example
  * ```typescript
- * import { notificationService } from '@/lib/services/notification-service';
+ * import { notificationService } from './notification-service';
  *
  * // Send appointment reminder
  * await notificationService.sendAppointmentReminder(

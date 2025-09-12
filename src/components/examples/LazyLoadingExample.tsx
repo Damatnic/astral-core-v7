@@ -12,10 +12,10 @@ import {
   LazyFileUpload,
   IntersectionLazy,
   preloadAnalyticsComponents
-} from '@/components/lazy';
-import { usePerformanceTracking } from '@/hooks/usePerformanceTracking';
-import Button from '@/components/ui/Button';
-import Card, { CardContent } from '@/components/ui/Card';
+} from '../lazy';
+import { usePerformanceTracking } from '../../hooks/usePerformanceTracking';
+import Button from '../ui/Button';
+import Card, { CardContent } from '../ui/Card';
 
 const LazyLoadingExample: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'analytics' | 'mfa' | 'upload'>('analytics');
@@ -41,10 +41,10 @@ const LazyLoadingExample: React.FC = () => {
         preloadAnalyticsComponents();
         break;
       case 'mfa':
-        import('@/components/MfaSetup');
+        import('../MfaSetup');
         break;
       case 'upload':
-        import('@/components/FileUpload');
+        import('../FileUpload');
         break;
     }
   };

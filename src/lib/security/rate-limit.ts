@@ -181,7 +181,7 @@ export class RateLimiter {
  * Each limiter is configured for specific security requirements and usage patterns
  * @example
  * ```typescript
- * import { rateLimiters } from '@/lib/security/rate-limit';
+ * import { rateLimiters } from './rate-limit';
  *
  * // Check auth rate limit
  * const authStatus = await rateLimiters.auth.check('user_123');

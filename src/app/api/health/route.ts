@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/db/prisma';
-import { logInfo, logError, toError } from '@/lib/logger';
+import prisma from '../../../lib/db/prisma';
+import { logInfo, logError, toError } from '../../../lib/logger';
 
 /**
  * Health Check API Endpoint

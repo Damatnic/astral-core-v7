@@ -6,7 +6,7 @@
  */
 
 import React, { useRef, useEffect } from 'react';
-import { useFocusTrap, useRovingTabIndex } from '@/hooks/useAccessibility';
+import { useFocusTrap, useRovingTabIndex } from '../../../hooks/useAccessibility';
 
 interface FocusManagerProps {
   children: React.ReactNode;

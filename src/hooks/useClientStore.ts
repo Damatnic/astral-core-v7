@@ -8,10 +8,10 @@ export function useClientStore<T>(storeName: 'wellness' | 'auth'): T | null {
   useEffect(() => {
     const loadStore = async () => {
       if (storeName === 'wellness') {
-        const { useWellnessStore } = await import('@/store/useWellnessStoreClient');
+        const { useWellnessStore } = await import('../store/useWellnessStoreClient');
         setStore(useWellnessStore as any);
       } else if (storeName === 'auth') {
-        const { useAuthStore } = await import('@/store/useAuthStoreClient');
+        const { useAuthStore } = await import('../store/useAuthStoreClient');
         setStore(useAuthStore as any);
       }
     };

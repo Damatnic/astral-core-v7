@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '../db';
 import { UserRole } from '@prisma/client';
-import { logError } from '@/lib/logger';
+import { logError } from '../logger';
 
 interface DateRange {
   startDate: Date;

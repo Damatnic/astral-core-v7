@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PhoneIcon } from '@heroicons/react/24/solid';
-import { useMobileOptimization } from '@/hooks/useResponsiveBreakpoints';
+import { useMobileOptimization } from '../../hooks/useResponsiveBreakpoints';
 
 export function MobileCrisisButton() {
   const { isMobile } = useMobileOptimization();

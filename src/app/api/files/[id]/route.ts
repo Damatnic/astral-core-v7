@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
-import { fileUploadService } from '@/lib/services/file-upload-service';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@/lib/constants/index';
+import { authOptions } from '../../../../lib/auth/config';
+import { fileUploadService } from '../../../../lib/services/file-upload-service';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../../../../lib/constants/index';
 
 // GET /api/files/[id] - Download a file
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
