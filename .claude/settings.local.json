@@ -64,7 +64,8 @@
       "Bash(do)",
       "Bash(echo:*)",
       "Bash(del \"H:\\Astral Core\\astral-core-v7\\src\\app\\api\\appointments\\route.ts\")",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

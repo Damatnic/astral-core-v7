@@ -1,9 +1,43 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-// Simplified middleware to fix deployment issues
-export function middleware() {
-  // For now, just pass through all requests
-  // This allows the deployment to succeed
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Allow public routes
+  const publicRoutes = [
+    '/auth/login',
+    '/auth/register', 
+    '/auth/forgot-password',
+    '/api/auth',
+    '/api/health',
+    '/api/status',
+    '/_next',
+    '/favicon.ico'
+  ];
+
+  // Check if current path is public
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname.startsWith(route)
+  );
+
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+
+  // Check authentication for protected routes
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.NEXTAUTH_SECRET 
+  });
+
+  // Redirect to login if not authenticated
+  if (!token) {
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return NextResponse.next();
 }
 

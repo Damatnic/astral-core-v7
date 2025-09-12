@@ -17,7 +17,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   CLIENT: {
     role: 'CLIENT',
     email: 'client@demo.astralcore.com',
-    password: 'Demo123!Client',
+    password: process.env.DEMO_CLIENT_PASSWORD || 'GeneratedSecurePassword123!',
     name: 'Emma Johnson',
     description: 'Experience wellness tracking, journaling, and therapy scheduling as a patient',
     features: [
@@ -33,7 +33,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   THERAPIST: {
     role: 'THERAPIST',
     email: 'therapist@demo.astralcore.com',
-    password: 'Demo123!Therapist',
+    password: process.env.DEMO_THERAPIST_PASSWORD || 'GeneratedSecureTherapist123!',
     name: 'Dr. Michael Thompson',
     description: 'Manage patients, create treatment plans, and conduct therapy sessions',
     features: [
@@ -49,7 +49,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   ADMIN: {
     role: 'ADMIN',
     email: 'admin@demo.astralcore.com',
-    password: 'Demo123!Admin',
+    password: process.env.DEMO_ADMIN_PASSWORD || 'GeneratedSecureAdmin123!',
     name: 'Sarah Administrator',
     description: 'Access system dashboard, user management, and platform settings',
     features: [
@@ -65,7 +65,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   CRISIS_RESPONDER: {
     role: 'CRISIS_RESPONDER',
     email: 'crisis@demo.astralcore.com',
-    password: 'Demo123!Crisis',
+    password: process.env.DEMO_CRISIS_PASSWORD || 'GeneratedSecureCrisis123!',
     name: 'Alex Crisis-Response',
     description: 'Handle crisis interventions and emergency mental health support',
     features: [
@@ -81,7 +81,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   SUPERVISOR: {
     role: 'SUPERVISOR',
     email: 'supervisor@demo.astralcore.com',
-    password: 'Demo123!Supervisor',
+    password: process.env.DEMO_SUPERVISOR_PASSWORD || 'GeneratedSecureSupervisor123!',
     name: 'Dr. Rachel Supervisor',
     description: 'Oversee clinical operations and staff performance',
     features: [
