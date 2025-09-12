@@ -1,391 +1,319 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '../../../lib/db/prisma';
-import { logInfo, logError, toError } from '../../../lib/logger';
-
 /**
- * Health Check API Endpoint
- * Comprehensive system health monitoring for production deployment
- * Checks database, external services, and system resources
+ * Comprehensive Health Check API Endpoint
+ * Monitors system health, database connectivity, and service availability
  */
 
-interface HealthCheckResult {
-  service: string;
-  status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' | 'UNKNOWN';
-  responseTime: number;
-  details?: Record<string, unknown>;
-  error?: string;
-}
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma, connectionPool } from '@/lib/database/connection-pool';
+import { cache } from '@/lib/caching/cache-strategies';
 
-interface SystemHealth {
-  status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
+interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
   uptime: number;
   version: string;
   environment: string;
-  checks: HealthCheckResult[];
-  summary: {
-    total: number;
-    healthy: number;
-    degraded: number;
-    unhealthy: number;
+  checks: {
+    database: HealthCheck;
+    cache: HealthCheck;
+    memory: HealthCheck;
+    disk?: HealthCheck;
+    external?: HealthCheck[];
+  };
+  performance: {
+    responseTime: number;
+    avgResponseTime?: number;
+    dbQueryTime?: number;
   };
 }
 
-// GET: System health check
+interface HealthCheck {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  responseTime: number;
+  details?: string;
+  error?: string;
+  metrics?: Record<string, any>;
+}
+
+// Cache health check results briefly to avoid overwhelming the system
+const HEALTH_CHECK_CACHE_TTL = 10; // 10 seconds
+
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
-  const checks: HealthCheckResult[] = [];
-
-  try {
-    // Check if this is a detailed health check (admin only) or basic liveness probe
-    const url = new URL(request.url);
-    const detailed = url.searchParams.get('detailed') === 'true';
-
-    // Basic database connectivity check
-    const dbCheck = await checkDatabase();
-    checks.push(dbCheck);
-
-    if (detailed) {
-      // Additional checks for detailed monitoring
-      const [memoryCheck, diskCheck, externalServicesCheck] = await Promise.allSettled([
-        checkMemoryUsage(),
-        checkDiskUsage(), 
-        checkExternalServices()
-      ]);
-
-      if (memoryCheck.status === 'fulfilled') {
-        checks.push(memoryCheck.value);
-      } else {
-        checks.push({
-          service: 'memory',
-          status: 'UNKNOWN',
-          responseTime: 0,
-          error: 'Memory check failed'
-        });
-      }
-
-      if (diskCheck.status === 'fulfilled') {
-        checks.push(diskCheck.value);
-      } else {
-        checks.push({
-          service: 'disk',
-          status: 'UNKNOWN', 
-          responseTime: 0,
-          error: 'Disk check failed'
-        });
-      }
-
-      if (externalServicesCheck.status === 'fulfilled') {
-        checks.push(...externalServicesCheck.value);
-      }
-    }
-
-    // Determine overall system health
-    const healthyCount = checks.filter(c => c.status === 'HEALTHY').length;
-    const degradedCount = checks.filter(c => c.status === 'DEGRADED').length;
-    const unhealthyCount = checks.filter(c => c.status === 'UNHEALTHY').length;
-
-    let overallStatus: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
-    if (unhealthyCount > 0) {
-      overallStatus = 'UNHEALTHY';
-    } else if (degradedCount > 0) {
-      overallStatus = 'DEGRADED';
-    } else {
-      overallStatus = 'HEALTHY';
-    }
-
-    const healthData: SystemHealth = {
-      status: overallStatus,
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      version: process.env['npm_package_version'] || '1.0.0',
-      environment: process.env['NODE_ENV'] || 'development',
-      checks,
-      summary: {
-        total: checks.length,
-        healthy: healthyCount,
-        degraded: degradedCount,
-        unhealthy: unhealthyCount
-      }
-    };
-
-    // Store health check result in database for monitoring
-    if (detailed) {
-      try {
-        await Promise.all(
-          checks.map(check =>
-            prisma.healthCheck.create({
-              data: {
-                service: check.service,
-                status: check.status,
-                responseTime: check.responseTime,
-                ...(check.details && { details: JSON.stringify(check.details) }),
-                ...(check.error && { errorMessage: check.error }),
-                metadata: JSON.stringify({
-                  overallStatus,
-                  environment: process.env['NODE_ENV'],
-                  uptime: process.uptime()
-                })
-              }
-            })
-          )
-        );
-      } catch (dbError) {
-        logError('Failed to store health check results', toError(dbError), 'HealthCheck');
-      }
-    }
-
-    const statusCode = overallStatus === 'HEALTHY' ? 200 : 
-                      overallStatus === 'DEGRADED' ? 200 : 503;
-
-    logInfo('Health check completed', 'HealthCheck', {
-      status: overallStatus,
-      duration: Date.now() - startTime,
-      checksCount: checks.length
-    });
-
-    return NextResponse.json(healthData, { 
-      status: statusCode,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
-
-  } catch (error) {
-    logError('Health check failed', toError(error), 'HealthCheck', {
-      duration: Date.now() - startTime
-    });
-
-    const errorResponse: SystemHealth = {
-      status: 'UNHEALTHY',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      version: process.env['npm_package_version'] || '1.0.0',
-      environment: process.env['NODE_ENV'] || 'development',
-      checks: [
-        {
-          service: 'system',
-          status: 'UNHEALTHY',
-          responseTime: Date.now() - startTime,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
-      ],
-      summary: {
-        total: 1,
-        healthy: 0,
-        degraded: 0,
-        unhealthy: 1
-      }
-    };
-
-    return NextResponse.json(errorResponse, { 
-      status: 503,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate'
-      }
-    });
-  }
-}
-
-// Database connectivity check
-async function checkDatabase(): Promise<HealthCheckResult> {
-  const startTime = Date.now();
   
   try {
-    // Simple query to test database connectivity
-    await prisma.$queryRaw`SELECT 1 as health_check`;
-    const responseTime = Date.now() - startTime;
+    // Check if cached health status exists
+    const cachedHealth = await cache.get<HealthStatus>('system_health');
+    if (cachedHealth && Date.now() - new Date(cachedHealth.timestamp).getTime() < 30000) {
+      // Return cached result if less than 30 seconds old
+      return NextResponse.json(cachedHealth);
+    }
 
-    // Additional database health metrics
-    const [userCount, recentErrors] = await Promise.all([
-      prisma.user.count(),
-      prisma.errorLog.count({
-        where: {
-          timestamp: {
-            gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
-          },
-          severity: 'CRITICAL'
-        }
-      })
+    // Run health checks in parallel
+    const [
+      databaseHealth,
+      cacheHealth,
+      memoryHealth
+    ] = await Promise.allSettled([
+      checkDatabaseHealth(),
+      checkCacheHealth(),
+      checkMemoryHealth()
     ]);
 
-    let status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' = 'HEALTHY';
-    
-    if (responseTime > 1000) {
-      status = 'DEGRADED';
-    }
-    if (responseTime > 5000) {
-      status = 'UNHEALTHY';
-    }
-    if (recentErrors > 10) {
-      status = 'DEGRADED';
-    }
+    // Determine overall system status
+    const checks = {
+      database: getResultValue(databaseHealth, { status: 'unhealthy', responseTime: 0, error: 'Check failed' }),
+      cache: getResultValue(cacheHealth, { status: 'unhealthy', responseTime: 0, error: 'Check failed' }),
+      memory: getResultValue(memoryHealth, { status: 'unhealthy', responseTime: 0, error: 'Check failed' })
+    };
 
-    return {
-      service: 'database',
-      status,
-      responseTime,
-      details: {
-        connectionPool: 'active',
-        userCount,
-        recentCriticalErrors: recentErrors,
-        query: 'SELECT 1'
+    const overallStatus = determineOverallStatus(Object.values(checks));
+    const responseTime = Date.now() - startTime;
+
+    const healthStatus: HealthStatus = {
+      status: overallStatus,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      checks,
+      performance: {
+        responseTime,
+        dbQueryTime: checks.database.responseTime
       }
     };
 
+    // Cache the health status
+    await cache.set('system_health', healthStatus, HEALTH_CHECK_CACHE_TTL);
+
+    // Log health status to monitoring
+    await logHealthStatus(healthStatus);
+
+    // Return appropriate HTTP status code
+    const httpStatus = overallStatus === 'healthy' ? 200 : 
+                      overallStatus === 'degraded' ? 200 : 503;
+
+    return NextResponse.json(healthStatus, { status: httpStatus });
+
+  } catch (error) {
+    console.error('Health check failed:', error);
+    
+    const errorResponse: HealthStatus = {
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      checks: {
+        database: { status: 'unhealthy', responseTime: 0, error: 'Health check failed' },
+        cache: { status: 'unhealthy', responseTime: 0, error: 'Health check failed' },
+        memory: { status: 'unhealthy', responseTime: 0, error: 'Health check failed' }
+      },
+      performance: {
+        responseTime: Date.now() - startTime
+      }
+    };
+
+    return NextResponse.json(errorResponse, { status: 503 });
+  }
+}
+
+// Database health check
+async function checkDatabaseHealth(): Promise<HealthCheck> {
+  const startTime = Date.now();
+  
+  try {
+    // Use connection pool health check
+    const healthResult = await connectionPool.getHealth();
+    const responseTime = Date.now() - startTime;
+
+    // Get additional database metrics
+    const stats = connectionPool.getStats();
+    
+    return {
+      status: healthResult.status,
+      responseTime,
+      details: healthResult.details,
+      metrics: {
+        connectionCount: stats.connectionCount,
+        queryCount: stats.queryCount,
+        slowQueryThreshold: stats.slowQueryThreshold
+      }
+    };
   } catch (error) {
     return {
-      service: 'database',
-      status: 'UNHEALTHY',
+      status: 'unhealthy',
       responseTime: Date.now() - startTime,
-      error: error instanceof Error ? error.message : 'Database connection failed'
+      error: error instanceof Error ? error.message : 'Database check failed'
     };
   }
 }
 
-// Memory usage check
-async function checkMemoryUsage(): Promise<HealthCheckResult> {
+// Cache health check
+async function checkCacheHealth(): Promise<HealthCheck> {
   const startTime = Date.now();
   
   try {
-    const memoryUsage = process.memoryUsage();
-    const totalHeap = memoryUsage.heapTotal;
-    const usedHeap = memoryUsage.heapUsed;
-    const heapUsagePercentage = (usedHeap / totalHeap) * 100;
-
-    let status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' = 'HEALTHY';
+    // Test cache read/write
+    const testKey = 'health_check_test';
+    const testValue = { timestamp: Date.now() };
     
-    if (heapUsagePercentage > 80) {
-      status = 'DEGRADED';
+    await cache.set(testKey, testValue, 5); // 5 second TTL
+    const retrieved = await cache.get(testKey);
+    
+    if (!retrieved || retrieved.timestamp !== testValue.timestamp) {
+      throw new Error('Cache read/write test failed');
     }
-    if (heapUsagePercentage > 95) {
-      status = 'UNHEALTHY';
-    }
-
+    
+    await cache.delete(testKey);
+    
+    const stats = cache.stats();
+    const responseTime = Date.now() - startTime;
+    
     return {
-      service: 'memory',
-      status,
-      responseTime: Date.now() - startTime,
-      details: {
-        heapUsed: Math.round(usedHeap / 1024 / 1024), // MB
-        heapTotal: Math.round(totalHeap / 1024 / 1024), // MB
-        heapUsagePercentage: Math.round(heapUsagePercentage),
-        external: Math.round(memoryUsage.external / 1024 / 1024), // MB
-        rss: Math.round(memoryUsage.rss / 1024 / 1024) // MB
+      status: 'healthy',
+      responseTime,
+      metrics: {
+        hitRate: stats.hitRate,
+        size: stats.cacheStats.size,
+        utilization: stats.cacheStats.utilization
       }
     };
-
   } catch (error) {
     return {
-      service: 'memory',
-      status: 'UNKNOWN',
+      status: 'unhealthy',
+      responseTime: Date.now() - startTime,
+      error: error instanceof Error ? error.message : 'Cache check failed'
+    };
+  }
+}
+
+// Memory health check
+async function checkMemoryHealth(): Promise<HealthCheck> {
+  const startTime = Date.now();
+  
+  try {
+    const memUsage = process.memoryUsage();
+    const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+    const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
+    const utilization = (heapUsedMB / heapTotalMB) * 100;
+    
+    // Determine status based on memory utilization
+    let status: 'healthy' | 'degraded' | 'unhealthy';
+    if (utilization < 70) {
+      status = 'healthy';
+    } else if (utilization < 85) {
+      status = 'degraded';
+    } else {
+      status = 'unhealthy';
+    }
+    
+    return {
+      status,
+      responseTime: Date.now() - startTime,
+      metrics: {
+        heapUsed: Math.round(heapUsedMB),
+        heapTotal: Math.round(heapTotalMB),
+        utilization: Math.round(utilization),
+        external: Math.round(memUsage.external / 1024 / 1024),
+        rss: Math.round(memUsage.rss / 1024 / 1024)
+      }
+    };
+  } catch (error) {
+    return {
+      status: 'unhealthy',
       responseTime: Date.now() - startTime,
       error: error instanceof Error ? error.message : 'Memory check failed'
     };
   }
 }
 
-// Disk usage check (simplified for demo - in production you'd check actual disk usage)
-async function checkDiskUsage(): Promise<HealthCheckResult> {
-  const startTime = Date.now();
+// Helper function to extract value from settled promise
+function getResultValue<T>(result: PromiseSettledResult<T>, fallback: T): T {
+  return result.status === 'fulfilled' ? result.value : fallback;
+}
+
+// Determine overall system status
+function determineOverallStatus(checks: HealthCheck[]): 'healthy' | 'degraded' | 'unhealthy' {
+  const unhealthyCount = checks.filter(check => check.status === 'unhealthy').length;
+  const degradedCount = checks.filter(check => check.status === 'degraded').length;
   
-  try {
-    // Simplified check - in production you'd use fs.stat to check actual disk usage
-    const diskUsagePercentage = 45; // Placeholder value
-    
-    let status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' = 'HEALTHY';
-    
-    if (diskUsagePercentage > 80) {
-      status = 'DEGRADED';
-    }
-    if (diskUsagePercentage > 95) {
-      status = 'UNHEALTHY';
-    }
-
-    return {
-      service: 'disk',
-      status,
-      responseTime: Date.now() - startTime,
-      details: {
-        usagePercentage: diskUsagePercentage,
-        freeSpace: '50GB', // Placeholder
-        totalSpace: '100GB' // Placeholder
-      }
-    };
-
-  } catch (error) {
-    return {
-      service: 'disk',
-      status: 'UNKNOWN',
-      responseTime: Date.now() - startTime,
-      error: error instanceof Error ? error.message : 'Disk check failed'
-    };
+  if (unhealthyCount > 0) {
+    return 'unhealthy';
+  } else if (degradedCount > 0) {
+    return 'degraded';
+  } else {
+    return 'healthy';
   }
 }
 
-// External services check
-async function checkExternalServices(): Promise<HealthCheckResult[]> {
-  const services = [
-    {
-      name: 'stripe',
-      url: 'https://api.stripe.com/healthcheck',
-      timeout: 5000
-    }
-  ];
-
-  const results: HealthCheckResult[] = [];
-
-  for (const service of services) {
-    const startTime = Date.now();
-    
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), service.timeout);
-
-      const response = await fetch(service.url, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Astral-Core-Health-Check/1.0'
-        }
-      });
-
-      clearTimeout(timeoutId);
-      const responseTime = Date.now() - startTime;
-
-      let status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' = 'HEALTHY';
-      
-      if (!response.ok) {
-        status = response.status >= 500 ? 'UNHEALTHY' : 'DEGRADED';
+// Log health status to monitoring system
+async function logHealthStatus(healthStatus: HealthStatus) {
+  try {
+    // Store health check result in database
+    await prisma.healthCheck.create({
+      data: {
+        service: 'system',
+        status: healthStatus.status.toUpperCase() as 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY',
+        responseTime: healthStatus.performance.responseTime,
+        details: JSON.stringify({
+          checks: healthStatus.checks,
+          performance: healthStatus.performance,
+          uptime: healthStatus.uptime
+        }),
+        timestamp: new Date(healthStatus.timestamp)
       }
-      if (responseTime > 3000) {
-        status = 'DEGRADED';
-      }
+    });
 
-      results.push({
-        service: service.name,
-        status,
-        responseTime,
-        details: {
-          httpStatus: response.status,
-          url: service.url
-        }
-      });
-
-    } catch (error) {
-      results.push({
-        service: service.name,
-        status: 'UNHEALTHY',
-        responseTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : 'Service check failed',
-        details: {
-          url: service.url
-        }
+    // Send to external monitoring if configured
+    if (process.env.MONITORING_WEBHOOK_URL) {
+      fetch(process.env.MONITORING_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service: 'astral-core-v7',
+          status: healthStatus.status,
+          timestamp: healthStatus.timestamp,
+          details: healthStatus
+        })
+      }).catch(error => {
+        console.warn('Failed to send health status to monitoring webhook:', error);
       });
     }
+  } catch (error) {
+    console.warn('Failed to log health status:', error);
   }
+}
 
-  return results;
+// Additional endpoints for specific health checks
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { check } = body;
+
+    switch (check) {
+      case 'database':
+        const dbHealth = await checkDatabaseHealth();
+        return NextResponse.json({ check: 'database', result: dbHealth });
+        
+      case 'cache':
+        const cacheHealth = await checkCacheHealth();
+        return NextResponse.json({ check: 'cache', result: cacheHealth });
+        
+      case 'memory':
+        const memoryHealth = await checkMemoryHealth();
+        return NextResponse.json({ check: 'memory', result: memoryHealth });
+        
+      default:
+        return NextResponse.json(
+          { error: 'Invalid health check type' },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Health check request failed' },
+      { status: 500 }
+    );
+  }
 }

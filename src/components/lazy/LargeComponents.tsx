@@ -57,10 +57,33 @@ export const LazyNotificationBell = withLazyLoading(
   'min-h-[50px]'
 );
 
-// Preload functions
-export const preloadMfaSetup = () => import('../MfaSetup');
-export const preloadFileUpload = () => import('../FileUpload');
-export const preloadNotificationBell = () => import('../NotificationBell');
+// Preload functions with performance tracking
+export const preloadMfaSetup = () => {
+  const start = performance.now();
+  return import('../MfaSetup').then(module => {
+    const duration = performance.now() - start;
+    console.info(`Preloaded MfaSetup in ${duration.toFixed(2)}ms`);
+    return module;
+  });
+};
+
+export const preloadFileUpload = () => {
+  const start = performance.now();
+  return import('../FileUpload').then(module => {
+    const duration = performance.now() - start;
+    console.info(`Preloaded FileUpload in ${duration.toFixed(2)}ms`);
+    return module;
+  });
+};
+
+export const preloadNotificationBell = () => {
+  const start = performance.now();
+  return import('../NotificationBell').then(module => {
+    const duration = performance.now() - start;
+    console.info(`Preloaded NotificationBell in ${duration.toFixed(2)}ms`);
+    return module;
+  });
+};
 
 // Convenience exports
 export const LargeComponents = {

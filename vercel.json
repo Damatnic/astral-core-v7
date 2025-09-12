@@ -10,29 +10,45 @@
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1",
-      "NODE_OPTIONS": "--max-old-space-size=8192",
+      "NODE_OPTIONS": "--max-old-space-size=8192 --max-http-header-size=32768",
       "SKIP_ENV_VALIDATION": "1",
       "PRISMA_SKIP_POSTINSTALL_GENERATE": "1",
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "NEXT_SHARP": "0",
+      "NEXT_BUNDLE_ANALYZE": "false"
     }
   },
   
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30,
-      "memory": 1024
+      "memory": 1024,
+      "runtime": "nodejs20.x"
     },
     "src/app/api/monitoring/**/*.ts": {
       "maxDuration": 10,
-      "memory": 512
+      "memory": 512,
+      "runtime": "nodejs20.x"
     },
     "src/app/api/health/**/*.ts": {
       "maxDuration": 5,
-      "memory": 256
+      "memory": 256,
+      "runtime": "nodejs20.x"
     },
     "src/app/api/auth/**/*.ts": {
       "maxDuration": 15,
-      "memory": 512
+      "memory": 512,
+      "runtime": "nodejs20.x"
+    },
+    "src/app/api/analytics/**/*.ts": {
+      "maxDuration": 45,
+      "memory": 1024,
+      "runtime": "nodejs20.x"
+    },
+    "src/app/api/performance/**/*.ts": {
+      "maxDuration": 20,
+      "memory": 512,
+      "runtime": "nodejs20.x"
     }
   },
   
@@ -148,7 +164,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.vercel-insights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.stripe.com https://*.auth0.com https://vitals.vercel-insights.com wss://localhost:* ws://localhost:*; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; media-src 'self' blob:; worker-src 'self' blob:;"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-RANDOM_CSP_NONCE' https://js.stripe.com https://cdn.vercel-insights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob: https://res.cloudinary.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com https://*.auth0.com https://vitals.vercel-insights.com https://*.sentry.io wss://localhost:* ws://localhost:* https://astral-core-v7-r7s1g00qe-astral-productions.vercel.app; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://api.stripe.com; frame-ancestors 'self'; manifest-src 'self';"
         },
         {
           "key": "X-DNS-Prefetch-Control",

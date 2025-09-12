@@ -67,7 +67,11 @@
       "Bash(test:*)",
       "Bash(rm:*)",
       "Bash(npm update:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(takeown:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npx cross-env:*)"
     ],
     "deny": [],
     "ask": []

@@ -47,7 +47,17 @@
     "deploy": "npm run vercel:deploy",
     "deploy:prod": "vercel --prod",
     "deploy:preview": "vercel",
-    "monitor": "npm run vercel:monitor"
+    "monitor": "npm run vercel:monitor",
+    "perf:analyze": "node scripts/performance-report.js",
+    "perf:lighthouse": "npx lighthouse http://localhost:3000 --output=html --output-path=./performance-reports/lighthouse-report.html",
+    "perf:webvitals": "node scripts/web-vitals-checker.js",
+    "perf:full": "npm run perf:analyze && npm run perf:lighthouse",
+    "health:check": "curl -f http://localhost:3000/api/health || echo 'Health check failed'",
+    "cache:clear": "node -e \"const cache = require('./src/lib/caching/cache-strategies'); cache.cache.invalidatePattern('*');\"",
+    "db:optimize": "node scripts/db-optimization.js",
+    "security:audit": "npm audit --audit-level high",
+    "build:analyze": "cross-env ANALYZE=true npm run build",
+    "deploy:performance": "npm run perf:full && npm run deploy"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
