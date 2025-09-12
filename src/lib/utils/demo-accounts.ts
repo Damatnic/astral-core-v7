@@ -163,7 +163,7 @@ export function getDemoAuditMetadata(role: string, userAgent?: string, ip?: stri
     userAgent: userAgent?.substring(0, 100), // Limit length
     clientIP: ip,
     timestamp: new Date().toISOString(),
-    allowedInProduction: process.env.ALLOW_DEMO_ACCOUNTS === 'true'
+    allowedInProduction: process.env['ALLOW_DEMO_ACCOUNTS'] === 'true'
   };
 }
 
