@@ -83,7 +83,7 @@ function LoginForm() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className='space-y-6' role='form' aria-label='Login form'>
+          <form onSubmit={handleSubmit} className='space-y-6' aria-label='Login form' noValidate>
             <div>
               <label
                 htmlFor='email'
@@ -136,14 +136,16 @@ function LoginForm() {
                   type='checkbox'
                   checked={formData.rememberMe}
                   onChange={e => setFormData({ ...formData, rememberMe: e.target.checked })}
-                  className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+                  className='h-4 w-4 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border-gray-300 rounded cursor-pointer'
                   disabled={isLoading}
+                  aria-describedby='remember-me-description'
                 />
                 <label
                   htmlFor='remember-me'
-                  className='ml-2 block text-sm text-gray-700 dark:text-gray-300'
+                  className='ml-2 block text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none'
                 >
                   Remember me
+                  <span id='remember-me-description' className='sr-only'>Stay signed in on this device</span>
                 </label>
               </div>
 
@@ -159,7 +161,8 @@ function LoginForm() {
             <button
               type='submit'
               disabled={isLoading}
-              className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
+              className='w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 min-h-[44px]'
+              aria-busy={isLoading}
               aria-describedby={isLoading ? 'loading-text' : undefined}
             >
               <span id={isLoading ? 'loading-text' : undefined}>
@@ -184,8 +187,8 @@ function LoginForm() {
               <button
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={isLoading}
-                className='w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
-                aria-label='Sign in with Google'
+                className='w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
+                aria-label='Sign in with Google account'
               >
                 <svg className='w-5 h-5' viewBox='0 0 24 24'>
                   <path
@@ -211,8 +214,8 @@ function LoginForm() {
               <button
                 onClick={() => handleOAuthSignIn('github')}
                 disabled={isLoading}
-                className='w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
-                aria-label='Sign in with GitHub'
+                className='w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
+                aria-label='Sign in with GitHub account'
               >
                 <svg className='w-5 h-5' fill='currentColor' viewBox='0 0 20 20'>
                   <path

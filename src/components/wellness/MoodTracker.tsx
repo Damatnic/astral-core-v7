@@ -250,35 +250,35 @@ const MoodTracker: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6" role="main" aria-labelledby="mood-tracker-title">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Mood Tracker</h1>
-        <p className="text-gray-600">Track your daily mood, energy, and well-being patterns</p>
+        <h1 id="mood-tracker-title" className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Mood Tracker</h1>
+        <p className="text-gray-600 dark:text-gray-300">Track your daily mood, energy, and well-being patterns to better understand your mental health journey</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Stats Overview */}
         <div className="lg:col-span-3">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-blue-600">{stats.averageMood}</p>
-              <p className="text-sm text-gray-600">Avg Mood</p>
+            <Card className="p-4 text-center" role="group" aria-labelledby="avg-mood-label">
+              <p className="text-2xl font-bold text-blue-600" aria-live="polite">{stats.averageMood}</p>
+              <p id="avg-mood-label" className="text-sm text-gray-600 dark:text-gray-300">Average Mood</p>
             </Card>
-            <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-green-600">{stats.averageEnergy}</p>
-              <p className="text-sm text-gray-600">Avg Energy</p>
+            <Card className="p-4 text-center" role="group" aria-labelledby="avg-energy-label">
+              <p className="text-2xl font-bold text-green-600" aria-live="polite">{stats.averageEnergy}</p>
+              <p id="avg-energy-label" className="text-sm text-gray-600 dark:text-gray-300">Average Energy</p>
             </Card>
-            <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-red-600">{stats.averageStress}</p>
-              <p className="text-sm text-gray-600">Avg Stress</p>
+            <Card className="p-4 text-center" role="group" aria-labelledby="avg-stress-label">
+              <p className="text-2xl font-bold text-orange-600" aria-live="polite">{stats.averageStress}</p>
+              <p id="avg-stress-label" className="text-sm text-gray-600 dark:text-gray-300">Average Stress</p>
             </Card>
-            <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-purple-600">{stats.averageSleep}h</p>
-              <p className="text-sm text-gray-600">Avg Sleep</p>
+            <Card className="p-4 text-center" role="group" aria-labelledby="avg-sleep-label">
+              <p className="text-2xl font-bold text-purple-600" aria-live="polite">{stats.averageSleep} hours</p>
+              <p id="avg-sleep-label" className="text-sm text-gray-600 dark:text-gray-300">Average Sleep</p>
             </Card>
-            <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-orange-600">{stats.streak}</p>
-              <p className="text-sm text-gray-600">Day Streak</p>
+            <Card className="p-4 text-center" role="group" aria-labelledby="streak-label">
+              <p className="text-2xl font-bold text-amber-600" aria-live="polite">{stats.streak}</p>
+              <p id="streak-label" className="text-sm text-gray-600 dark:text-gray-300">Day Streak</p>
             </Card>
           </div>
         </div>
@@ -401,12 +401,21 @@ const MoodTracker: React.FC = () => {
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="How are you feeling? What happened today?"
+                  aria-label="Additional notes about your mood"
+                  aria-describedby="notes-help"
                 />
+                <p id="notes-help" className="sr-only">Optional: Add any thoughts or events that may have influenced your mood today</p>
               </div>
 
-              <Button onClick={handleSaveEntry} className="w-full">
+              <Button 
+                onClick={handleSaveEntry} 
+                className="w-full min-h-[44px]"
+                aria-label="Save mood entry"
+                aria-describedby="save-help"
+              >
                 Save Mood Entry
               </Button>
+              <p id="save-help" className="sr-only">Save your current mood entry to track your wellness over time</p>
             </div>
           </Card>
         </div>
