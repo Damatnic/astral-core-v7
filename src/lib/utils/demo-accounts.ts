@@ -104,8 +104,8 @@ export function areDemoAccountsAllowed(): boolean {
   return (
     process.env.NODE_ENV === 'development' ||
     process.env.NODE_ENV === 'test' ||
-    process.env.ALLOW_DEMO_ACCOUNTS === 'true' ||
-    process.env.VERCEL_ENV === 'preview'
+    process.env['ALLOW_DEMO_ACCOUNTS'] === 'true' ||
+    process.env['VERCEL_ENV'] === 'preview'
   );
 }
 
