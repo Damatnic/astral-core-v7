@@ -5,10 +5,10 @@ import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { z } from 'zod';
-import { loginSchema } from '@/lib/types/auth';
-import { APP_CONFIG } from '@/lib/constants';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import DemoAccountsSection from '@/components/auth/DemoAccountsSection';
+import { loginSchema } from '../../../lib/types/auth';
+import { APP_CONFIG } from '../../../lib/constants';
+import { ErrorBoundary } from '../../../components/ErrorBoundary';
+import DemoAccountsSection from '../../../components/auth/DemoAccountsSection';
 
 function LoginForm() {
   const router = useRouter();

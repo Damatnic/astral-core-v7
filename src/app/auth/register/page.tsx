@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { z } from 'zod';
-import { registerSchema } from '@/lib/types/auth';
-import { APP_CONFIG } from '@/lib/constants';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { registerSchema } from '../../../lib/types/auth';
+import { APP_CONFIG } from '../../../lib/constants';
+import { ErrorBoundary } from '../../../components/ErrorBoundary';
 
 export default function RegisterPage() {
   const router = useRouter();
