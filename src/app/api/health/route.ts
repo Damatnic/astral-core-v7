@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, connectionPool } from '@/lib/database/connection-pool';
-import { cache } from '@/lib/caching/cache-strategies';
+import { prisma, connectionPool } from '../../../lib/database/connection-pool';
+import { cache } from '../../../lib/caching/cache-strategies';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
