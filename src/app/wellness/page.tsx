@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/components/ui/Button';
-import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import type { WellnessDataInput } from '@/lib/types/wellness';
+import Button from '../../components/ui/Button';
+import Card, { CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
+import type { WellnessDataInput } from '../../lib/types/wellness';
 
 // Force dynamic rendering to avoid SSR issues with stores
 export const dynamic = 'force-dynamic';

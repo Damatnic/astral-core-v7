@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { APP_CONFIG } from '@/lib/constants';
+import { APP_CONFIG } from '../lib/constants';
 
 export default function Home() {
   return (

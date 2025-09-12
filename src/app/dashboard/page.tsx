@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth/utils';
-import { ROUTES } from '@/lib/constants';
-import { getDashboardComponent, preloadDashboardComponent } from '@/components/dashboards/lazy';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { getCurrentUser } from '../../lib/auth/utils';
+import { ROUTES } from '../../lib/constants';
+import { getDashboardComponent, preloadDashboardComponent } from '../../components/dashboards/lazy';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
