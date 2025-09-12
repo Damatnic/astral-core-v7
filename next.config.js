@@ -2,7 +2,6 @@
 const nextConfig = {
   // Production optimizations
   reactStrictMode: true,
-  swcMinify: true,
   
   // Build optimizations
   compiler: {
@@ -20,14 +19,6 @@ const nextConfig = {
       'date-fns',
       '@headlessui/react',
     ],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
   
   // Skip ESLint during production builds to speed up deployment
