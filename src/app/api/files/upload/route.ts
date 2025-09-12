@@ -43,6 +43,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Additional rate limiting for large files (1MB+) - 5 per hour
+    const fileSizeLimit = 1024 * 1024; // 1MB
+    if (file.size >= fileSizeLimit) {
+      const largeFileAllowed = await rateLimiter.check(`large-file-upload:${session.user.id}`);
+      if (!largeFileAllowed) {
+        return NextResponse.json(
+          { error: 'Large file upload limit exceeded. Please try again later.' },
+          { status: HTTP_STATUS.TOO_MANY_REQUESTS }
+        );
+      }
+    }
+
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -66,7 +78,9 @@ export async function POST(request: NextRequest) {
       { status: HTTP_STATUS.CREATED }
     );
   } catch (error: unknown) {
-    console.error('Error uploading file:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error uploading file:', error);
+    }
 
     if (
       error instanceof Error &&
@@ -110,7 +124,9 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Error getting upload info:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error getting upload info:', error);
+    }
     return NextResponse.json(
       { error: ERROR_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

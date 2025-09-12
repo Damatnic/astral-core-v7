@@ -64,7 +64,9 @@ export function PWAManager({ children }: PWAManagerProps) {
         
         setSwRegistration(registration);
         
-        console.log('Service Worker registered successfully:', registration);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Service Worker registered successfully:', registration);
+        }
         
         // Handle updates
         registration.addEventListener('updatefound', () => {
@@ -83,7 +85,9 @@ export function PWAManager({ children }: PWAManagerProps) {
         registration.update();
         
       } catch (error) {
-        console.error('Service Worker registration failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Service Worker registration failed:', error);
+        }
       }
     }
   };
@@ -105,7 +109,9 @@ export function PWAManager({ children }: PWAManagerProps) {
         swRegistration.sync.register('sync-wellness-data');
         swRegistration.sync.register('sync-journal-entries');
       } catch (error) {
-        console.error('Background sync failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Background sync failed:', error);
+        }
       }
     }
   };
@@ -139,14 +145,18 @@ export function PWAManager({ children }: PWAManagerProps) {
 
   const setupPushNotifications = async () => {
     if (!swRegistration || !('PushManager' in window)) {
-      console.log('Push messaging is not supported');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Push messaging is not supported');
+      }
       return;
     }
 
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        console.log('Notification permission granted');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Notification permission granted');
+        }
         
         // Subscribe to push notifications
         const vapidKey = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '';
@@ -164,10 +174,14 @@ export function PWAManager({ children }: PWAManagerProps) {
         });
         
       } else {
-        console.log('Notification permission denied');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Notification permission denied');
+        }
       }
     } catch (error) {
-      console.error('Failed to setup push notifications:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to setup push notifications:', error);
+      }
     }
   };
 
@@ -179,7 +193,9 @@ export function PWAManager({ children }: PWAManagerProps) {
       const choiceResult = await installPrompt.userChoice;
       
       if (choiceResult.outcome === 'accepted') {
-        console.log('PWA installed');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('PWA installed');
+        }
         setIsInstalled(true);
         announceToScreenReader('App installed successfully');
       }
@@ -187,7 +203,9 @@ export function PWAManager({ children }: PWAManagerProps) {
       setInstallPrompt(null);
       setIsInstallable(false);
     } catch (error) {
-      console.error('Installation failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Installation failed:', error);
+      }
     }
   };
 
@@ -316,10 +334,14 @@ export const PWAUtils = {
     if ('storage' in navigator && 'persist' in navigator.storage) {
       try {
         const granted = await navigator.storage.persist();
-        console.log('Persistent storage:', granted ? 'granted' : 'denied');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Persistent storage:', granted ? 'granted' : 'denied');
+        }
         return granted;
       } catch (error) {
-        console.error('Failed to request persistent storage:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to request persistent storage:', error);
+        }
         return false;
       }
     }
@@ -336,7 +358,9 @@ export const PWAUtils = {
           percentage: estimate.quota ? Math.round((estimate.usage || 0) / estimate.quota * 100) : 0
         };
       } catch (error) {
-        console.error('Failed to get storage estimate:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to get storage estimate:', error);
+        }
         return null;
       }
     }
@@ -349,7 +373,9 @@ export const PWAUtils = {
         await navigator.share(data);
         return true;
       } catch (error) {
-        console.error('Web Share failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Web Share failed:', error);
+        }
         return false;
       }
     }

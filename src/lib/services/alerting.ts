@@ -99,7 +99,9 @@ export class AlertingService {
     const throttleMinutes = this.config.throttleMinutes || 15;
     
     if (!this.throttle.shouldAlert(throttleKey, throttleMinutes)) {
-      console.log('[AlertingService] Alert throttled:', throttleKey);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[AlertingService] Alert throttled:', throttleKey);
+      }
       return;
     }
     
@@ -135,12 +137,16 @@ export class AlertingService {
    */
   private async sendEmailAlert(payload: AlertPayload): Promise<void> {
     if (!this.config.emailRecipients?.length) {
-      console.warn('[AlertingService] No email recipients configured');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[AlertingService] No email recipients configured');
+      }
       return;
     }
     
     // In production, integrate with email service (SendGrid, AWS SES, etc.)
-    console.log('[AlertingService] Email alert would be sent to:', this.config.emailRecipients);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AlertingService] Email alert would be sent to:', this.config.emailRecipients);
+    }
     
     // Example integration with a hypothetical email service:
     /*
@@ -158,7 +164,9 @@ export class AlertingService {
    */
   private async sendSlackAlert(payload: AlertPayload): Promise<void> {
     if (!this.config.slackWebhookUrl) {
-      console.warn('[AlertingService] No Slack webhook URL configured');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[AlertingService] No Slack webhook URL configured');
+      }
       return;
     }
     
@@ -211,7 +219,9 @@ export class AlertingService {
         throw new Error(`Slack webhook failed: ${response.statusText}`);
       }
     } catch (error) {
-      console.error('[AlertingService] Failed to send Slack alert:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[AlertingService] Failed to send Slack alert:', error);
+      }
     }
   }
   
@@ -220,7 +230,9 @@ export class AlertingService {
    */
   private async sendWebhookAlert(payload: AlertPayload): Promise<void> {
     if (!this.config.customWebhookUrl) {
-      console.warn('[AlertingService] No custom webhook URL configured');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[AlertingService] No custom webhook URL configured');
+      }
       return;
     }
     
@@ -238,7 +250,9 @@ export class AlertingService {
         throw new Error(`Webhook failed: ${response.statusText}`);
       }
     } catch (error) {
-      console.error('[AlertingService] Failed to send webhook alert:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[AlertingService] Failed to send webhook alert:', error);
+      }
     }
   }
   
@@ -252,12 +266,16 @@ export class AlertingService {
     }
     
     if (!this.config.smsNumbers?.length) {
-      console.warn('[AlertingService] No SMS numbers configured');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[AlertingService] No SMS numbers configured');
+      }
       return;
     }
     
     // In production, integrate with SMS service (Twilio, AWS SNS, etc.)
-    console.log('[AlertingService] SMS alert would be sent to:', this.config.smsNumbers);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AlertingService] SMS alert would be sent to:', this.config.smsNumbers);
+    }
     
     // Example integration with a hypothetical SMS service:
     /*
@@ -382,7 +400,9 @@ export function getAlertingService(): AlertingService | null {
  */
 export async function sendAlert(payload: AlertPayload): Promise<void> {
   if (!defaultService) {
-    console.warn('[AlertingService] Service not initialized, using console fallback');
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[AlertingService] Service not initialized, using console fallback');
+    }
     const fallbackService = new AlertingService({
       channels: [AlertChannel.CONSOLE]
     });

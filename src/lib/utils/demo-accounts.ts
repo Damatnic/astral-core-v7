@@ -104,8 +104,8 @@ export function areDemoAccountsAllowed(): boolean {
   return (
     process.env.NODE_ENV === 'development' ||
     process.env.NODE_ENV === 'test' ||
-    process.env['ALLOW_DEMO_ACCOUNTS'] === 'true' ||
-    process.env['VERCEL_ENV'] === 'preview'
+    process.env.ALLOW_DEMO_ACCOUNTS === 'true' ||
+    process.env.VERCEL_ENV === 'preview'
   );
 }
 
@@ -163,7 +163,7 @@ export function getDemoAuditMetadata(role: string, userAgent?: string, ip?: stri
     userAgent: userAgent?.substring(0, 100), // Limit length
     clientIP: ip,
     timestamp: new Date().toISOString(),
-    allowedInProduction: process.env['ALLOW_DEMO_ACCOUNTS'] === 'true'
+    allowedInProduction: process.env.ALLOW_DEMO_ACCOUNTS === 'true'
   };
 }
 

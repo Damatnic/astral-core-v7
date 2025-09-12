@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import * as React from 'react';
+import React from 'react';
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { 
   SupportedLocale, 

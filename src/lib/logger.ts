@@ -40,7 +40,7 @@ class Logger {
   }
 
   private getLogLevel(): LogLevel {
-    const level = process.env['LOG_LEVEL']?.toLowerCase();
+    const level = process.env.LOG_LEVEL?.toLowerCase();
     switch (level) {
       case 'error':
         return LogLevel.ERROR;

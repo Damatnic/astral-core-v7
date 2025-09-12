@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import { randomBytes, pbkdf2Sync, createCipheriv, createDecipheriv } from 'crypto';
 import { logError } from '@/lib/logger';
 
 const ALGORITHM = 'aes-256-gcm';
@@ -40,11 +40,11 @@ export class EncryptionService {
    * ```
    */
   encrypt(text: string): string {
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const salt = crypto.randomBytes(SALT_LENGTH);
+    const iv = randomBytes(IV_LENGTH);
+    const salt = randomBytes(SALT_LENGTH);
 
-    const key = crypto.pbkdf2Sync(this.key, salt, ITERATIONS, 32, 'sha256');
-    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+    const key = pbkdf2Sync(this.key, salt, ITERATIONS, 32, 'sha256');
+    const cipher = createCipheriv(ALGORITHM, key, iv);
 
     const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
 
@@ -73,8 +73,8 @@ export class EncryptionService {
     const tag = buffer.subarray(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
     const encrypted = buffer.subarray(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
 
-    const key = crypto.pbkdf2Sync(this.key, salt, ITERATIONS, 32, 'sha256');
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    const key = pbkdf2Sync(this.key, salt, ITERATIONS, 32, 'sha256');
+    const decipher = createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(tag);
 
     return decipher.update(encrypted) + decipher.final('utf8');
@@ -149,8 +149,8 @@ export class EncryptionService {
    * ```
    */
   hashPassword(password: string): string {
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+    const salt = randomBytes(16).toString('hex');
+    const hash = pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
     return `${salt}:${hash}`;
   }
 
@@ -170,7 +170,7 @@ export class EncryptionService {
   verifyPassword(password: string, hashedPassword: string): boolean {
     const [salt, hash] = hashedPassword.split(':');
     if (!salt || !hash) return false;
-    const verifyHash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+    const verifyHash = pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
     return hash === verifyHash;
   }
 
@@ -188,7 +188,7 @@ export class EncryptionService {
    * ```
    */
   generateToken(length: number = 32): string {
-    return crypto.randomBytes(length).toString('hex');
+    return randomBytes(length).toString('hex');
   }
 
   /**
@@ -206,11 +206,11 @@ export class EncryptionService {
    */
   generateSecureRandomString(length: number = 16): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const randomBytes = crypto.randomBytes(length);
+    const randomBytesArray = randomBytes(length);
     const result = new Array(length);
 
     for (let i = 0; i < length; i++) {
-      const byte = randomBytes[i];
+      const byte = randomBytesArray[i];
       if (byte !== undefined) {
         result[i] = chars[byte % chars.length];
       }

@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center" role="status" aria-live="polite">
             <h1 id="success-title" className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
               Check your email
-            </h2>
+            </h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               We've sent a password reset link to {email}
             </p>

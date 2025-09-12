@@ -90,13 +90,13 @@ export const authOptions: NextAuthOptions = {
         if (!isValid) {
           // Increment login attempts
           const attempts = user.loginAttempts + 1;
-          const maxAttempts = parseInt(process.env['MAX_LOGIN_ATTEMPTS'] || '5');
+          const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5');
 
           const updateData: Record<string, unknown> = { loginAttempts: attempts };
 
           // Lock account if max attempts exceeded
           if (attempts >= maxAttempts) {
-            const lockoutMinutes = parseInt(process.env['LOCKOUT_DURATION_MINUTES'] || '15');
+            const lockoutMinutes = parseInt(process.env.LOCKOUT_DURATION_MINUTES || '15');
             updateData['lockedUntil'] = new Date(Date.now() + lockoutMinutes * 60000);
             updateData['loginAttempts'] = 0;
           }
@@ -147,8 +147,8 @@ export const authOptions: NextAuthOptions = {
     }),
 
     GoogleProvider({
-      clientId: process.env['GOOGLE_CLIENT_ID']!,
-      clientSecret: process.env['GOOGLE_CLIENT_SECRET']!,
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       profile(profile) {
         return {
           id: profile.sub,
@@ -161,8 +161,8 @@ export const authOptions: NextAuthOptions = {
     }),
 
     GitHubProvider({
-      clientId: process.env['GITHUB_ID']!,
-      clientSecret: process.env['GITHUB_SECRET']!,
+      clientId: process.env.GITHUB_ID!,
+      clientSecret: process.env.GITHUB_SECRET!,
       profile(profile) {
         return {
           id: profile.id.toString(),
@@ -269,14 +269,14 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: 'jwt',
-    maxAge: 24 * 60 * 60 // 24 hours
+    maxAge: 4 * 60 * 60 // 4 hours for healthcare data security
   },
 
   jwt: {
-    maxAge: 24 * 60 * 60 // 24 hours
+    maxAge: 4 * 60 * 60 // 4 hours for healthcare data security
   },
 
-  secret: process.env['NEXTAUTH_SECRET']!,
+  secret: process.env.NEXTAUTH_SECRET!,
 
-  debug: process.env['NODE_ENV'] === 'development'
+  debug: process.env.NODE_ENV === 'development'
 };

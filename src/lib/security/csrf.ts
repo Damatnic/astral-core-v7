@@ -28,7 +28,10 @@ export interface CSRFValidationResult {
   };
 }
 
-const CSRF_SECRET = process.env['CSRF_SECRET'] || 'your-csrf-secret-key-change-in-production';
+const CSRF_SECRET = process.env.CSRF_SECRET;
+if (!CSRF_SECRET) {
+  throw new Error('CSRF_SECRET environment variable is required');
+}
 const TOKEN_LIFETIME = 24 * 60 * 60 * 1000; // 24 hours
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const CSRF_COOKIE_NAME = '__csrf_token';

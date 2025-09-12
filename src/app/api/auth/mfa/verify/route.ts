@@ -43,13 +43,18 @@ export async function POST(request: NextRequest) {
     if (result.success) {
       // Create full session token
       // In production, integrate with NextAuth properly
+      const JWT_SECRET = process.env.JWT_SECRET;
+      if (!JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is required');
+      }
+
       const sessionToken = jwt.sign(
         {
           userId: validated.userId,
           mfaVerified: true,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24 hours
+          exp: Math.floor(Date.now() / 1000) + 60 * 60 * 4 // 4 hours for healthcare security
         },
-        process.env['JWT_SECRET'] || 'your-secret-key'
+        JWT_SECRET
       );
 
       // Set secure cookie
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24, // 24 hours
+        maxAge: 60 * 60 * 4, // 4 hours for healthcare security
         path: '/'
       });
 
