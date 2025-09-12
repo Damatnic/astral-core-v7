@@ -22,6 +22,11 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
+    "migration:preflight": "node scripts/preflight-check.js",
+    "migration:run": "node scripts/run-migrations.js",
+    "migration:rollback": "node scripts/rollback-migration.js",
+    "migration:status": "node scripts/migration-status.js",
+    "migration:full": "npm run migration:preflight && npm run migration:run",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -123,5 +128,8 @@
     "ts-jest": "^29.4.1",
     "typescript": "^5",
     "webpack-bundle-analyzer": "^4.10.2"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

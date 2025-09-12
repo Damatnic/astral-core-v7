@@ -21,34 +21,22 @@
   
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 30,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
+      "maxDuration": 30
     },
     "src/app/api/monitoring/**/*.ts": {
-      "maxDuration": 10,
-      "memory": 512,
-      "runtime": "nodejs20.x"
+      "maxDuration": 10
     },
     "src/app/api/health/**/*.ts": {
-      "maxDuration": 5,
-      "memory": 256,
-      "runtime": "nodejs20.x"
+      "maxDuration": 5
     },
     "src/app/api/auth/**/*.ts": {
-      "maxDuration": 15,
-      "memory": 512,
-      "runtime": "nodejs20.x"
+      "maxDuration": 15
     },
     "src/app/api/analytics/**/*.ts": {
-      "maxDuration": 45,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
+      "maxDuration": 45
     },
     "src/app/api/performance/**/*.ts": {
-      "maxDuration": 20,
-      "memory": 512,
-      "runtime": "nodejs20.x"
+      "maxDuration": 20
     }
   },
   
