@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx next build",
+    "build": "next build",
     "build:fast": "next build",
     "build:vercel": "npx prisma generate --no-engine && cross-env NODE_ENV=production SKIP_TYPE_CHECK=true next build",
     "prebuild": "echo Skipping prebuild for minimal deployment",

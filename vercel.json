@@ -7,7 +7,14 @@
   "build": {
     "env": {
       "NODE_ENV": "production",
-      "SKIP_TYPE_CHECK": "true"
+      "SKIP_TYPE_CHECK": "true",
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  
+  "functions": {
+    "app/**": {
+      "maxDuration": 30
     }
   }
 }
