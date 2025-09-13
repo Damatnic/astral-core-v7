@@ -65,7 +65,10 @@
     "db:optimize": "node scripts/db-optimization.js",
     "security:audit": "npm audit --audit-level high",
     "build:analyze": "cross-env ANALYZE=true npm run build",
-    "deploy:performance": "npm run perf:full && npm run deploy"
+    "deploy:performance": "npm run perf:full && npm run deploy",
+    "monitor": "node scripts/monitor-health.js",
+    "monitor:once": "node -e \"require('./scripts/monitor-health.js').runMonitoring()\"",
+    "monitor:status": "node -e \"console.log(JSON.stringify(require('./scripts/monitor-health.js').getStatus(), null, 2))\""
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
