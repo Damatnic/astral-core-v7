@@ -75,7 +75,7 @@
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
     "@types/qrcode": "^1.5.5",
-    "@types/sharp": "^0.31.1",
+    "@types/sharp": "^0.32.0",
     "@types/speakeasy": "^2.0.10",
     "@types/node": "^20.19.13",
     "@types/react": "^19",
