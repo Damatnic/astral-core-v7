@@ -1,37 +1,13 @@
 {
   "version": 2,
-  "name": "astral-core-v7",
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm ci --prefer-offline --no-audit --no-fund",
-  "outputDirectory": ".next",
+  "installCommand": "npm ci",
   
   "build": {
     "env": {
-      "NEXT_TELEMETRY_DISABLED": "1",
-      "NODE_OPTIONS": "--max-old-space-size=4096",
       "NODE_ENV": "production",
-      "SKIP_TYPE_CHECK": "true",
-      "SKIP_ENV_VALIDATION": "1"
+      "SKIP_TYPE_CHECK": "true"
     }
-  },
-  
-  
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        }
-      ]
-    }
-  ],
-  
-  
-  "regions": ["iad1"],
-  "public": false,
-  "trailingSlash": false
+  }
 }
