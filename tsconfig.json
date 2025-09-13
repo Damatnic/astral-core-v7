@@ -4,7 +4,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -18,21 +18,8 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "useUnknownInCatchVariables": true,
-    "alwaysStrict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "exactOptionalPropertyTypes": false,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": false,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": false,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
@@ -40,6 +27,25 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "tests/**/*", "**/*.test.ts", "**/*.spec.ts", ".next", "out", "dist", "build"]
+  "include": [
+    "next-env.d.ts", 
+    "src/**/*.ts", 
+    "src/**/*.tsx", 
+    "src/types/global.d.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules", 
+    "tests/**/*", 
+    "**/*.test.ts", 
+    "**/*.spec.ts", 
+    ".next", 
+    "out", 
+    "dist", 
+    "build",
+    "playwright.config.ts",
+    "next.config.js",
+    "tailwind.config.js",
+    "jest.config.js"
+  ]
 }

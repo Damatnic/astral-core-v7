@@ -28,6 +28,11 @@ jest.config.js
 /scripts/generate-secrets.js
 /scripts/reset-and-create-demo-accounts.js
 /scripts/seed-demo-accounts.js
+/scripts/analyze-bundle.js
+/scripts/optimize-images.js
+/scripts/performance-report.js
+/scripts/web-vitals-checker.js
+/scripts/db-optimization.js
 
 # Local environment files
 .env.local
@@ -40,4 +45,41 @@ local env.txt
 .eslintrc.json
 .prettierrc
 tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
 FINAL_POLISH_PLAN.md
+
+# Build artifacts and cache
+.next/cache
+node_modules/.cache
+.swc
+.turbo
+*.tsbuildinfo
+
+# Backup files
+*.bak
+/backups
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Performance reports
+/performance-reports
+
+# Temporary files
+*.tmp
+*.temp
+
+# Large documentation files
+*COMPLETION_REPORT.md
+*GUIDE.md
+*CHECKLIST.md
+*TRACKER.md
+*SUMMARY.md
+*PLAN.md

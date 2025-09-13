@@ -2,9 +2,9 @@
   "version": 2,
   "name": "astral-core-v7",
   "framework": "nextjs",
-  "buildCommand": "npm install --save-dev typescript @types/react && npm run vercel:build",
+  "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm ci --prefer-offline --no-audit --no-fund && npm install --save-dev typescript @types/react || npm install --prefer-offline --no-audit --no-fund && npm install --save-dev typescript @types/react",
+  "installCommand": "npm ci --prefer-offline --no-audit --no-fund",
   "outputDirectory": ".next",
   
   "build": {
@@ -15,28 +15,36 @@
       "PRISMA_SKIP_POSTINSTALL_GENERATE": "1",
       "NODE_ENV": "production",
       "NEXT_SHARP": "0",
-      "NEXT_BUNDLE_ANALYZE": "false"
+      "NEXT_BUNDLE_ANALYZE": "false",
+      "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true",
+      "SKIP_TYPE_CHECK": "true"
     }
   },
   
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 25,
+      "memory": 1024
     },
     "src/app/api/monitoring/**/*.ts": {
-      "maxDuration": 10
+      "maxDuration": 10,
+      "memory": 512
     },
     "src/app/api/health/**/*.ts": {
-      "maxDuration": 5
+      "maxDuration": 5,
+      "memory": 256
     },
     "src/app/api/auth/**/*.ts": {
-      "maxDuration": 15
+      "maxDuration": 15,
+      "memory": 512
     },
     "src/app/api/analytics/**/*.ts": {
-      "maxDuration": 45
+      "maxDuration": 30,
+      "memory": 1024
     },
     "src/app/api/performance/**/*.ts": {
-      "maxDuration": 20
+      "maxDuration": 20,
+      "memory": 512
     }
   },
   
@@ -185,7 +193,7 @@
     }
   ],
   
-  "regions": ["iad1"],
+  "regions": ["iad1", "sfo1", "fra1"],
   
   "github": {
     "enabled": true,

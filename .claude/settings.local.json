@@ -81,7 +81,9 @@
       "Bash(source .env.local)",
       "Bash(npx --prefer-offline tsc --noEmit)",
       "Bash(cd:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(cross-env NODE_ENV=production SKIP_TYPE_CHECK=true npm run build:fast)",
+      "Bash(set NODE_ENV=production)"
     ],
     "deny": [],
     "ask": []

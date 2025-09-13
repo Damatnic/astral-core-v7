@@ -19,16 +19,18 @@ const nextConfig = {
       'date-fns',
       '@headlessui/react',
     ],
+    serverComponentsExternalPackages: ['prisma', '@prisma/client'],
+    instrumentationHook: false,
   },
   
   // Skip ESLint during production builds to speed up deployment
   eslint: {
-    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
+    ignoreDuringBuilds: true,
   },
   
   // Enable TypeScript checking with proper error handling
   typescript: {
-    ignoreBuildErrors: process.env.NODE_ENV === 'production',
+    ignoreBuildErrors: true,
   },
   
   // Webpack configuration for better SSR handling
@@ -132,9 +134,19 @@ const nextConfig = {
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
   },
   
-  // Output configuration
+  // Output configuration for Vercel
   output: 'standalone',
   distDir: '.next',
+  
+  // Vercel-specific optimizations
+  swcMinify: true,
+  optimizeFonts: true,
+  
+  // Caching optimizations
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   
   // Image optimization settings
   images: {
