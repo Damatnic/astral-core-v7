@@ -23,6 +23,8 @@
     "db:setup:prod": "node scripts/setup-production-database.js",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
+    "db:backup": "node scripts/database-backup.js",
+    "db:backup:schedule": "node scripts/schedule-backups.js",
     "migration:preflight": "node scripts/preflight-check.js",
     "migration:run": "node scripts/run-migrations.js",
     "migration:rollback": "node scripts/rollback-migration.js",

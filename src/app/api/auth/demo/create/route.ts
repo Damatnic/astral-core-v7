@@ -3,6 +3,7 @@ import prisma from '../../../../../lib/db/prisma';
 import bcrypt from 'bcryptjs';
 import { audit } from '../../../../../lib/security/audit';
 import { areDemoAccountsAllowed, getDemoSecurityHeaders, DEMO_ACCOUNT_INFO } from '../../../../../lib/utils/demo-accounts';
+import { authRateLimiter } from '../../../../../lib/security/rate-limiter';
 
 // Demo profile and data configurations
 const DEMO_PROFILES = {
@@ -252,9 +253,11 @@ async function createSampleAppointment(therapistId: string, clientId: string) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    // Check if demo accounts are allowed in current environment
-    if (!areDemoAccountsAllowed()) {
+  // Apply rate limiting
+  return authRateLimiter(request, async () => {
+    try {
+      // Check if demo accounts are allowed in current environment
+      if (!areDemoAccountsAllowed()) {
       return NextResponse.json(
         { 
           error: 'Demo account creation not allowed in this environment',
@@ -403,7 +406,8 @@ export async function POST(request: NextRequest) {
         headers: getDemoSecurityHeaders()
       }
     );
-  }
+    }
+  });
 }
 
 // GET endpoint to check if demo accounts exist
