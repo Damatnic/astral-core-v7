@@ -71,17 +71,6 @@ const nextConfig = {
     ];
   },
   
-  // Redirects configuration
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/login',
-        permanent: false,
-      },
-    ];
-  },
-  
   // Production source maps (disabled for security)
   productionBrowserSourceMaps: false,
   

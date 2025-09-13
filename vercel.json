@@ -10,204 +10,28 @@
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1",
-      "NODE_OPTIONS": "--max-old-space-size=8192 --max-http-header-size=32768",
-      "SKIP_ENV_VALIDATION": "1",
-      "PRISMA_SKIP_POSTINSTALL_GENERATE": "1",
+      "NODE_OPTIONS": "--max-old-space-size=4096",
       "NODE_ENV": "production",
-      "NEXT_SHARP": "0",
-      "NEXT_BUNDLE_ANALYZE": "false",
-      "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true",
-      "SKIP_TYPE_CHECK": "true"
+      "SKIP_TYPE_CHECK": "true",
+      "SKIP_ENV_VALIDATION": "1"
     }
   },
   
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "maxDuration": 25,
-      "memory": 1024
-    },
-    "src/app/api/monitoring/**/*.ts": {
-      "maxDuration": 10,
-      "memory": 512
-    },
-    "src/app/api/health/**/*.ts": {
-      "maxDuration": 5,
-      "memory": 256
-    },
-    "src/app/api/auth/**/*.ts": {
-      "maxDuration": 15,
-      "memory": 512
-    },
-    "src/app/api/analytics/**/*.ts": {
-      "maxDuration": 30,
-      "memory": 1024
-    },
-    "src/app/api/performance/**/*.ts": {
-      "maxDuration": 20,
-      "memory": 512
-    }
-  },
-  
-  "crons": [
-    {
-      "path": "/api/monitoring/health-check",
-      "schedule": "*/5 * * * *"
-    }
-  ],
   
   "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, no-cache, must-revalidate, proxy-revalidate"
-        },
-        {
-          "key": "Pragma",
-          "value": "no-cache"
-        },
-        {
-          "key": "Expires",
-          "value": "0"
-        },
-        {
-          "key": "Surrogate-Control",
-          "value": "no-store"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        }
-      ]
-    },
-    {
-      "source": "/_next/static/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/fonts/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*).js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*).css",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*).webp",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*).svg",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
     {
       "source": "/(.*)",
       "headers": [
         {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-RANDOM_CSP_NONCE' https://js.stripe.com https://cdn.vercel-insights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob: https://res.cloudinary.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com https://*.auth0.com https://vitals.vercel-insights.com https://*.sentry.io wss://localhost:* ws://localhost:* https://astral-core-v7-r7s1g00qe-astral-productions.vercel.app; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://api.stripe.com; frame-ancestors 'self'; manifest-src 'self';"
-        },
-        {
-          "key": "X-DNS-Prefetch-Control",
-          "value": "on"
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         }
       ]
     }
   ],
   
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/login",
-      "permanent": false
-    }
-  ],
   
-  "rewrites": [
-    {
-      "source": "/health",
-      "destination": "/api/health"
-    },
-    {
-      "source": "/status",
-      "destination": "/api/status"
-    },
-    {
-      "source": "/metrics",
-      "destination": "/api/monitoring/metrics"
-    }
-  ],
-  
-  "regions": ["iad1", "sfo1", "fra1"],
-  
-  "github": {
-    "enabled": true,
-    "autoAlias": true,
-    "silent": false,
-    "autoJobCancelation": true
-  },
-  
+  "regions": ["iad1"],
   "public": false,
-  "trailingSlash": false,
-  "cleanUrls": true,
-  
-  "env": {
-    "ANALYZE": "false",
-    "NODE_ENV": "production"
-  }
+  "trailingSlash": false
 }
