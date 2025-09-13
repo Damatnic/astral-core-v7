@@ -146,89 +146,108 @@ export const authOptions: NextAuthOptions = {
       }
     }),
 
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture,
-          role: 'CLIENT' as const
-        };
-      }
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        profile(profile) {
+          return {
+            id: profile.sub,
+            name: profile.name,
+            email: profile.email,
+            image: profile.picture,
+            role: 'CLIENT' as const
+          };
+        }
+      })
+    ] : []),
 
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
-      profile(profile) {
-        return {
-          id: profile.id.toString(),
-          name: profile.name || profile.login,
-          email: profile.email,
-          image: profile.avatar_url,
-          role: 'CLIENT' as const
-        };
-      }
-    })
+    ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET ? [
+      GitHubProvider({
+        clientId: process.env.GITHUB_ID,
+        clientSecret: process.env.GITHUB_SECRET,
+        profile(profile) {
+          return {
+            id: profile.id.toString(),
+            name: profile.name || profile.login,
+            email: profile.email,
+            image: profile.avatar_url,
+            role: 'CLIENT' as const
+          };
+        }
+      })
+    ] : [])
   ],
 
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider !== 'credentials') {
-        // For OAuth providers, ensure user exists in database
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email! }
-        });
-
-        if (!existingUser) {
-          // Create user for OAuth sign-in
-          await prisma.user.create({
-            data: {
-              email: user.email!,
-              name: user.name || null,
-              image: user.image || null,
-              role: 'CLIENT',
-              emailVerified: new Date()
-            }
+      try {
+        if (account?.provider !== 'credentials') {
+          // For OAuth providers, ensure user exists in database
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! }
           });
+
+          if (!existingUser) {
+            // Create user for OAuth sign-in
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name || null,
+                image: user.image || null,
+                role: 'CLIENT',
+                emailVerified: new Date()
+              }
+            });
+          }
+
+          await audit.logSuccess(
+            'LOGIN',
+            'User',
+            existingUser?.id || user.id,
+            { method: account?.provider },
+            existingUser?.id
+          );
         }
 
-        await audit.logSuccess(
-          'LOGIN',
-          'User',
-          existingUser?.id || user.id,
-          { method: account?.provider },
-          existingUser?.id
-        );
+        return true;
+      } catch (error) {
+        console.error('SignIn callback error:', error);
+        return false;
       }
-
-      return true;
     },
 
     async jwt({ token, user, trigger, session }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-      }
+      try {
+        if (user) {
+          token.id = user.id;
+          token.role = user.role;
+        }
 
-      if (trigger === 'update' && session) {
-        // Update token with new session data
-        token = { ...token, ...session };
-      }
+        if (trigger === 'update' && session) {
+          // Update token with new session data
+          token = { ...token, ...session };
+        }
 
-      return token;
+        return token;
+      } catch (error) {
+        console.error('JWT callback error:', error);
+        return token;
+      }
     },
 
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-      }
+      try {
+        if (token && session.user) {
+          session.user.id = token.id;
+          session.user.role = token.role;
+        }
 
-      return session;
+        return session;
+      } catch (error) {
+        console.error('Session callback error:', error);
+        return session;
+      }
     },
 
     async redirect({ url, baseUrl }) {
@@ -276,7 +295,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 4 * 60 * 60 // 4 hours for healthcare data security
   },
 
-  secret: process.env.NEXTAUTH_SECRET!,
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
 
   debug: process.env.NODE_ENV === 'development'
 };
