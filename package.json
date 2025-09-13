@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && cross-env NODE_ENV=production next build",
+    "build": "npx next build",
     "build:fast": "next build",
     "build:vercel": "npx prisma generate --no-engine && cross-env NODE_ENV=production SKIP_TYPE_CHECK=true next build",
-    "prebuild": "npx prisma generate --no-engine",
+    "prebuild": "echo Skipping prebuild for minimal deployment",
     "postinstall": "echo 'Install complete. Run npm run prisma:generate to generate Prisma client.'",
     "prisma:generate": "npx prisma generate",
     "start": "next start",
