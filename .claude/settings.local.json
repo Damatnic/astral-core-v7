@@ -83,7 +83,12 @@
       "Bash(cd:*)",
       "WebSearch",
       "Bash(cross-env NODE_ENV=production SKIP_TYPE_CHECK=true npm run build:fast)",
-      "Bash(set NODE_ENV=production)"
+      "Bash(set NODE_ENV=production)",
+      "Bash(pwd:*)",
+      "Bash(cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
+      "WebFetch(domain:astral-core-v7-922lzrlva-astral-productions.vercel.app)",
+      "Bash(timeout 10 npx next dev --port 3005)",
+      "Bash(tasklist)"
     ],
     "deny": [],
     "ask": []
