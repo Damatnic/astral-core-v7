@@ -65,19 +65,46 @@ export class AuditService {
         userAgent = request.headers.get('user-agent') || undefined;
       }
 
+      // Sanitize and limit details to prevent database issues
+      let sanitizedDetails = null;
+      if (details) {
+        try {
+          const detailsString = JSON.stringify(details);
+          // Limit details size to 4KB to prevent database issues
+          sanitizedDetails = detailsString.length > 4000 
+            ? { ...details, _truncated: true, _originalLength: detailsString.length } 
+            : details;
+        } catch (parseError) {
+          sanitizedDetails = { error: 'Failed to serialize details', details: String(details) };
+        }
+      }
+
       await this.prisma.auditLog.create({
         data: {
           userId: userId || null,
-          action,
-          entity,
-          entityId: entityId || null,
-          details: details ? JSON.parse(JSON.stringify(details)) : null,
+          action: action.substring(0, 100), // Limit action length
+          entity: entity.substring(0, 50), // Limit entity length
+          entityId: entityId?.substring(0, 100) || null, // Limit entityId length
+          details: sanitizedDetails,
           outcome,
-          ipAddress: ipAddress || null,
-          userAgent: userAgent || null
+          ipAddress: ipAddress?.substring(0, 45) || null, // IPv6 max length
+          userAgent: userAgent?.substring(0, 500) || null // Limit user agent
         }
       });
     } catch (error) {
+      // Enhanced error logging for audit failures
+      console.error('Audit logging failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        context: {
+          action: context.action,
+          entity: context.entity,
+          outcome: context.outcome,
+          hasDetails: !!context.details
+        },
+        timestamp: new Date().toISOString()
+      });
+      
+      // Don't re-throw the error to prevent breaking main functionality
       logError('Failed to create audit log', error, 'AuditService');
     }
   }

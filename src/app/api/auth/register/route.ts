@@ -24,7 +24,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      await audit.logFailure('REGISTER', 'User', 'Email already exists', undefined);
+      try {
+        await audit.logFailure('REGISTER', 'User', 'Email already exists', undefined, request);
+      } catch (auditError) {
+        console.error('Audit logging failed:', auditError);
+      }
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 409 }
@@ -52,7 +56,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    await audit.logSuccess('REGISTER', 'User', user.id, { email: user.email }, user.id);
+    try {
+      await audit.logSuccess('REGISTER', 'User', user.id, { email: user.email }, user.id, request);
+    } catch (auditError) {
+      console.error('Audit logging failed:', auditError);
+    }
 
     return NextResponse.json(
       {
@@ -71,16 +79,31 @@ export async function POST(request: NextRequest) {
     console.error('Registration error:', error);
 
     if (error instanceof z.ZodError) {
+      try {
+        await audit.logFailure('REGISTER', 'User', 'Validation error', undefined, request);
+      } catch (auditError) {
+        console.error('Audit logging failed:', auditError);
+      }
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { 
+          error: 'Validation failed', 
+          details: process.env.NODE_ENV === 'development' ? error.errors : 'Invalid input data' 
+        },
         { status: 400 }
       );
     }
 
-    await audit.logFailure('REGISTER', 'User', 'Internal server error', undefined);
+    try {
+      await audit.logError('REGISTER', 'User', error, undefined, request);
+    } catch (auditError) {
+      console.error('Audit logging failed:', auditError);
+    }
     
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? String(error) : 'An unexpected error occurred'
+      },
       { status: 500 }
     );
   }

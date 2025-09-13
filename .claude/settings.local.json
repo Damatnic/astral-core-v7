@@ -88,7 +88,8 @@
       "Bash(cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
       "WebFetch(domain:astral-core-v7-922lzrlva-astral-productions.vercel.app)",
       "Bash(timeout 10 npx next dev --port 3005)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(openssl rand:*)"
     ],
     "deny": [],
     "ask": []

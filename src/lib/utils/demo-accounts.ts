@@ -12,12 +12,30 @@ export interface DemoAccountInfo {
   features: string[];
 }
 
+/**
+ * Get demo account password from environment or generate fallback
+ * In production, environment variables should always be set
+ */
+function getDemoPassword(role: string, fallback: string): string {
+  const envVar = `DEMO_${role.toUpperCase()}_PASSWORD`;
+  const envPassword = process.env[envVar];
+  
+  if (!envPassword) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn(`Warning: ${envVar} not set in production environment`);
+    }
+    return fallback;
+  }
+  
+  return envPassword;
+}
+
 // Demo account configurations with enhanced security
 export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   CLIENT: {
     role: 'CLIENT',
     email: 'client@demo.astralcore.com',
-    password: process.env.DEMO_CLIENT_PASSWORD || 'GeneratedSecurePassword123!',
+    password: getDemoPassword('CLIENT', 'DemoClient2024!'),
     name: 'Emma Johnson',
     description: 'Experience wellness tracking, journaling, and therapy scheduling as a patient',
     features: [
@@ -33,7 +51,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   THERAPIST: {
     role: 'THERAPIST',
     email: 'therapist@demo.astralcore.com',
-    password: process.env.DEMO_THERAPIST_PASSWORD || 'GeneratedSecureTherapist123!',
+    password: getDemoPassword('THERAPIST', 'DemoTherapist2024!'),
     name: 'Dr. Michael Thompson',
     description: 'Manage patients, create treatment plans, and conduct therapy sessions',
     features: [
@@ -49,7 +67,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   ADMIN: {
     role: 'ADMIN',
     email: 'admin@demo.astralcore.com',
-    password: process.env.DEMO_ADMIN_PASSWORD || 'GeneratedSecureAdmin123!',
+    password: getDemoPassword('ADMIN', 'DemoAdmin2024!'),
     name: 'Sarah Administrator',
     description: 'Access system dashboard, user management, and platform settings',
     features: [
@@ -65,7 +83,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   CRISIS_RESPONDER: {
     role: 'CRISIS_RESPONDER',
     email: 'crisis@demo.astralcore.com',
-    password: process.env.DEMO_CRISIS_PASSWORD || 'GeneratedSecureCrisis123!',
+    password: getDemoPassword('CRISIS', 'DemoCrisis2024!'),
     name: 'Alex Crisis-Response',
     description: 'Handle crisis interventions and emergency mental health support',
     features: [
@@ -81,7 +99,7 @@ export const DEMO_ACCOUNT_INFO: Record<string, DemoAccountInfo> = {
   SUPERVISOR: {
     role: 'SUPERVISOR',
     email: 'supervisor@demo.astralcore.com',
-    password: process.env.DEMO_SUPERVISOR_PASSWORD || 'GeneratedSecureSupervisor123!',
+    password: getDemoPassword('SUPERVISOR', 'DemoSupervisor2024!'),
     name: 'Dr. Rachel Supervisor',
     description: 'Oversee clinical operations and staff performance',
     features: [

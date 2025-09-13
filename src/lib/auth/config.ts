@@ -49,7 +49,11 @@ export const authOptions: NextAuthOptions = {
         // Check if demo accounts are allowed in current environment
         const isDemoAccount = isDemoAccountEmail(credentials.email);
         if (isDemoAccount && !areDemoAccountsAllowed()) {
-          await audit.logFailure('LOGIN', 'User', 'Demo account access denied in production', undefined);
+          try {
+            await audit.logFailure('LOGIN', 'User', 'Demo account access denied in production', undefined);
+          } catch (auditError) {
+            console.error('Audit logging failed:', auditError);
+          }
           throw new Error('Demo accounts are not available in this environment');
         }
 
@@ -68,19 +72,31 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.password) {
-          await audit.logFailure('LOGIN', 'User', 'Invalid credentials', undefined);
+          try {
+            await audit.logFailure('LOGIN', 'User', 'Invalid credentials', undefined);
+          } catch (auditError) {
+            console.error('Audit logging failed:', auditError);
+          }
           throw new Error('Invalid credentials');
         }
 
         // Check if account is locked
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-          await audit.logFailure('LOGIN', 'User', 'Account locked', user.id);
+          try {
+            await audit.logFailure('LOGIN', 'User', 'Account locked', user.id);
+          } catch (auditError) {
+            console.error('Audit logging failed:', auditError);
+          }
           throw new Error('Account is locked. Please try again later.');
         }
 
         // Check if account is active
         if (user.status !== 'ACTIVE') {
-          await audit.logFailure('LOGIN', 'User', `Account status: ${user.status}`, user.id);
+          try {
+            await audit.logFailure('LOGIN', 'User', `Account status: ${user.status}`, user.id);
+          } catch (auditError) {
+            console.error('Audit logging failed:', auditError);
+          }
           throw new Error('Account is not active');
         }
 
@@ -106,12 +122,16 @@ export const authOptions: NextAuthOptions = {
             data: updateData
           });
 
-          await audit.logFailure(
-            'LOGIN',
-            'User',
-            `Invalid password. Attempts: ${attempts}`,
-            user.id
-          );
+          try {
+            await audit.logFailure(
+              'LOGIN',
+              'User',
+              `Invalid password. Attempts: ${attempts}`,
+              user.id
+            );
+          } catch (auditError) {
+            console.error('Audit logging failed:', auditError);
+          }
 
           throw new Error('Invalid credentials');
         }
@@ -135,7 +155,12 @@ export const authOptions: NextAuthOptions = {
             )
           : { method: 'credentials' };
 
-        await audit.logSuccess('LOGIN', 'User', user.id, auditMetadata, user.id);
+        try {
+          await audit.logSuccess('LOGIN', 'User', user.id, auditMetadata, user.id);
+        } catch (auditError) {
+          console.error('Audit logging failed:', auditError);
+          // Continue with login even if audit fails
+        }
 
         return {
           id: user.id,
@@ -201,13 +226,17 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          await audit.logSuccess(
-            'LOGIN',
-            'User',
-            existingUser?.id || user.id,
-            { method: account?.provider },
-            existingUser?.id
-          );
+          try {
+            await audit.logSuccess(
+              'LOGIN',
+              'User',
+              existingUser?.id || user.id,
+              { method: account?.provider },
+              existingUser?.id
+            );
+          } catch (auditError) {
+            console.error('Audit logging failed:', auditError);
+          }
         }
 
         return true;
@@ -273,7 +302,11 @@ export const authOptions: NextAuthOptions = {
   events: {
     async signOut({ token }) {
       if (token?.id) {
-        await audit.logSuccess('LOGOUT', 'User', token.id as string, undefined, token.id as string);
+        try {
+          await audit.logSuccess('LOGOUT', 'User', token.id as string, undefined, token.id as string);
+        } catch (auditError) {
+          console.error('Audit logging failed:', auditError);
+        }
       }
     }
   },
@@ -295,7 +328,12 @@ export const authOptions: NextAuthOptions = {
     maxAge: 4 * 60 * 60 // 4 hours for healthcare data security
   },
 
-  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
+  secret: process.env.NEXTAUTH_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('NEXTAUTH_SECRET must be set in production');
+    }
+    return 'fallback-secret-for-development';
+  })(),
 
   debug: process.env.NODE_ENV === 'development'
 };
